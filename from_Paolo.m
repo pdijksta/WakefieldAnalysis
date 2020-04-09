@@ -33,7 +33,7 @@ hold on
 s = 0:deltas:max(sb);
 
 %wake function
-gap   = 2.5e-3; %m
+gap   = 4.0e-3; %m
 a     = gap/2;
 p     = 0.500e-3; %m period
 delta = 0.250e-3; %m corrugation depth
@@ -78,7 +78,7 @@ title('Wake potential and bunch profile', 'FontSize', 16, 'Fontname', 'Times');
 
 
 Q      = 1e-12*Q;  % charge in C
-optics = 10; %m
+optics = 11; %m
 Lguide  = 1; %m
 E      = energy_eV; %beam energy in eV
 

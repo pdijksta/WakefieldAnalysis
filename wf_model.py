@@ -1,8 +1,7 @@
+#import scipy
 import numpy as np
 from scipy.constants import physical_constants, c
-import matplotlib.pyplot as plt
 
-import myplotstyle as ms
 
 
 Z0 = physical_constants['characteristic impedance of vacuum'][0]
@@ -47,9 +46,73 @@ def wxd(s, a):
     t4 = 1 - (1 + sqr)*np.exp(-sqr)
     return t1*t2*t3*t4
 
+class WakeFieldCalculator:
+    def __init__(self, xx, charge_profile):
+        self.xx = xx
+        self.charge_profile = charge_profile
+
+    def get_single_particle_wake(self, semigap):
+        return wxd(self.xx, semigap)
+
+    def get_wake_potential(self, single_particle_wake):
+        return np.convolve(self.charge_profile, single_particle_wake)[:len(self.xx)]
+
+    def get_kick_factor(self, wake_effect):
+        return np.sum(self.charge_profile*wake_effect) / np.sum(self.charge_profile)
+
+    def get_kick(self, kick_factor, R12, beam_energy_eV):
+        return (Ls * kick_factor * R12) / beam_energy_eV
+
+    def calc_all(self, semigap, R12, beam_energy_eV):
+        spw = self.get_single_particle_wake(semigap)
+        wake_potential = self.get_wake_potential(spw)
+        kick_factor = self.get_kick_factor(wake_potential)
+        x_per_m_offset = self.get_kick(kick_factor, R12, beam_energy_eV)
+
+        return {
+                'single_particle_wake': spw,
+                'wake_potential': wake_potential,
+                'kick_factor': kick_factor,
+                'x_per_m_offset': x_per_m_offset,
+                'charge_xx': self.xx,
+                'charge_profile': self.charge_profile
+                }
+
+#def convolve(xx, charge_profile, semigap):
+#    single_particle_wake = wxd(xx, semigap)
+#    wake_effect = np.convolve(charge_profile, single_particle_wake)[:len(xx)]
+#    return single_particle_wake, wake_effect
+
+
+
+
+
+
+
+#### OLD
+#def get_matrix_drift(L):
+#    return np.array([[1, L], [0, 1]], float)
+#
+#def get_matrix_quad(k1l, L):
+#    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt # numpy trigonometric functions do not work
+#    k1 = k1l/L
+#    phi = L * sqrt(k1)
+#    mat = np.array([[cos(phi), sin(phi) / sqrt(k1)],
+#    [-sqrt(k1) * sin(phi), cos(phi)]], dtype=complex)
+#    return np.real(mat)
+#
+#def matmul(matrix_list):
+#    output = matrix_list[0].copy()
+#    for m in matrix_list[1:]:
+#        output = output @ m
+#    return output
+#### END OLD
+
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    import myplotstyle as ms
 
     plt.close('all')
 

@@ -12,10 +12,11 @@ plt.close('all')
 
 home_office = True
 load_compact = True
+storage_dir = '/storage/'
 
 if home_office:
     def loadH5Recursive2(path):
-        return loadH5Recursive(os.path.join('/mnt/usb/work/data_2020-02-03/', os.path.basename(path)))
+        return loadH5Recursive(os.path.join(storage_dir + 'data_2020-02-03/', os.path.basename(path)))
 else:
     loadH5Recursive2 = loadH5Recursive
 
@@ -78,10 +79,13 @@ for gap in gap_list:
     label = gap*1e3
     single_particle_wake = wxd(xx_space, gap/2)
     sp_single.plot(xx_space*1e6, single_particle_wake*1e-15,label=label)
-    wake_effect = np.zeros_like(xx_space)
-    for n in range(len(xx_space)):
-        for n2 in range(0,n):
-            wake_effect[n] += yy_charge[n2] * single_particle_wake[n-n2]
+    wake_effect = np.convolve(yy_charge, single_particle_wake)[:len(xx_space)]
+
+    #wake_effect2 = np.zeros_like(xx_space)
+    #for n in range(len(xx_space)):
+    #    for n2 in range(0,n):
+    #        wake_effect2[n] += yy_charge[n2] * single_particle_wake[n-n2]
+    #assert np.all(wake_effect == wake_effect2)
 
     sp_wake_effect.semilogy(xx_space*1e6, wake_effect*1e-6, label=label)
     sp_wake_effect2.plot(xx_space*1e6, wake_effect*1e-6, label=label)
@@ -98,7 +102,7 @@ sp_kick_factor.plot(gap_list*1e3, np.array(kick_list)*1e-6, marker='.')
 for sp_ in sp_wake_effect, sp_single, sp_delta_x:
     sp_.legend(title='Gap size [mm]')
 
-ms.saveall('/mnt/usb/work/plots/wakefield')
+ms.saveall(storage_dir + '/plots/wakefield', wspace=0.3)
 
 plt.show()
 

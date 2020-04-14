@@ -18,7 +18,7 @@ yy_charge = np.ones_like(xx_space)*total_charge/(size-2)
 yy_charge[0] = 0
 yy_charge[-1] = 0
 
-wf_obj = wf_model.WakeFieldCalculator(xx_space, yy_charge)
+wf_obj = wf_model.WakeFieldCalculator(xx_space, yy_charge, energy_eV)
 
 fig = ms.figure('Ideal beam wake field')
 subplot = ms.subplot_factory(2,2)
@@ -38,7 +38,7 @@ gap_list = np.exp(np.linspace(np.log(2.5e-6), np.log(10e-3), 20))
 for gap_m in gap_list:
     semigap_m = gap_m/2
 
-    wf_dict = wf_obj.calc_all(semigap_m, r12, energy_eV)
+    wf_dict = wf_obj.calc_all(semigap_m, r12, calc_dipole=False)['lin_dipole']
     delta_x = wf_dict['x_per_m_offset'] * beam_offset
 
     x_list.append(delta_x)

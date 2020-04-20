@@ -22,6 +22,7 @@ bpms = ['SARBD02.DBPM010', 'SARBD02.DBPM040']
 reverse_current_profile = True
 linear_fit_details = True
 quadratic_fit_details = True
+show_quadrupole = False
 
 
 plt.close('all')
@@ -57,8 +58,8 @@ sp_ctr += 1
 sp_wake = subplot(sp_ctr, title='Wake potential', xlabel=xlabel2, ylabel='E [MV/m m(offset)]')
 sp_ctr += 1
 
-guessed_centers = [0.46e-3, 0.70e-3]
-bpm_reading_0 = [0.3e-3, 0.4e-3]
+guessed_centers = [0.47e-3, 0.70e-3]
+bpm_reading_0 = [0.31e-3, 0.39e-3]
 
 bl_meas_file = data_dir + 'Bunch_length_meas_2020-02-03_15-59-13.h5'
 total_charge = 200e-12
@@ -130,22 +131,24 @@ gap_file2 = sorted([
 plotted_gaps = []
 
 exp_results = {
+        0: {1: {}, 2: {}},
         1: {1: {}, 2: {}},
-        2: {1: {}, 2: {}},
         }
 
 model_results = copy.deepcopy(exp_results)
+model2_results = copy.deepcopy(exp_results)
+model3_results = copy.deepcopy(exp_results)
 
 
 for n_streaker, gap_file, sps in [
-    (1, gap_file1, (sp_x, sp_x2)),
-    (2, gap_file2, (sp_x3, sp_x4)),
+    (0, gap_file1, (sp_x, sp_x2)),
+    (1, gap_file2, (sp_x3, sp_x4)),
         ]:
 
     for gap, files in gap_file:
 
         semigap_m = gap/2 * 1e-3
-        spw = wf_model.wxd_lin_dipole(charge_xx, semigap_m)
+        spw = wf_model.wxd_lin_dipole(charge_xx, semigap_m, 1)
         wake_potential = wf_calc.wake_potential(spw)
         #wf_dict = wf_calc.calc_all(semigap_m, 10, energy_eV)
         #wake_potential = wf_dict['wake_potential']
@@ -156,22 +159,8 @@ for n_streaker, gap_file, sps in [
 
         xx_list = []
         bpm1_list, bpm2_list = [], []
-        bpm1_list_model, bpm2_list_model = [], []
 
         for n_file, file_ in enumerate(files):
-            # Model
-            if n_file == 0:
-                _, year, month, day, hour, minute, second, _ = os.path.basename(file_).split('_')
-                date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
-                timestamp = int(date.strftime('%s'))
-                mat = elegant_matrix.get_elegant_matrix(n_streaker-1, timestamp)
-                r12_bpm1 = mat[bpms[0]][0,1]
-                r12_bpm2 = mat[bpms[1]][0,1]
-
-                wf_dict_bpm1 = wf_calc.calc_all(semigap_m, r12_bpm1, calc_dipole=False)['lin_dipole']
-                wf_dict_bpm2 = wf_calc.calc_all(semigap_m, r12_bpm2, calc_dipole=False)['lin_dipole']
-                bpm1_list_model.append(wf_dict_bpm1['x_per_m_offset'])
-                bpm2_list_model.append(wf_dict_bpm2['x_per_m_offset'])
 
             # Measurement
 
@@ -186,8 +175,30 @@ for n_streaker, gap_file, sps in [
                 bpm1_list.append(bpm_data1)
                 bpm2_list.append(bpm_data2)
 
-                offset = np.array(dict_['scan 1']['method']['actuators']['SARUN18-UDCP%i00' % n_streaker]['CENTER'])*1e-3
+                offset = np.array(dict_['scan 1']['method']['actuators']['SARUN18-UDCP%i00' % (n_streaker+1)]['CENTER'])*1e-3
+                #print(n_streaker, gap, offset.min(), offset.max(), offset.size)
             xx_list.append(offset)
+
+            # Model
+            if n_file == 0:
+                _, year, month, day, hour, minute, second, _ = os.path.basename(file_).split('_')
+                date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+                timestamp = int(date.strftime('%s'))
+                mat = elegant_matrix.get_elegant_matrix(n_streaker, timestamp)
+                r12_bpm1 = mat[bpms[0]][0,1]
+                r12_bpm2 = mat[bpms[1]][0,1]
+
+                beam_offset = offset[...,np.newaxis] - guessed_centers[n_streaker]
+                wf_dict_bpm1 = wf_calc.calc_all(semigap_m, r12_bpm1, calc_dipole=True, beam_offset=beam_offset)
+                wf_dict_bpm2 = wf_calc.calc_all(semigap_m, r12_bpm2, calc_dipole=True, beam_offset=beam_offset)
+                bpm1_list_model = (wf_dict_bpm1['lin_dipole']['kick']/beam_offset.squeeze())[0]
+                bpm2_list_model = (wf_dict_bpm2['lin_dipole']['kick']/beam_offset.squeeze())[0]
+
+                bpm1_list_model2 = wf_dict_bpm1['dipole']['kick']
+                bpm2_list_model2 = wf_dict_bpm2['dipole']['kick']
+
+                bpm1_list_model3 = wf_dict_bpm1['dipole']['kick'] + wf_dict_bpm1['quadrupole']['kick']
+                bpm2_list_model3 = wf_dict_bpm2['dipole']['kick'] + wf_dict_bpm2['quadrupole']['kick']
 
         # Combine different measurements
         len2 = sum(x.shape[-1] for x in bpm1_list)
@@ -215,7 +226,7 @@ for n_streaker, gap_file, sps in [
         x2_mean = np.nanmean(bpm2_data, axis=-1)
         x2_err = np.nanstd(bpm2_data, axis=-1)
 
-        xx_plot = (xx_list[0] - guessed_centers[n_streaker-1])*1e3
+        xx_plot = (xx_list[0] - guessed_centers[n_streaker])*1e3
         line = sps[0].errorbar(xx_plot, (x1_mean-bpm_reading_0[0])*1e3, yerr=x1_err*1e3, label=gap).lines[0]
         sps[1].errorbar(xx_plot, (x2_mean-bpm_reading_0[1])*1e3, yerr=x2_err*1e3, label=gap)
 
@@ -223,13 +234,25 @@ for n_streaker, gap_file, sps in [
         exp_results[n_streaker][2][gap] = (xx_plot*1e-3, x2_mean, x2_err)
 
         # Theory
-        model_kick1 = bpm1_list_model[0]*xx_plot*1e-3*(-1)
-        model_kick2 = bpm2_list_model[0]*xx_plot*1e-3*(-1)
+        model_kick1 = bpm1_list_model*xx_plot*1e-3*(-1)
+        model_kick2 = bpm2_list_model*xx_plot*1e-3*(-1)
         sps[0].plot(xx_plot, model_kick1*1e3, color=line.get_color(), ls='--')
+        sps[0].plot(xx_plot, -bpm1_list_model2*1e3, color=line.get_color(), ls='-.')
         sps[1].plot(xx_plot, model_kick2*1e3, color=line.get_color(), ls='--')
+        sps[1].plot(xx_plot, -bpm2_list_model2*1e3, color=line.get_color(), ls='-.')
 
-        model_results[n_streaker][1][gap] = bpm1_list_model[0]
-        model_results[n_streaker][2][gap] = bpm2_list_model[0]
+        if show_quadrupole:
+            sps[0].plot(xx_plot, -bpm1_list_model3*1e3, color=line.get_color(), ls=':')
+            sps[1].plot(xx_plot, -bpm2_list_model3*1e3, color=line.get_color(), ls=':')
+
+        model_results[n_streaker][1][gap] = bpm1_list_model
+        model_results[n_streaker][2][gap] = bpm2_list_model
+
+        model2_results[n_streaker][1][gap] = bpm1_list_model2
+        model2_results[n_streaker][2][gap] = bpm2_list_model2
+
+        model3_results[n_streaker][1][gap] = bpm1_list_model3
+        model3_results[n_streaker][2][gap] = bpm2_list_model3
 
 
 for sp_ in sp_x, sp_x2, sp_x3, sp_x4, sp_wake:
@@ -248,9 +271,11 @@ if linear_fit_details:
 
 ratios = []
 fit_results = copy.deepcopy(model_results)
-for k1, k2, k3 in itertools.product([1,2], [1,2], [2.5, 3, 4, 6]):
+for k1, k2, k3 in itertools.product([0,1], [1,2], [2.5, 3, 4, 6]):
     exp = exp_results[k1][k2][k3]
     model = model_results[k1][k2][k3]
+    model2 = model2_results[k1][k2][k3]
+    model3 = model3_results[k1][k2][k3]
     xx, yy, err = exp
     xx = xx
     yy = yy
@@ -277,6 +302,9 @@ for k1, k2, k3 in itertools.product([1,2], [1,2], [2.5, 3, 4, 6]):
         sp_123.errorbar(xx*1e3, (yy-fit[0])*1e3, yerr=err*1e3, label='Data')
         sp_123.plot(xx_fit*1e3, (fit(xx_fit)-fit[0])*1e3, ls='--', label='Linear fit')
         sp_123.plot(xx_fit*1e3, xx_fit*(-1)*abs(model)*1e3, label='Linear model')
+        sp_123.plot(xx*1e3, -model2*1e3, label='Full dipole model', marker='.')
+        if show_quadrupole:
+            sp_123.plot(xx*1e3, -model3*1e3, label='Quadrupole model', marker='.')
         sp_123.legend()
 
 ratios = np.array(ratios)
@@ -296,7 +324,7 @@ ratios_f4 = []
 order_fits_model = []
 order_fits_fit = []
 
-for k1, k2 in itertools.product([1, 2], repeat=2):
+for k1, k2 in itertools.product([0,1], [1, 2]):
     fit_scaling = np.abs(np.array(sorted(fit_results[k1][k2].items())))
     model_scaling = np.abs(np.array(sorted(model_results[k1][k2].items())))
 
@@ -331,7 +359,7 @@ for k1, k2 in itertools.product([1, 2], repeat=2):
 
 sp_scaling.legend()
 
-ms.saveall('~/Dropbox/plots/003_trans_wake_first_order', ending='.pdf', bottom=0.15, wspace=0.3)
+#ms.saveall('~/Dropbox/plots/003_trans_wake_first_order', ending='.pdf', bottom=0.15, wspace=0.3)
 
 plt.show()
 

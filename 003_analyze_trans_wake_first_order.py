@@ -159,19 +159,6 @@ for n_streaker, gap_file, sps in [
         bpm1_list_model, bpm2_list_model = [], []
 
         for n_file, file_ in enumerate(files):
-            # Model
-            if n_file == 0:
-                _, year, month, day, hour, minute, second, _ = os.path.basename(file_).split('_')
-                date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
-                timestamp = int(date.strftime('%s'))
-                mat = elegant_matrix.get_elegant_matrix(n_streaker-1, timestamp)
-                r12_bpm1 = mat[bpms[0]][0,1]
-                r12_bpm2 = mat[bpms[1]][0,1]
-
-                wf_dict_bpm1 = wf_calc.calc_all(semigap_m, r12_bpm1, calc_dipole=False)['lin_dipole']
-                wf_dict_bpm2 = wf_calc.calc_all(semigap_m, r12_bpm2, calc_dipole=False)['lin_dipole']
-                bpm1_list_model.append(wf_dict_bpm1['x_per_m_offset'])
-                bpm2_list_model.append(wf_dict_bpm2['x_per_m_offset'])
 
             # Measurement
 
@@ -188,6 +175,20 @@ for n_streaker, gap_file, sps in [
 
                 offset = np.array(dict_['scan 1']['method']['actuators']['SARUN18-UDCP%i00' % n_streaker]['CENTER'])*1e-3
             xx_list.append(offset)
+
+            # Model
+            if n_file == 0:
+                _, year, month, day, hour, minute, second, _ = os.path.basename(file_).split('_')
+                date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+                timestamp = int(date.strftime('%s'))
+                mat = elegant_matrix.get_elegant_matrix(n_streaker-1, timestamp)
+                r12_bpm1 = mat[bpms[0]][0,1]
+                r12_bpm2 = mat[bpms[1]][0,1]
+
+                wf_dict_bpm1 = wf_calc.calc_all(semigap_m, r12_bpm1, calc_dipole=True, beam_offset=offset[...,np.newaxis])
+                wf_dict_bpm2 = wf_calc.calc_all(semigap_m, r12_bpm2, calc_dipole=True, beam_offset=offset[...,np.newaxis])
+                bpm1_list_model.append(wf_dict_bpm1['lin_dipole']['kick_per_m_offset'])
+                bpm2_list_model.append(wf_dict_bpm2['lin_dipole']['kick_per_m_offset'])
 
         # Combine different measurements
         len2 = sum(x.shape[-1] for x in bpm1_list)

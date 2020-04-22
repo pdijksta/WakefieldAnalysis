@@ -117,8 +117,8 @@ class WakeFieldCalculator:
         result = np.sqrt(full_variance - eloss_sq)
         return result
 
-    def kick(self, kick_factor, R12):
-        return (self.Ls * kick_factor * R12) / self.beam_energy_eV
+    def kick(self, kick_factor):
+        return (self.Ls * kick_factor) / self.beam_energy_eV
 
     def calc_all(self, semigap, R12, beam_offset=1, calc_lin_dipole=True, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=True):
         output = {'input': {
@@ -141,13 +141,15 @@ class WakeFieldCalculator:
                 spw = wxd_function(self.xx, semigap, beam_offset)
                 wake_potential = self.wake_potential(spw)
                 kick_factor = self.kick_factor(wake_potential)
-                kick = self.kick(kick_factor, R12)
+                kick = self.kick(kick_factor)
+                kick_effect = kick * R12
 
                 output[key] = {
                         'single_particle_wake': spw,
                         'wake_potential': wake_potential,
                         'kick_factor': kick_factor,
                         'kick': kick,
+                        'kick_effect': kick_effect,
                         }
             elif do_calc and direction == 'longitudinal':
                 spw = wxd_function(self.xx, semigap, beam_offset)

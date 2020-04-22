@@ -1,6 +1,8 @@
-import numpy as np
-from h5_storage import loadH5Recursive
 import functools
+import json
+import numpy as np
+
+from h5_storage import loadH5Recursive
 
 @functools.lru_cache(5)
 def csv_to_dict(file_):
@@ -25,10 +27,25 @@ def csv_to_dict(file_):
 
     return dict_
 
+def json_to_dict(file_):
+    with open(file_) as f:
+        abc = json.load(f)
+    outp = {}
+    for subdict in abc:
+        data = subdict['data']
+        data_list = []
+        for dd in data:
+            data_list.append([float(dd['globalSeconds']), dd['value']])
+        outp[subdict['channel']['name']] = np.array(data_list)
+    return outp
+
 class DataLoader(dict):
-    def __init__(self, file_):
-        dict_ = csv_to_dict(file_)
-        super().__init__(dict_)
+    def __init__(self, file_csv=None, file_json=None):
+        if file_csv is not None:
+            dict_ = csv_to_dict(file_csv)
+            super().__init__(dict_)
+        if file_json is not None:
+            self.add_other_json(file_json)
 
     def get_prev_datapoint(self, key, timestamp):
         data_list = self[key]
@@ -42,7 +59,11 @@ class DataLoader(dict):
     def add_other_csv(self, file_):
         new_dict = csv_to_dict(file_)
         assert len(set(new_dict.keys()).intersection(set(self.keys()))) == 0
+        self.update(new_dict)
 
+    def add_other_json(self, file_):
+        new_dict = json_to_dict(file_)
+        assert len(set(new_dict.keys()).intersection(set(self.keys()))) == 0
         self.update(new_dict)
 
 @functools.lru_cache(5)
@@ -66,7 +87,10 @@ def load_blmeas(file_):
 
 
 if __name__ == '__main__':
-    file_ = '/mnt/usb/work/data_2020-02-03/sarun_18_19_quads.csv'
+    file_ = '/storage/data_2020-02-03/sarun_18_19_quads.csv'
     dict_ = csv_to_dict(file_)
+    data_loader = DataLoader(file_)
+    file_json = '/storage/data_2020-02-03/2020-02-03.json1'
+    data_loader.add_other_jason(file_json)
 
 

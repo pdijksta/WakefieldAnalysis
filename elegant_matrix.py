@@ -81,7 +81,10 @@ def get_data(mag_name, timestamp):
     return mag_data.get_prev_datapoint(new_key, timestamp)
 
 @functools.lru_cache()
-def get_elegant_matrix(streaker_index, timestamp, del_sim=True):
+def get_elegant_matrix(streaker_index, timestamp, del_sim=True, print_=False):
+    """
+    streaker_index must be in (0,1)
+    """
 
     #streaker = streakers[streaker_index]
     #bpm = bpms[bpm_index]
@@ -91,7 +94,10 @@ def get_elegant_matrix(streaker_index, timestamp, del_sim=True):
         key = '_'+quad.lower()+'.k1_'
         val = get_data(quad, timestamp)
         length = get_magnet_length(quad)
-        macro_dict[key] = val/length
+        k1 = val/length
+        macro_dict[key] = k1
+        if print_:
+            print(key, '%.2e' % k1)
 
     cmd, sim = run_sim(macro_dict, './SwissFEL_in0.ele', './Elegant-Aramis-Reference.lat')
     sim.del_sim = del_sim

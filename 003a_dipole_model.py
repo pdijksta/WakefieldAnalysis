@@ -23,6 +23,7 @@ reverse_current_profile = True
 linear_fit_details = True
 quadratic_fit_details = True
 show_quadrupole = False
+plot_lin_model = False
 
 
 plt.close('all')
@@ -55,8 +56,8 @@ xlabel2 = 's [$\mu$m]'
 sp_current = subplot(sp_ctr, title='Current profile', xlabel=xlabel2, ylabel='Current profile [kA]')
 sp_ctr += 1
 
-sp_wake = subplot(sp_ctr, title='Wake potential', xlabel=xlabel2, ylabel='E [MV/m m(offset)]')
-sp_ctr += 1
+#sp_wake = subplot(sp_ctr, title='Wake potential', xlabel=xlabel2, ylabel='E [MV/m m(offset)]')
+#sp_ctr += 1
 
 guessed_centers = [0.47e-3, 0.70e-3]
 bpm_reading_0 = [0.31e-3, 0.39e-3]
@@ -150,11 +151,11 @@ for n_streaker, gap_file, sps in [
         semigap_m = gap/2 * 1e-3
         spw = wf_model.wxd_lin_dipole(charge_xx, semigap_m, 1)
         wake_potential = wf_calc.wake_potential(spw)
-        #wf_dict = wf_calc.calc_all(semigap_m, 10, energy_eV)
+        wf_dict = wf_calc.calc_all(semigap_m, 10, energy_eV)
         #wake_potential = wf_dict['wake_potential']
 
         if gap not in plotted_gaps:
-            sp_wake.plot(charge_xx*1e6, wake_potential*1e-6, label='%.1f' % gap)
+            #sp_wake.plot(charge_xx*1e6, wake_potential*1e-6, label='%.1f' % gap)
             plotted_gaps.append(gap)
 
         xx_list = []
@@ -184,21 +185,21 @@ for n_streaker, gap_file, sps in [
                 _, year, month, day, hour, minute, second, _ = os.path.basename(file_).split('_')
                 date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
                 timestamp = int(date.strftime('%s'))
-                mat = elegant_matrix.get_elegant_matrix(n_streaker, timestamp)
+                mat = elegant_matrix.get_elegant_matrix(n_streaker, timestamp, print_=True)
                 r12_bpm1 = mat[bpms[0]][0,1]
                 r12_bpm2 = mat[bpms[1]][0,1]
 
                 beam_offset = offset[...,np.newaxis] - guessed_centers[n_streaker]
                 wf_dict_bpm1 = wf_calc.calc_all(semigap_m, r12_bpm1, calc_dipole=True, beam_offset=beam_offset)
                 wf_dict_bpm2 = wf_calc.calc_all(semigap_m, r12_bpm2, calc_dipole=True, beam_offset=beam_offset)
-                bpm1_list_model = (wf_dict_bpm1['lin_dipole']['kick']/beam_offset.squeeze())[0]
-                bpm2_list_model = (wf_dict_bpm2['lin_dipole']['kick']/beam_offset.squeeze())[0]
+                bpm1_list_model = (wf_dict_bpm1['lin_dipole']['kick_effect']/beam_offset.squeeze())[0]
+                bpm2_list_model = (wf_dict_bpm2['lin_dipole']['kick_effect']/beam_offset.squeeze())[0]
 
-                bpm1_list_model2 = wf_dict_bpm1['dipole']['kick']
-                bpm2_list_model2 = wf_dict_bpm2['dipole']['kick']
+                bpm1_list_model2 = wf_dict_bpm1['dipole']['kick_effect']
+                bpm2_list_model2 = wf_dict_bpm2['dipole']['kick_effect']
 
-                bpm1_list_model3 = wf_dict_bpm1['dipole']['kick'] + wf_dict_bpm1['quadrupole']['kick']
-                bpm2_list_model3 = wf_dict_bpm2['dipole']['kick'] + wf_dict_bpm2['quadrupole']['kick']
+                bpm1_list_model3 = wf_dict_bpm1['dipole']['kick_effect'] + wf_dict_bpm1['quadrupole']['kick_effect']
+                bpm2_list_model3 = wf_dict_bpm2['dipole']['kick_effect'] + wf_dict_bpm2['quadrupole']['kick_effect']
 
         # Combine different measurements
         len2 = sum(x.shape[-1] for x in bpm1_list)
@@ -236,9 +237,11 @@ for n_streaker, gap_file, sps in [
         # Theory
         model_kick1 = bpm1_list_model*xx_plot*1e-3*(-1)
         model_kick2 = bpm2_list_model*xx_plot*1e-3*(-1)
-        sps[0].plot(xx_plot, model_kick1*1e3, color=line.get_color(), ls='--')
+        if plot_lin_model:
+            sps[0].plot(xx_plot, model_kick1*1e3, color=line.get_color(), ls='--')
+            sps[1].plot(xx_plot, model_kick2*1e3, color=line.get_color(), ls='--')
+
         sps[0].plot(xx_plot, -bpm1_list_model2*1e3, color=line.get_color(), ls='-.')
-        sps[1].plot(xx_plot, model_kick2*1e3, color=line.get_color(), ls='--')
         sps[1].plot(xx_plot, -bpm2_list_model2*1e3, color=line.get_color(), ls='-.')
 
         if show_quadrupole:
@@ -255,7 +258,7 @@ for n_streaker, gap_file, sps in [
         model3_results[n_streaker][2][gap] = bpm2_list_model3
 
 
-for sp_ in sp_x, sp_x2, sp_x3, sp_x4, sp_wake:
+for sp_ in sp_x, sp_x2, sp_x3, sp_x4: # , sp_wake:
     sp_.legend()
 
 
@@ -301,7 +304,8 @@ for k1, k2, k3 in itertools.product([0,1], [1,2], [2.5, 3, 4, 6]):
 
         sp_123.errorbar(xx*1e3, (yy-fit[0])*1e3, yerr=err*1e3, label='Data')
         sp_123.plot(xx_fit*1e3, (fit(xx_fit)-fit[0])*1e3, ls='--', label='Linear fit')
-        sp_123.plot(xx_fit*1e3, xx_fit*(-1)*abs(model)*1e3, label='Linear model')
+        if plot_lin_model:
+            sp_123.plot(xx_fit*1e3, xx_fit*(-1)*abs(model)*1e3, label='Linear model')
         sp_123.plot(xx*1e3, -model2*1e3, label='Full dipole model', marker='.')
         if show_quadrupole:
             sp_123.plot(xx*1e3, -model3*1e3, label='Quadrupole model', marker='.')
@@ -358,8 +362,7 @@ for k1, k2 in itertools.product([0,1], [1, 2]):
         sp_11.legend()
 
 sp_scaling.legend()
-
-#ms.saveall('~/Dropbox/plots/003_trans_wake_first_order', ending='.pdf', bottom=0.15, wspace=0.3)
+ms.saveall('~/Dropbox/plots/003a_dipole_model', ending='.pdf', bottom=0.15, wspace=0.3)
 
 plt.show()
 

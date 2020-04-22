@@ -24,9 +24,10 @@ plt.close('all')
 
 files = [data_dir+'/Eloss_DEH1.fig.mat', data_dir+'/Eloss_DEH2.fig.mat', data_dir+'/Eloss_DEH1-2.fig.mat']
 lengths = [1, 1, 2]
-titles = ['Structure 1', 'Structure 2', 'Structure 1+2']
+titles = ['Structure 1', 'Structure 2', 'Structures 1+2']
 
 for n_struct, (file_, Ls, title) in enumerate(zip(files, lengths, titles)):
+    print(title)
     mat = loadmat(file_)
     wf_calc = wf_model.WakeFieldCalculator(charge_xx, charge_profile, energy_eV, Ls=Ls)
 
@@ -52,7 +53,9 @@ for n_struct, (file_, Ls, title) in enumerate(zip(files, lengths, titles)):
                     'err2': mat[alternate_key+'_YNegativeDelta'].squeeze(),
                     }
 
-    fig = ms.figure('Longitudinal measurements %s' % title)
+    full_title = 'Longitudinal measurements %s' % title
+    fig = ms.figure(title=full_title)
+
     subplot = ms.subplot_factory(2, 3)
     sp_ctr = 1
 
@@ -99,7 +102,7 @@ for n_struct, (file_, Ls, title) in enumerate(zip(files, lengths, titles)):
         rel_espread = eloss_dict['espread_increase']/energy_eV
         eloss_model_list.append(rel_eloss)
         espread_model_list.append(rel_espread)
-        print(gap_mm, '%.1e' % rel_eloss)
+        #print(gap_mm, '%.1e' % rel_eloss)
         sp_wake_functions.plot(wf_calc.xx*1e6, eloss_dict['single_particle_wake']*1e-15, label='%.1f' % gap_mm)
         sp_wake_potentials.plot(wf_calc.xx*1e6, eloss_dict['wake_potential']*1e-15, label='%.1f' % gap_mm)
 
@@ -118,7 +121,7 @@ for n_struct, (file_, Ls, title) in enumerate(zip(files, lengths, titles)):
 
 
 
-ms.saveall('~/Dropbox/plots/006_longitudinal_measurements', ending='.pdf', bottom=0.15, wspace=0.3)
+ms.saveall('~/Dropbox/plots/006_longitudinal_measurements', ending='.pdf', bottom=0.15, wspace=0.3, top=0.85)
 
 
 

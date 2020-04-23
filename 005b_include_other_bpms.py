@@ -30,7 +30,7 @@ ylabel = 'BPM reading [mm]'
 
 xlabel2 = 's [$\mu$m]'
 
-guessed_centers = [0.46e-3, 0.70e-3]
+guessed_centers = [0.46e-3, 0.69e-3]
 bpm_reading_0 = [0.3e-3, 0.39e-3]
 
 bl_meas_file = data_dir + 'Bunch_length_meas_2020-02-03_15-59-13.h5'
@@ -176,7 +176,7 @@ for n_streaker, gap_file in [
 
             sp_rescaled.errorbar(xx_plot, (x1_mean-guessed0)/r12, yerr=x1_err/r12, label=bpm)
             if n_bpm == 0:
-                sp_rescaled.plot(beam_offset_model*1e3, -kick, ls='--', color='black')
+                sp_rescaled.plot(beam_offset_model*1e3, -kick, ls='--', color='black', label='Model')
 
         for sp in sp_raw, sp_rescaled:
             sp.legend(title='BPM')

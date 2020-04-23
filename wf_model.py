@@ -54,7 +54,7 @@ def wxd(s, a, x):
     t3 = 1./cos(arg)**2
     t4 = tan(arg)
     t5 = s0yd(a, x)
-    sqr = sqrt(s/s0d(a))
+    sqr = sqrt(s/t5)
     t6 = 1 - (1 + sqr)*exp(-sqr)
     return t1 * t2 * t3 * t4 * t5 * t6
 
@@ -72,7 +72,7 @@ def wxq(s, a, x):
     t3 = 2 - cos(arg)
     t4 = 1/cos(arg/2)**4
     t5 = s0yq(a, x)
-    sqr = sqrt(s/s0d(a))
+    sqr = sqrt(s/t5)
     t6 = 1 - (1+sqr)*exp(-sqr)
     result = t1 * t2 * t3 * t4 * t5 * t6
     return result
@@ -130,14 +130,16 @@ class WakeFieldCalculator:
                 'charge_profile': self.charge_profile,
                 }}
 
+        TRANS, LONG = 0, 1
+
         for do_calc, wxd_function, key, direction in [
-                (calc_lin_dipole, wxd_lin_dipole, 'lin_dipole', 'transverse'),
-                (calc_dipole, wxd, 'dipole', 'transverse'),
-                (calc_quadrupole, wxq, 'quadrupole', 'transverse'),
-                (calc_long_dipole, wld, 'longitudinal_dipole', 'longitudinal'),
+                (calc_lin_dipole, wxd_lin_dipole, 'lin_dipole', TRANS),
+                (calc_dipole, wxd, 'dipole', TRANS),
+                (calc_quadrupole, wxq, 'quadrupole', TRANS),
+                (calc_long_dipole, wld, 'longitudinal_dipole', LONG),
                 ]:
 
-            if do_calc and direction == 'transverse':
+            if do_calc and direction == TRANS:
                 spw = wxd_function(self.xx, semigap, beam_offset)
                 wake_potential = self.wake_potential(spw)
                 kick_factor = self.kick_factor(wake_potential)
@@ -151,7 +153,7 @@ class WakeFieldCalculator:
                         'kick': kick,
                         'kick_effect': kick_effect,
                         }
-            elif do_calc and direction == 'longitudinal':
+            elif do_calc and direction == LONG:
                 spw = wxd_function(self.xx, semigap, beam_offset)
                 wake_potential = self.wake_potential(spw)
                 mean_energy_loss = self.mean_energy_loss(wake_potential)

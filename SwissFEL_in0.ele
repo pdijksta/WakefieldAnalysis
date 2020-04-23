@@ -74,9 +74,9 @@
 	use_twiss_command_values = 1,
 	! 5.5 GeV as in lb paper,
 	Po = 10763.2,
-	sigma_dp = 1.3e-4
+	sigma_dp = 0
 	sigma_s = 7.5e-6
-	momentum_chirp = -537.5,
+	momentum_chirp = 0,
 	distribution_type[0] = gaussian, gaussian, gaussian,
 	enforce_rms_values[0] = 1, 1, 1
 &end

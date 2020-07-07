@@ -26,7 +26,7 @@ w = 10e-3
 alpha = 1. - 0.465*sqrt(g/p) - 0.070*g/p
 
 def s0r(a):
-    return (a**2 * delta) / (2*pi * alpha**2 * p**2)
+    return (a**2 * g) / (2*pi * alpha**2 * p**2)
 
 def s0d(a):
     return s0r(a) * (15/14)**2
@@ -37,7 +37,7 @@ def wxd_lin_dipole(s, a, x):
     Single particle wake, linear dipole approximation.
     Unit: V/m /m (offset)
     """
-    t2 = pi**4 / (16 * a**4)
+    t2 = pi**4 / (16*a**4)
     s0d_ = s0d(a)
     t3 = s0d_
     sqr = sqrt(s/s0d_)

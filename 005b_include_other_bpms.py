@@ -11,19 +11,17 @@ import data_loader
 import elegant_matrix
 import wf_model
 
-data_dir = '/storage/data_2020-02-03/'
+#data_dir = '/storage/data_2020-02-03/'
+data_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03/'
 reverse_current_profile = True
 linear_fit_details = True
 quadratic_fit_details = True
 
-
 plt.close('all')
-
 
 figsize = (16, 12)
 ny, nx = 2, 4
 subplot = ms.subplot_factory(ny, nx)
-
 
 xlabel = 'Offset [mm]'
 ylabel = 'BPM reading [mm]'
@@ -45,7 +43,6 @@ charge_xx -= charge_xx.min()
 energy_eV = bl_meas['energy_eV']
 
 wf_calc = wf_model.WakeFieldCalculator(charge_xx, charge_profile, energy_eV)
-
 
 gap_file1 = sorted([
         (2.5, [
@@ -181,7 +178,7 @@ for n_streaker, gap_file in [
         for sp in sp_raw, sp_rescaled:
             sp.legend(title='BPM')
 
-ms.saveall('~/Dropbox/plots/005b_include_other', ending='.pdf', bottom=0.15, wspace=0.3)
+ms.saveall('/tmp/005b_include_other', ending='.png', bottom=0.15, wspace=0.3)
 
 plt.show()
 

@@ -12,22 +12,25 @@ import data_loader
 pid = os.getpid()
 ctr = 0
 
-storage_path = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03'
+storage_path = '/storage/'
 # storage_path = '/mnt/usb/work/'
 streakers = ['SARUN18.UDCP010', 'SARUN18.UDCP020']
-
-#mag_file = storage_path + 'data_2020-02-03/quad_bnd.csv'
-#quad_file = storage_path + 'data_2020-02-03/sarun_18_19_quads.csv'
-#quad_file2 = storage_path + 'data_2020-02-03/sarbd01_quad_k1l.csv'
+for_alex = True
 
 default_SF_par = FileViewer('./default.par.h5')
 
+if for_alex:
+    mag_file = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/2020-03-01.json111'
+    mag_data = data_loader.DataLoader(file_json=mag_file)
+else:
+    mag_file = storage_path + 'data_2020-02-03/quad_bnd.csv'
+    quad_file = storage_path + 'data_2020-02-03/sarun_18_19_quads.csv'
+    quad_file2 = storage_path + 'data_2020-02-03/sarbd01_quad_k1l.csv'
 
-#mag_data = data_loader.DataLoader(mag_file)
-#mag_data.add_other_csv(quad_file)
-#mag_data.add_other_csv(quad_file2)
+    mag_data = data_loader.DataLoader(mag_file)
+    mag_data.add_other_csv(quad_file)
+    mag_data.add_other_csv(quad_file2)
 
-mag_data = data_loader.DataLoader(file_json='/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/2020-02-09.json1')
 quads = ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030']
 
 

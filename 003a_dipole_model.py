@@ -8,8 +8,6 @@ from scipy.constants import c
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
-#from EmittanceTool.h5_storage import loadH5Recursive
-
 import myplotstyle as ms
 
 import wf_model
@@ -17,6 +15,7 @@ import data_loader
 import elegant_matrix
 
 data_dir = '/storage/data_2020-02-03/'
+data_dir = '/mnt/usb/work/data_2020-02-03/'
 bpms = ['SARBD02.DBPM010', 'SARBD02.DBPM040']
 
 reverse_current_profile = True

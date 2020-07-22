@@ -6,10 +6,7 @@ dl = data_loader.DataLoader(file_json='/storage/data_2020-02-03/2020-02-03.json1
 
 
 tt0 = list(dl.values())[0][0,0]
-
-
 tt = datetime.fromtimestamp(tt0)
-
 tt1 = datetime.now()
 
 

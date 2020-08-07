@@ -73,7 +73,7 @@ def H_integrand(var, im_or_re, const_re, const_im, tau, r):
     return -(t1 * t2/(t3*t4)).real
 
 
-@functools.lru_cache()
+@functools.lru_cache(10000)
 def H(tau, r, deviation_im=1e-2, deviation_re=1.):
 
     #deviation_im = 0.0001

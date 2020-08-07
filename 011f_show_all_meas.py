@@ -1,8 +1,8 @@
 import os
 import numpy as np
-#from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit
 from scipy.io import loadmat
-#improt uwf_model as uwf
+import uwf_model as uwf
 import matplotlib.pyplot as plt
 from EmittanceTool.h5_storage import loadH5Recursive
 
@@ -15,10 +15,11 @@ meas1, meas2, meas3 = 0, 0, 0
 mat_files_current_charge = [
         ('Eloss_UNDbis.mat', meas1, 200),
         ('Eloss_UND2ndStreak.mat', meas1, 200),
-        ('Eloss_DEH1-COMP1.mat', meas1, 200),
-        ('Eloss_DEH1-COMP2.mat', meas2, 200),
+        ('Eloss_UND-COMP2.mat', meas2, 100),
+        #('Eloss_DEH1-COMP1.mat', meas1, 200),
+        #('Eloss_DEH1-COMP2.mat', meas2, 200),
         ('Eloss_UND-COMP3.mat', meas3, 100),
-        ('Eloss_DEH1-COMP3.mat', meas3, 100),
+        #('Eloss_DEH1-COMP3.mat', meas3, 100),
         ]
 
 for mat_file, _, total_charge in mat_files_current_charge:
@@ -33,7 +34,7 @@ for mat_file, _, total_charge in mat_files_current_charge:
 
 
     ms.figure('Undulator wakefield measurements %s' % mat_file)
-    plt.subplots_adjust(hspace=0.4)
+    plt.subplots_adjust(hspace=0.5, wspace=0.4)
     subplot = ms.subplot_factory(3,3)
     sp_ctr = 1
 
@@ -74,8 +75,7 @@ for mat_file, _, total_charge in mat_files_current_charge:
 
     W_combined = []
 
-
-    for gap, wf_dict in zip(gap_list, result_list):
+    for n_gap, (gap, wf_dict) in enumerate(zip(gap_list, result_list)):
         loss_surface = wf_dict['proj_Eloss_surface']
         loss_ac = wf_dict['proj_Eloss_ac']
         eloss_surface.append(loss_surface)
@@ -89,13 +89,14 @@ for mat_file, _, total_charge in mat_files_current_charge:
         factor1 = 1e-3*1e-12
         factor2 = 1e-6
 
-        sp_wf_surface.errorbar(plot_xx, wf_dict['w_surface']*factor1, label=label, yerr=wf_dict['w_surface_err']*factor1)
-        sp_wf_res.plot(plot_xx, wf_dict['w_ac']*factor1, label=label)
-        sp_wf_surface_W.plot(plot_xx, wf_dict['W_surface']*factor2, label=label)
-        sp_wf_res_W.plot(plot_xx, wf_dict['W_ac']*factor2, label=label)
         comb = (wf_dict['W_ac']+wf_dict['W_surface'])
         W_combined.append(comb)
-        sp_chirp.plot(plot_xx, comb*factor2, label=label)
+        if n_gap % 2 == 0:
+            sp_wf_surface.errorbar(plot_xx, wf_dict['w_surface']*factor1, label=label, yerr=wf_dict['w_surface_err']*factor1)
+            sp_wf_res.plot(plot_xx, wf_dict['w_ac']*factor1, label=label)
+            sp_wf_surface_W.plot(plot_xx, wf_dict['W_surface']*factor2, label=label)
+            sp_wf_res_W.plot(plot_xx, wf_dict['W_ac']*factor2, label=label)
+            sp_chirp.plot(plot_xx, comb*factor2, label=label)
 
     eloss_surface = np.array(eloss_surface)
     eloss_ac = np.array(eloss_ac)
@@ -141,60 +142,56 @@ for mat_file, _, total_charge in mat_files_current_charge:
 
     mean_x = np.mean(charge_xx)
 
-    #ms.figure('Debug fit')
-    #sp_ctr = 1
-    #sp_initial_chirp = subplot(sp_ctr, title='Initial chirp')
+    ms.figure('Debug fit')
+    sp_ctr = 1
+    sp_initial_chirp = subplot(sp_ctr, title='Initial chirp')
+    sp_ctr += 1
+
+    #sp_final_chirp = subplot(sp_ctr, title='Final chirp', sciy=True)
     #sp_ctr += 1
 
-    ##sp_final_chirp = subplot(sp_ctr, title='Final chirp', sciy=True)
-    ##sp_ctr += 1
+    sp_espread_fit = subplot(sp_ctr, title='Energy spread')
+    sp_ctr += 1
 
-    #sp_espread_fit = subplot(sp_ctr, title='Energy spread')
-    #sp_ctr += 1
+    def fit_initial_chirp(gap_list, dE_ds, plot=False):
+        init_chirp = dE_ds * (charge_xx - mean_x)
+        #init_Espread = np.sqrt(np.sum(init_chirp**2*charge_profile)/np.sum(charge_profile) - (np.sum(init_chirp*charge_profile)/np.sum(charge_profile))**2)
+        #init_Espread2 = uwf.calc_espread(init_chirp, charge_profile)
 
-    #def fit_initial_chirp(gap_list, dE_ds, plot=False):
-    #    init_chirp = dE_ds * (charge_xx - mean_x)
-    #    #init_Espread = np.sqrt(np.sum(init_chirp**2*charge_profile)/np.sum(charge_profile) - (np.sum(init_chirp*charge_profile)/np.sum(charge_profile))**2)
-    #    #init_Espread2 = uwf.calc_espread(init_chirp, charge_profile)
+        if plot:
+            label = '%.2e' % dE_ds
+            sp_initial_chirp.plot(charge_xx, init_chirp/1e6, label=label)
 
-    #    if plot:
-    #        label = '%.2e' % dE_ds
-    #        sp_initial_chirp.plot(charge_xx, init_chirp/1e6, label=label)
+        final_chirp_list = []
+        for i, gap in enumerate(gap_list):
+            final_chirp = init_chirp + W_combined[i]
+            final_espread = uwf.calc_espread(final_chirp, charge_profile)
+            final_chirp_list.append(final_espread)
+            if plot:
+                #sp_final_chirp.plot(charge_xx, final_chirp, label=label)
+                pass
+        #import pdb; pdb.set_trace()
+        final_chirp_list = np.array(final_chirp_list)
 
-    #    final_chirp_list = []
-    #    for i, gap in enumerate(gap_list):
-    #        final_chirp = init_chirp + W_combined[i]
-    #        final_espread = uwf.calc_espread(final_chirp, charge_profile)
-    #        final_chirp_list.append(final_espread)
-    #        if plot:
-    #            #sp_final_chirp.plot(charge_xx, final_chirp, label=label)
-    #            pass
-    #    #import pdb; pdb.set_trace()
-    #    final_chirp_list = np.array(final_chirp_list)
+        outp = final_chirp_list - final_chirp_list[0]
+        if plot:
+            sp_espread_fit.plot(gap_list*1e3, outp/1e6, label=label)
+        return outp
 
-    #    outp = final_chirp_list - final_chirp_list[0]
-    #    if plot:
-    #        sp_espread_fit.plot(gap_list*1e3, outp/1e6, label=label)
-    #    return outp
+    initial_guess = -1e8/charge_xx.max()
+    fit_chirp = curve_fit(fit_initial_chirp, gap_list, espread_fwhm_plot, p0=[initial_guess])
+    fit_chirp_yy0 = fit_initial_chirp(gap_list, fit_chirp[0])
 
-    #initial_guess = -1e8/charge_xx.max()
-    #fit_chirp = curve_fit(fit_initial_chirp, gap_list, espread_fwhm_plot, p0=[initial_guess])
-    #fit_chirp_yy0 = fit_initial_chirp(gap_list, fit_chirp[0])
+    for deds in np.array([0, 0.8, 1, 1.2])*initial_guess:
+        fit_chirp_yy = fit_initial_chirp(gap_list, deds, plot=True)
+    sp_espread_fit.errorbar(gap_list*1e3, espread_fwhm_plot/1e6, yerr=yy_err/1e6, label='FWHM')
 
-    #for deds in np.array([0, 0.8, 1, 1.2])*initial_guess:
-    #    fit_chirp_yy = fit_initial_chirp(gap_list, deds, plot=True)
-    #sp_espread_fit.errorbar(gap_list*1e3, espread_fwhm_plot/1e6, yerr=yy_err/1e6, label='FWHM')
-
-    #sp_espread.plot(gap_list*1e3, fit_chirp_yy0/1e6, label='Fit')
-
+    sp_espread.plot(gap_list*1e3, fit_chirp_yy0/1e6, label='Fit')
 
     for sp_ in sp_wf_res, sp_wf_surface, sp_wf_res_W, sp_wf_surface_W, sp_espread, sp_gap_effect, sp_chirp:
         sp_.legend()
 
 
-    #for gap, wf_dict in zip(gap_list, result_list):
-    #    print(gap, loss_surface, loss_ac)
-    break
-
+ms.saveall('~/pcloud_share/presentations/022_uwf/011_show_all_meas', hspace=0.4, wspace=0.3)
 plt.show()
 

@@ -53,7 +53,7 @@ sp_ctr = 1
 
 xlabel = 's [$\mu$m]'
 ylabel = 'w(kV/(pC$\cdot$m))'
-sp_charge = subplot(sp_ctr, title='Charge profile', xlabel=xlabel, ylabel=ylabel)
+sp_charge = subplot(sp_ctr, title='Charge profile', xlabel='Current (arb. units)', ylabel=ylabel)
 sp_ctr += 1
 sp_charge.plot(s_arr*1e6, charge_profile)
 
@@ -90,6 +90,7 @@ sp_wf_W.legend(title='Undulator gap')
 #sp_integrand = subplot(sp_ctr,
 #sp_ctr += 1
 
+ms.saveall('~/pcloud_share/presentations/022_uwf/008_test_uwf')
 
 
 plt.show()

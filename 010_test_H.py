@@ -38,7 +38,7 @@ for s in s_arr:
             (0., deviation_until, (RE, 0, deviation_im, tau, r)),
             (deviation_im, 0, (IM, deviation_until, 0, tau, r)),
             (deviation_until, np.inf, (RE, 0, 0, tau, r)),
-            (deviation_until, 10, (RE, 0, 0, tau, r)),]):
+            ]):
 
         sp = subplot(sp_ctr, title=sp_ctr)
         sp_ctr += 1

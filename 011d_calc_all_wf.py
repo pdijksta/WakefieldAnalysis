@@ -15,12 +15,10 @@ meas2 = 'Bunch_length_meas_2020-02-03_22-08-38.h5'
 meas3 = 'Bunch_length_meas_2020-02-03_23-55-33.h5'
 
 mat_files_current_charge = [
-        ('Eloss_UNDbis.mat', meas1, 200e-12),
-        ('Eloss_UND2ndStreak.mat', meas1, 200e-12),
-        ('Eloss_DEH1-COMP1.mat', meas1, 200e-12),
-        ('Eloss_DEH1-COMP2.mat', meas2, 200e-12),
-        ('Eloss_UND-COMP3.mat', meas3, 100e-12),
-        ('Eloss_DEH1-COMP3.mat', meas3, 100e-12),
+        #('Eloss_UNDbis.mat', meas1, 200e-12),
+        #('Eloss_UND2ndStreak.mat', meas1, 200e-12),
+        ('Eloss_UND-COMP2.mat', meas2, 100e-12),
+        #('Eloss_UND-COMP3.mat', meas3, 100e-12),
         ]
 
 for mat_file, current_file, charge in mat_files_current_charge:

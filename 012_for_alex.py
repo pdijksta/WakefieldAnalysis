@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import datetime
 
-import elegant_matrix
+import elegant_matrix_for_alex as elegant_matrix
 from ElegantWrapper.simulation import ElegantSimulation
 
 import myplotstyle as ms
@@ -9,7 +9,7 @@ import myplotstyle as ms
 plt.close('all')
 
 
-year, month, day, hour, minute, second = 2020, 2, 9, 22, 14, 54
+year, month, day, hour, minute, second = 2020, 7, 26, 17, 57, 47
 date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
 timestamp = int(date.strftime('%s'))
 mat0 = elegant_matrix.get_elegant_matrix(0, timestamp, del_sim=False, print_=False)
@@ -26,8 +26,11 @@ print(mat0[dscr1])
 print(mat1[dscr1])
 
 
-sim0 = ElegantSimulation('./for_alex//elegant_5521_2020-06-19_17-17-32_0/SwissFEL_in0.ele')
-sim1 = ElegantSimulation('./for_alex//elegant_5521_2020-06-19_17-17-33_1/SwissFEL_in0.ele')
+#sim0 = ElegantSimulation('./for_alex//elegant_5521_2020-06-19_17-17-32_0/SwissFEL_in0.ele')
+#sim1 = ElegantSimulation('./for_alex//elegant_5521_2020-06-19_17-17-33_1/SwissFEL_in0.ele')
+
+sim0 = ElegantSimulation('./for_alex//elegant_15997_2020-08-03_17-20-10_0/SwissFEL_in0.ele')
+sim1 = ElegantSimulation('./for_alex//elegant_15997_2020-08-03_17-20-10_1/SwissFEL_in0.ele')
 
 
 ms.figure()

@@ -20,7 +20,7 @@ for_alex = True
 default_SF_par = FileViewer('./default.par.h5')
 
 if for_alex:
-    mag_file = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/2020-03-01.json111'
+    mag_file = './archiver_api_data/2020-07-26.json'
     mag_data = data_loader.DataLoader(file_json=mag_file)
 else:
     mag_file = storage_path + 'data_2020-02-03/quad_bnd.csv'

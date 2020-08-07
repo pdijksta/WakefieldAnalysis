@@ -52,5 +52,8 @@ sp_current2.set_xlim(*xlim)
 sp_current.legend()
 sp_current2.legend()
 
+
+ms.saveall('~/pcloud_share/presentations/022_uwf/011e_plot_all_current')
+
 plt.show()
 

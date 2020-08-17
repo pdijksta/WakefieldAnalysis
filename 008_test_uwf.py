@@ -30,20 +30,20 @@ wf_list2 = []
 conv_list = []
 conv_list2 = []
 for gap in gap_list:
-    #ac_round_tube = uwf_model.ac_round_tube(s_arr, gap)
+    #dc_round_tube = uwf_model.dc_round_tube(s_arr, gap)
     #surface_round_tube, err = uwf_model.surface_round_tube(s_arr, gap/2, kappa, h)
 
     uwf_dict = uwf_model.calc_all(s_arr, charge_profile, gap/2)
-    ac_round_tube = uwf_dict['w_ac']
+    dc_round_tube = uwf_dict['w_dc']
     surface_round_tube = uwf_dict['w_surface']
     surface_err = uwf_dict['w_surface_err']
-    W_ac = uwf_dict['W_ac']
+    W_dc = uwf_dict['W_dc']
     W_surface = uwf_dict['W_surface']
 
-    wf_list.append(ac_round_tube)
+    wf_list.append(dc_round_tube)
     wf_list2.append(surface_round_tube)
     wf_err_list2.append(surface_err)
-    conv_list.append(W_ac)
+    conv_list.append(W_dc)
     conv_list2.append(W_surface)
     #break
 
@@ -57,7 +57,7 @@ sp_charge = subplot(sp_ctr, title='Charge profile', xlabel='Current (arb. units)
 sp_ctr += 1
 sp_charge.plot(s_arr*1e6, charge_profile)
 
-sp_wf = subplot(sp_ctr, title='Resistive wake', xlabel=xlabel, ylabel=ylabel)
+sp_wf = subplot(sp_ctr, title='Resistive wake (dc round tube)', xlabel=xlabel, ylabel=ylabel)
 sp_ctr += 1
 sp_wf2 = subplot(sp_ctr, title='Surface roughness wake', xlabel=xlabel, ylabel=ylabel)
 sp_ctr += 1

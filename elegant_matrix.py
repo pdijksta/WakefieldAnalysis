@@ -170,7 +170,8 @@ class simulator:
         for key in ('p', 'x', 'y', 'xp', 'yp'):
             new_watcher_dict[key] = watcher0[key]
         new_watcher = Watcher2({}, new_watcher_dict)
-        new_watcher.toSDDS('/tmp/input_beam.sdds')
+        new_watcher_file = '/tmp/input_beam.sdds'
+        new_watcher.toSDDS(new_watcher_file)
 
 
 

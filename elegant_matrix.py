@@ -3,19 +3,21 @@ import os
 import shutil
 import datetime
 import numpy as np
+from scipy.constants import c
 
 from ElegantWrapper.simulation import ElegantSimulation
 from ElegantWrapper.watcher import FileViewer, Watcher, Watcher2
 
 import data_loader
+import wf_model
 
 pid = os.getpid()
 ctr = 0
 
-storage_path = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03'
 # storage_path = '/mnt/usb/work/'
 streakers = ['SARUN18.UDCP010', 'SARUN18.UDCP020']
 
+#storage_path = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03'
 #mag_file = storage_path + 'data_2020-02-03/quad_bnd.csv'
 #quad_file = storage_path + 'data_2020-02-03/sarun_18_19_quads.csv'
 #quad_file2 = storage_path + 'data_2020-02-03/sarbd01_quad_k1l.csv'
@@ -33,14 +35,19 @@ quads = ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA0
 quads_athos = ['SATMA02.MQUA050', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030']
 
 @functools.lru_cache(400)
-def get_simulator(*args, **kwargs):
-    return simulator(*args, **kwargs)
+def get_simulator(file_json):
+    return simulator(file_json)
+
+def get_timestamp(year, month, day, hour, minute, second):
+    date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+    timestamp = int(date.strftime('%s'))
+    return timestamp
 
 class simulator:
     def __init__(self, file_json):
         self.mag_data = data_loader.DataLoader(file_json=file_json)
 
-    def run_sim(self, macro_dict, ele, lat, copy_files=()):
+    def run_sim(self, macro_dict, ele, lat, copy_files=(), move_files=()):
         """
         macro_dict must have  the following form:
         {'_matrix_start_': 'MIDDLE_STREAKER_1$1',
@@ -61,6 +68,8 @@ class simulator:
         os.system('mkdir -p %s' % new_dir)
         for f in copy_files:
             shutil.copy(f, new_dir)
+        for f in move_files:
+            shutil.move(f, new_dir)
         ctr += 1
         new_ele_file = shutil.copy(ele, new_dir)
         shutil.copy(lat, new_dir)
@@ -69,7 +78,7 @@ class simulator:
             cmd = 'elegant %s ' % os.path.basename(new_ele_file)
             for key, val in macro_dict.items():
                 cmd += ' -macro=%s=%s' % (key, val)
-            #print(cmd)
+            print(cmd)
             os.system(cmd)
         finally:
             os.chdir(old_dir)
@@ -154,13 +163,12 @@ class simulator:
 
         return mat_dict
 
-    def simulate_streaker(self, streaker_index, current_time, current_profile, timestamp, gap, beam_offset, del_sim=True, n_particles=int(20e3)):
+    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, del_sim=True, n_particles=int(20e3)):
 
         curr = current_profile
         tt = current_time
         integrated_curr = np.cumsum(curr)
         integrated_curr /= integrated_curr.max()
-
 
         randoms = np.random.rand(n_particles)
         interp_tt = np.interp(randoms, integrated_curr, tt)
@@ -173,13 +181,16 @@ class simulator:
         new_watcher_file = '/tmp/input_beam.sdds'
         new_watcher.toSDDS(new_watcher_file)
 
+        max_xx = (interp_tt.max() - interp_tt.min())*c*1.1
+        xx = np.linspace(0, max_xx, int(10000))
 
+        filenames = ('/tmp/streaker1.sdds', '/tmp/streaker2.sdds')
+        for gap, beam_offset, filename in zip(gaps, beam_offsets, filenames):
+                wf_model.generate_elegant_wf(filename, xx, gap/2., beam_offset, L=1.)
 
-
-        macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_%i$1' % (streaker_index+1)}
-        lat = './Elegant-Aramis-Reference.lat'
-        ele = './SwissFEL_in0.ele'
-        macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_%i$1' % (streaker_index+1)}
+        lat = './Aramis.lat'
+        ele = './SwissFEL_in_streaker.ele'
+        macro_dict = {}
         for quad in quads:
             key = '_'+quad.lower()+'.k1_'
             val = self.get_data(quad, timestamp)
@@ -187,7 +198,8 @@ class simulator:
             k1 = val/length
             macro_dict[key] = k1
 
-        cmd, sim = self.run_sim(macro_dict, ele, lat)
+        move_files = (new_watcher_file,) + filenames
+        cmd, sim = self.run_sim(macro_dict, ele, lat, move_files=move_files)
         sim.del_sim = del_sim
 
         mat_dict = {}
@@ -202,7 +214,7 @@ class simulator:
                 ):
             mat_dict[name] = np.array([[r11, r12], [r21, r22]])
 
-        return mat_dict
+        return sim, mat_dict
 
 
 

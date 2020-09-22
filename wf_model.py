@@ -49,6 +49,8 @@ def s0yd(a, x):
     return 4*s0r(a) * (3/2 + arg * 1/sin(arg) - arg/(2*tan(arg)))**(-2)
 
 def wxd(s, a, x):
+    if x == 0:
+        return np.zeros_like(s)
     t2 = pi**3 / (4*a**3)
     arg = pi*x/(2*a)
     t3 = 1./cos(arg)**2

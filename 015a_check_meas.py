@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from ElegantWrapper.simulation import ElegantSimulation
 from ElegantWrapper.watcher import Watcher2
 import data_loader
+import elegant_matrix
 import wf_model
 
 import myplotstyle as ms
@@ -18,11 +19,19 @@ plt.close('all')
 n_particles = int(20e3) # for elegant
 ele_dir0 = '/home/philipp/elegant/wakefield/001_cut_sim/'
 ele_dir = '/home/philipp/elegant/wakefield/001a_test_measured_current_prof/'
+bl_meas_file = '/sf/data/measurements/2020/02/03/Bunch_length_meas_2020-02-03_21-54-24.h5'
+
+
+displacement = (3.0884-0.65)*1e-3
+gap = 6e-3
+timestamp = elegant_matrix.get_timestamp(2020, 2, 3, 21, 54, 24)
+simulator = elegant_matrix.get_simulator('/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data//archiver_api_data/2020-02-03.json11')
+
+
 
 # Shift day was 3.2.2020
 
 
-bl_meas_file = '/sf/data/measurements/2020/02/03/Bunch_length_meas_2020-02-03_21-54-24.h5'
 
 bl_meas = data_loader.load_blmeas(bl_meas_file)
 
@@ -42,6 +51,7 @@ randoms = np.random.rand(n_particles)
 interp_tt = np.interp(randoms, integrated_curr, tt)
 
 
+sim, _ = simulator.simulate_streaker(tt[curr!=0], curr[curr!=0], timestamp, gaps=(20, gap), beam_offsets=(0, displacement))
 
 
 
@@ -87,9 +97,8 @@ max_xx = (interp_tt.max() - interp_tt.min())*c*1.1
 
 xx = np.linspace(0, max_xx, int(10000))
 
-displacement = (3.0884-0.65)*1e-3
 
-generated_wf = wf_model.generate_elegant_wf(ele_dir + '/passive_streaker_wake.sdds', xx, 6e-3/2., displacement, L=1)
+generated_wf = wf_model.generate_elegant_wf(ele_dir + '/passive_streaker_wake.sdds', xx, gap/2., displacement, L=1)
 beamsize = 15e-6
 
 generated_wf_minus = wf_model.generate_elegant_wf(ele_dir + '/passive_streaker_wake.sdds', xx, 6e-3/2., displacement-beamsize, L=1)
@@ -112,7 +121,8 @@ try:
 finally:
     os.chdir(old_dir)
 
-sim = ElegantSimulation(ele_dir + 'SwissFEL_in1.ele')
+#sim = ElegantSimulation(ele_dir + 'SwissFEL_in1.ele')
+#si
 
 sp = subplot(sp_ctr, title='Image at SARBD01-DSCR050', grid=False, scix=True, sciy=True, xlabel='x [m]', ylabel='y [m]')
 sp_ctr += 1
@@ -120,9 +130,6 @@ sp_ctr += 1
 w = sim.watch[-2]
 
 sp.hist2d(w['x'], w['y'], bins=100)
-
-
-
 
 sp = subplot(sp_ctr, title='Image at SARBD02-DSCR050', grid=False, scix=True, sciy=True, xlabel='x [m]', ylabel='y [m]')
 sp_ctr += 1
@@ -138,9 +145,9 @@ sp_ctr += 1
 sp.hist2d((w['t']-w['t'].mean())*c, (w['p']-w['p'].mean())*511e3*1e-6, bins=100)
 
 
-sp = subplot(sp_ctr, title='Projected', scix=True)
+sp = subplot(sp_ctr, title='Projected', scix=True, xlabel='x [m]', ylabel='Intensity (arb. units)')
 sp_ctr += 1
-sp.hist(w['x'], bins=100)
+sp.hist(w['x'], bins=100, density=True)
 
 
 sp = subplot(sp_ctr, title='Centroid', sciy=True)
@@ -164,8 +171,6 @@ for w_index, label in [(0, 'first'), (2, 'middle'), (-1, 'last')]:
     sp.hist((w['t']-w['t'].mean())*c*1e6, bins=200, label=label+' at %i m' % w.s, density=True)
 
 sp.legend()
-
-
 
 plt.show()
 

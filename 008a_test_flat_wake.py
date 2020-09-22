@@ -157,7 +157,7 @@ for n_s, s in enumerate(s_arr):
 
 sp.plot(s_arr*x_factor, W_arr*y_factor, label='Cos')
 sp.plot(s_arr*x_factor, W_arr2*y_factor, label='Sin')
-sp.plot(W_arr_comp['s_arr']*x_factor, W_arr_comp['W_arr']*y_factor, label='Cos 2')
+sp.plot(W_arr_comp['s_arr']*x_factor, W_arr_comp['W_arr']/-uwf.conversion_factor*y_factor, label='Cos 2')
 #sp.plot(s_arr*x_factor, W_arr3_re*y_factor, label='RE')
 #sp.plot(s_arr*x_factor, W_arr3_im*y_factor, label='IM')
 

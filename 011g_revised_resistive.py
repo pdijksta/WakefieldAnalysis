@@ -16,11 +16,15 @@ mat_files_current_charge = [
         ('Eloss_UNDbis.mat', meas1, 200),
         ('Eloss_UND2ndStreak.mat', meas1, 200),
         ('Eloss_UND-COMP2.mat', meas2, 100),
+        ('Eloss_UND-COMP3.mat', meas3, 100),
+
         #('Eloss_DEH1-COMP1.mat', meas1, 200),
         #('Eloss_DEH1-COMP2.mat', meas2, 200),
-        ('Eloss_UND-COMP3.mat', meas3, 100),
         #('Eloss_DEH1-COMP3.mat', meas3, 100),
-        ]
+       ]
+L = 58.8
+L0 = 1.
+L_factor = L/L0
 
 for mat_file, _, total_charge in mat_files_current_charge:
     result_dict = loadH5Recursive(os.path.basename(mat_file)+'_wake.h5')
@@ -45,6 +49,7 @@ for mat_file, _, total_charge in mat_files_current_charge:
     xlabel = 's [$\mu$m]'
     ylabel = 'w [kV/(pC$\cdot$m)]'
     ylabel2 = '$\Delta$ E [MeV]'
+    ylabel3 = '$\Delta$ E [keV/m]'
 
     sp_wf_surface = subplot(sp_ctr, title='Surface wake', xlabel=xlabel, ylabel=ylabel)
     sp_ctr += 1
@@ -52,13 +57,13 @@ for mat_file, _, total_charge in mat_files_current_charge:
     sp_wf_res = subplot(sp_ctr, title='Resistive wake', xlabel=xlabel, ylabel=ylabel)
     sp_ctr += 1
 
-    sp_wf_surface_W = subplot(sp_ctr, title='Surface wake convolved', xlabel=xlabel, ylabel=ylabel2)
+    sp_wf_surface_W = subplot(sp_ctr, title='Surface wake convolved', xlabel=xlabel, ylabel=ylabel3)
     sp_ctr += 1
 
-    sp_wf_res_W = subplot(sp_ctr, title='Resistive wake convolved', xlabel=xlabel, ylabel=ylabel2)
+    sp_wf_res_W = subplot(sp_ctr, title='Resistive wake convolved', xlabel=xlabel, ylabel=ylabel3)
     sp_ctr += 1
 
-    sp_chirp = subplot(sp_ctr, title='Combined effect', xlabel='s [$\mu$m]', ylabel=ylabel2)
+    sp_chirp = subplot(sp_ctr, title='Combined effect', xlabel='s [$\mu$m]', ylabel=ylabel3)
     sp_ctr += 1
 
     sp_gap_effect = subplot(sp_ctr, title='Proj Energy loss', xlabel='Gap [mm]', ylabel='Energy loss [MeV]')
@@ -68,6 +73,7 @@ for mat_file, _, total_charge in mat_files_current_charge:
     sp_ctr += 1
 
     eloss_surface = []
+    eloss_surface2 = []
     eloss_ac = []
 
     espread_surface = []
@@ -76,40 +82,57 @@ for mat_file, _, total_charge in mat_files_current_charge:
     W_combined = []
 
     for n_gap, (gap, wf_dict) in enumerate(zip(gap_list, result_list)):
-        loss_surface = wf_dict['proj_Eloss_surface']
-        loss_ac = wf_dict['proj_Eloss_ac']
+        loss_surface = wf_dict['proj_Eloss_surface'] * L_factor
+        loss_ac = wf_dict['proj_Eloss_ac'] * L_factor
         eloss_surface.append(loss_surface)
         eloss_ac.append(loss_ac)
-        espread_surface.append(wf_dict['proj_Espread_surface'])
-        espread_ac.append(wf_dict['proj_Espread_ac'])
+        espread_surface.append(wf_dict['proj_Espread_surface'] * L_factor)
+        espread_ac.append(wf_dict['proj_Espread_ac'] * L_factor)
+
+        new_surf = uwf.surface_round_tube(charge_xx, gap/2, uwf.aramis_kappa*2, uwf.aramis_h, multi=True)[0]
+        print('donezo')
+        new_surf_W = uwf.convolve(new_surf, charge_profile)
+        new_surf_eloss = np.sum(new_surf_W*charge_profile) / np.sum(charge_profile) * L_factor
+        eloss_surface2.append(new_surf_eloss)
 
         label = '%.1f' % (gap*1e3)
 
         plot_xx = charge_xx * 1e6
         factor1 = 1e-3*1e-12
         factor2 = 1e-6
+        factor3 = 1e-3
 
         comb = (wf_dict['W_ac']+wf_dict['W_surface'])
+        comb2 = (wf_dict['W_ac']+new_surf_W)
         W_combined.append(comb)
-        if n_gap % 2 == 0:
+        if n_gap % 3 == 0:
             sp_wf_surface.errorbar(plot_xx, wf_dict['w_surface']*factor1, label=label, yerr=wf_dict['w_surface_err']*factor1)
-            sp_wf_res.plot(plot_xx, wf_dict['w_ac']*factor1, label=label)
-            sp_wf_surface_W.plot(plot_xx, wf_dict['W_surface']*factor2, label=label)
-            sp_wf_res_W.plot(plot_xx, wf_dict['W_ac']*factor2, label=label)
-            sp_chirp.plot(plot_xx, comb*factor2, label=label)
+            color = sp_wf_res.plot(plot_xx, wf_dict['w_ac']*factor1, label=label)[0].get_color()
+            sp_wf_surface.plot(plot_xx, new_surf*factor1, label=label, color=color, ls='--')
+            sp_wf_res.plot(plot_xx, wf_dict['w_dc']*factor1, ls='--', color=color)
+            sp_wf_surface_W.plot(plot_xx, wf_dict['W_surface']*factor3, label=label)
+            sp_wf_surface_W.plot(plot_xx, new_surf_W*factor3, color=color, ls='--')
+            sp_wf_res_W.plot(plot_xx, wf_dict['W_ac']*factor3, label=label)
+            sp_wf_res_W.plot(plot_xx, wf_dict['W_dc']*factor3, ls='--', color=color)
+            sp_chirp.plot(plot_xx, comb*factor3, label=label)
+            sp_chirp.plot(plot_xx, comb2*factor3, color=color, ls='--')
 
     eloss_surface = np.array(eloss_surface)
     eloss_ac = np.array(eloss_ac)
     espread_surface = np.array(espread_surface)
     espread_ac = np.array(espread_ac)
     W_combined = np.array(W_combined)
+    eloss_surface2 = np.array(eloss_surface2)
 
     eloss_surface -= eloss_surface.max()
+    eloss_surface2 -= eloss_surface2.max()
     eloss_ac -= eloss_ac.max()
 
     sp_gap_effect.plot(gap_list*1e3, eloss_surface/1e6, label='Surface')
+    sp_gap_effect.plot(gap_list*1e3, eloss_surface2/1e6, label='Surface 2')
     sp_gap_effect.plot(gap_list*1e3, eloss_ac/1e6, label='Resistive')
     sp_gap_effect.plot(gap_list*1e3, (eloss_ac+eloss_surface)/1e6, label='Combined')
+    sp_gap_effect.plot(gap_list*1e3, (eloss_ac+eloss_surface2)/1e6, label='Combined 2')
 
 
     delta_E_screen = yy0 = dd['delta'].squeeze() * energy_eV
@@ -192,6 +215,6 @@ for mat_file, _, total_charge in mat_files_current_charge:
         sp_.legend()
 
 
-ms.saveall('~/pcloud_share/presentations/022_uwf/011_show_all_meas', hspace=0.4, wspace=0.3)
+#ms.saveall('~/pcloud_share/presentations/022_uwf/011_show_all_meas', hspace=0.4, wspace=0.3)
 plt.show()
 

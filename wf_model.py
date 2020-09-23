@@ -49,8 +49,6 @@ def s0yd(a, x):
     return 4*s0r(a) * (3/2 + arg * 1/sin(arg) - arg/(2*tan(arg)))**(-2)
 
 def wxd(s, a, x):
-    if x == 0:
-        return np.zeros_like(s)
     t2 = pi**3 / (4*a**3)
     arg = pi*x/(2*a)
     t3 = 1./cos(arg)**2
@@ -170,10 +168,11 @@ class WakeFieldCalculator:
 
 
 def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
-    w_wxd = np.zeros_like(xx)
-    w_wxd[xx>=0] = wxd(xx[xx>=0], semigap, beam_offset)*L
-    w_wld = np.zeros_like(xx)
-    w_wld[xx>=0] = wld(xx[xx>=0], semigap, beam_offset)*L
+    if beam_offset == 0:
+        w_wxd = np.zeros_like(xx)
+    else:
+        w_wxd = wxd(xx, semigap, beam_offset)*L
+    w_wld = wld(xx, semigap, beam_offset)*L
     tt = xx/c
 
     #outp_arr = np.array([tt, w_wld, w_wxd])

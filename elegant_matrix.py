@@ -164,6 +164,9 @@ class simulator:
         return mat_dict
 
     def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, del_sim=True, n_particles=int(20e3)):
+        """
+        Returns: sim, mat_dict
+        """
 
         curr = current_profile
         tt = current_time

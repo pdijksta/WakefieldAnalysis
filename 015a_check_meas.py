@@ -51,7 +51,6 @@ randoms = np.random.rand(n_particles)
 interp_tt = np.interp(randoms, integrated_curr, tt)
 
 
-sim, _ = simulator.simulate_streaker(tt[curr!=0], curr[curr!=0], timestamp, gaps=(20, gap), beam_offsets=(0, displacement))
 
 
 
@@ -117,12 +116,12 @@ sp.legend()
 old_dir = os.getcwd()
 try:
     os.chdir(ele_dir)
-    os.system('elegant SwissFEL_in1.ele')
+    os.system('elegant ./SwissFEL_in1.ele  -macro=_sarbd02.mqua030.k1_=0.0 -macro=_sarun19.mqua080.k1_=-1.72545495094 -macro=_sarun18.mqua080.k1_=1.40406715498 -macro=_sarbd01.mqua020.k1_=-0.339201848397 -macro=_sarun20.mqua080.k1_=-0.502219505545')
 finally:
     os.chdir(old_dir)
 
-#sim = ElegantSimulation(ele_dir + 'SwissFEL_in1.ele')
-#si
+sim1, _ = simulator.simulate_streaker(tt[curr!=0], curr[curr!=0], timestamp, gaps=(20, gap), beam_offsets=(0, displacement))
+sim = ElegantSimulation(ele_dir + 'SwissFEL_in1.ele')
 
 sp = subplot(sp_ctr, title='Image at SARBD01-DSCR050', grid=False, scix=True, sciy=True, xlabel='x [m]', ylabel='y [m]')
 sp_ctr += 1
@@ -147,7 +146,9 @@ sp.hist2d((w['t']-w['t'].mean())*c, (w['p']-w['p'].mean())*511e3*1e-6, bins=100)
 
 sp = subplot(sp_ctr, title='Projected', scix=True, xlabel='x [m]', ylabel='Intensity (arb. units)')
 sp_ctr += 1
-sp.hist(w['x'], bins=100, density=True)
+sp.hist(w['x'], bins=100, density=True, label='Original')
+sp.hist(sim1.watch[-1]['x'], bins=100, density=True, label='Module')
+sp.legend()
 
 
 sp = subplot(sp_ctr, title='Centroid', sciy=True)

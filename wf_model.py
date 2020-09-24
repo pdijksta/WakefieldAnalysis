@@ -166,3 +166,37 @@ class WakeFieldCalculator:
                         }
         return output
 
+
+def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
+    w_wxd = np.zeros_like(xx)
+    w_wxd[xx>=0] = wxd(xx[xx>=0], semigap, beam_offset)*L
+    w_wld = np.zeros_like(xx)
+    w_wld[xx>=0] = wld(xx[xx>=0], semigap, beam_offset)*L
+    tt = xx/c
+
+    #outp_arr = np.array([tt, w_wld, w_wxd])
+    #fname_txt = filename+'.txt'
+    #np.savetxt(fname_txt, outp_arr, delimiter=';')
+    #cmd = "plaindata2sdds %s %s -inputModel=ascii -outputModel=binary -separator=';' -noRowCount -column=t,double -column=W,double, -column=WD,double" % (fname_txt, filename)
+    #print(cmd)
+    #os.system(cmd)
+
+    with open(filename, 'w') as fid:
+        fid.write('SDDS1\n')
+        #fid.write('&column name=z,    units=m,    type=double,    &end\n')
+        fid.write('&column name=t,    units=s,    type=double,    &end\n')
+        fid.write('&column name=W,    units=V/C,  type=double,    &end\n')
+        fid.write('&column name=WX,   units=V/C,    type=double,    &end\n') # V/C for X_DRIVE_EXPONENT=0, otherwise V/C/m
+        fid.write('&data mode=ascii, &end\n')
+        fid.write('! page number 1\n')
+        fid.write('%i\n' % len(xx))
+        for t, wx, wl in zip(tt, w_wld, w_wxd):
+            fid.write('  %12.6e  %12.6e  %12.6e\n' % (t, wx, wl))
+
+    return {
+            't': tt,
+            'W': w_wld,
+            'WX': w_wxd,
+            }
+
+

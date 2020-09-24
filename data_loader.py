@@ -52,12 +52,13 @@ class DataLoader(dict):
         for index, (timestamp2, _) in enumerate(data_list):
             if timestamp2 > timestamp:
                 out_index = index-1
-                if out_index in (0, len(data_list-1)):
-                    raise KeyError('Requested data at border of data array')
+                if out_index in (-1, len(data_list-1)):
+                    raise KeyError('Requested data at border of data array. Key %s' % key)
                 if verbose:
                     print(key, out_index)
                 return data_list[index-1,1]
         else:
+            #import pdb; pdb.set_trace()
             raise KeyError('Requested data at border of data array')
 
 

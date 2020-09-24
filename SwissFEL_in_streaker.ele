@@ -1,0 +1,47 @@
+&run_setup
+	lattice		=Aramis.lat,
+	use_beamline	= SARUN18_TO_END,
+	rootname	= SwissFEL0,
+	output		= %s.out,
+	centroid	= %s.cen,
+	sigma		= %s.sig,
+	final		= %s.fin,
+	parameters	= %s.par,
+	magnets		= %s.mag,
+	combine_bunch_statistics = 0,
+	default_order	= 3,
+	concat_order	= 0,
+	print_statistics	= 0,
+	random_number_seed	= 9876543210,
+	p_central	= 1.165402e+04,
+	tracking_updates	= 1,
+	element_divisions = 5,
+&end
+
+&run_control
+	n_steps	= 1,
+	reset_rf_for_each_step = 1
+&end
+
+&twiss_output
+	filename	= %s.twi,
+	matched		= 0,
+	! At SARUN18.START
+	beta_x		= 5.067067,
+	beta_y		= 16.72606,
+	alpha_x		= -0.5774133,
+	alpha_y		= 1.781136,
+&end
+
+&sdds_beam
+	input_type= "elegant",
+	sample_interval	= 1,
+	input = test_new_sdds.sdds,
+	reuse_bunch	= 0
+&end
+
+
+
+&track
+&end
+

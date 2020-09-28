@@ -1,5 +1,4 @@
 import os
-import datetime
 import h5py
 from scipy.constants import c
 import numpy as np; np
@@ -28,7 +27,7 @@ subplot = ms.subplot_factory(ny, nx)
 xlabel = 'Offset [mm]'
 ylabel = 'BPM reading [mm]'
 
-xlabel2 = 's [$\mu$m]'
+xlabel2 = r's [$\mu$m]'
 
 guessed_centers = [0.46e-3, 0.69e-3]
 bpm_reading_0 = [0.3e-3, 0.39e-3]
@@ -101,18 +100,20 @@ sp_ctr = np.inf
 
 for n_streaker, gap_file in [
     (1, gap_file1),
-    (2, gap_file2),
+    #(2, gap_file2),
         ]:
 
-    for gap, files in gap_file:
+    for gap_mm, files in gap_file:
 
         xx_list = []
         bpm_list_dict = {key: [] for key in bpms}
-        semigap_m = gap*1e-3/2.
+        semigap_m = gap_mm*1e-3/2.
         for n_file, file_ in enumerate(files):
             # Measurement
 
             file_ = os.path.join(data_dir, os.path.basename(file_))
+            _, year, month, day, hour, minute, second, _ = os.path.basename(file_).split('_')
+            timestamp = elegant_matrix.get_timestamp(year, month, day, hour, minute, second)
             with h5py.File(file_, 'r') as dict_:
                 for bpm in bpms:
                     bpm_list_dict[bpm].append(np.array(dict_['scan 1']['data'][bpm]['X1'])*1e-3)
@@ -126,9 +127,9 @@ for n_streaker, gap_file in [
 
         for key, ll in bpm_list_dict.items():
             ctr = 0
-            for l in ll:
-                l_len = l.shape[-1]
-                bpm_data[key][:,ctr:ctr+l_len] = l
+            for l_ in ll:
+                l_len = l_.shape[-1]
+                bpm_data[key][:,ctr:ctr+l_len] = l_
                 ctr += l_len
 
         # filter out non-unique bpm data
@@ -141,30 +142,65 @@ for n_streaker, gap_file in [
 
         if sp_ctr > ny*nx:
             sp_ctr = 1
-            fig_raw = ms.figure('Streaker gap scan (raw)', figsize=figsize)
-            fig_rescaled = ms.figure('Streaker gap scan (normalized by R12)', figsize=figsize)
+            fig_raw = ms.figure('Streaker gap_mm scan (raw)', figsize=figsize)
+            fig_rescaled = ms.figure('Streaker gap_mm scan (normalized by R12)', figsize=figsize)
+            fig_wf = ms.figure('Wake functions', figsize=figsize)
+            #fig_kick = ms.figure('Kick', figsize=figsize)
 
         plt.figure(fig_raw.number)
-        sp_raw = subplot(sp_ctr, title='Streaker %i Gap %.1f mm' % (n_streaker, gap), xlabel='Offset [mm]', ylabel='BPM reading [mm]')
+        sp_raw = subplot(sp_ctr, title='Streaker %i Gap %.1f mm' % (n_streaker, gap_mm), xlabel='Offset [mm]', ylabel='BPM reading [mm]')
+
         plt.figure(fig_rescaled.number)
-        sp_rescaled = subplot(sp_ctr, title='Streaker %i Gap %.1f mm' % (n_streaker, gap), xlabel='Offset [mm]', ylabel='BPM reading / R12', sciy=True)
+        sp_rescaled = subplot(sp_ctr, title='Streaker %i Gap %.1f mm' % (n_streaker, gap_mm), xlabel='Offset [mm]', ylabel='BPM reading / R12', sciy=True)
+
+        plt.figure(fig_wf.number)
+        sp_trans_wake = subplot(sp_ctr, title='Wakefield %i Gap %.1f mm' % (n_streaker, gap_mm), xlabel='t [s]', ylabel='E [V/m]')
+
+        #plt.figure(fig_kick.number)
+        #sp_kick = subplot(sp_ctr, title='Wakefield %i Gap %.1f mm' % (n_streaker, gap_mm), xlabel='t [s]', ylabel='E [V/m]')
         sp_ctr += 1
 
-        for n_bpm, (bpm, arr) in enumerate(bpm_data.items()):
-            _, year, month, day, hour, minute, second, _ = os.path.basename(file_).split('_')
-            date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
-            timestamp = int(date.strftime('%s'))
+        xx_plot = (xx_list[0] - guessed_centers[n_streaker-1])*1e3
+        xx_plot_m = xx_plot*1e-3
+        beam_offset_list = np.linspace(xx_plot_m.min(), xx_plot_m.max(), 10)
 
-            mat_dict = simulator.get_elegant_matrix(n_streaker-1, timestamp, print_=True)
-            mat = mat_dict[bpm.replace('-','.')]
+        simulated_kick_normalized = []
+
+        for beam_offset in beam_offset_list:
+
+            if n_streaker == 1:
+                gaps = (gap_mm*1e-3, 20e-3)
+                beam_offsets = (beam_offset, 0)
+            else:
+                gaps = (20e-3, gap_mm*1e-3)
+                beam_offsets = (0, beam_offset)
+            sim, mat_dict, wf_dicts = simulator.simulate_streaker(charge_xx/c, current_profile, timestamp, gaps, beam_offsets, energy_eV)
+            bpm_index = list(sim.cen['ElementName']).index('SARBD02.DBPM040')
+            simulated_kick_normalized.append(sim.cen['Cx'][bpm_index])
+            #break
+        simulated_kick_normalized = np.array(simulated_kick_normalized)
+
+        for n_bpm, (bpm, arr) in enumerate(bpm_data.items()):
+
+            #mat_dict = simulator.get_elegant_matrix(n_streaker-1, timestamp, print_=True)
+            #mat_old = mat_dict[bpm.replace('-','.')]
+
+            mat0 = mat_dict['MIDDLE_STREAKER_%i' % n_streaker]
+            mat1 = mat_dict[bpm.replace('-', '.')]
+            mat = mat1 @ np.linalg.inv(mat0)
             r12 = mat[0,1]
 
-            xx_plot = (xx_list[0] - guessed_centers[n_streaker-1])*1e3
             x1_mean = np.nanmean(arr, axis=-1)
             x1_err = np.nanstd(arr, axis=-1)
 
             beam_offset_model = (np.linspace(xx_plot.min(), xx_plot.max(), 100)*1e-3)[:, np.newaxis]
             wf_dict = wf_calc.calc_all(semigap_m, r12, beam_offset=beam_offset_model, calc_lin_dipole=False, calc_quadrupole=False, calc_long_dipole=False)
+            #plt.figure()
+            #plt.plot(wf_dicts[0]['t']*c, -wf_dicts[0]['WX'], label='WX')
+            #plt.plot(wf_dict['input']['charge_xx'], wf_dict['dipole']['single_particle_wake'][0,:], label='wld')
+            #plt.legend()
+            #plt.show()
+            #import pdb; pdb.set_trace()
             print('%.1e %.2e' % (semigap_m*2*1e3, wf_dict['dipole']['single_particle_wake'].max()))
             kick = wf_dict['dipole']['kick']
             kick_effect = wf_dict['dipole']['kick_effect']
@@ -175,8 +211,21 @@ for n_streaker, gap_file in [
             sp_raw.plot(beam_offset_model*1e3, -kick_effect*1e3, ls='--', color=color)
 
             sp_rescaled.errorbar(xx_plot, (x1_mean-guessed0)/r12, yerr=x1_err/r12, label=bpm)
+
             if n_bpm == 0:
                 sp_rescaled.plot(beam_offset_model*1e3, -kick, ls='--', color='black', label='Model')
+
+                index = np.argmin((wf_dict['input']['beam_offset'].squeeze() - beam_offset)**2)
+                spw1 = -wf_dict['dipole']['single_particle_wake'][index]
+                tt1 = wf_dict['input']['charge_xx']/c
+                spw2 = wf_dicts[n_streaker-1]['WX']
+                tt2 = wf_dicts[n_streaker-1]['t']
+
+                sp_trans_wake.plot(tt1, spw1, label='Model')
+                sp_trans_wake.plot(tt2, spw2, label='Elegant')
+
+            if bpm == 'SARBD02-DBPM040':
+                sp_rescaled.plot((beam_offset_list)*1e3, simulated_kick_normalized/r12, ls='-.', color='black', label='Elegant', marker='.')
 
         for sp in sp_raw, sp_rescaled:
             sp.legend(title='BPM')

@@ -268,8 +268,8 @@ SINSB03.RACC100   : RFCW, FREQ=2998800000.000000, CELL_LENGTH=1.0, &
 	 L=4.083000, VOLT=6.663456e+07, PHASE= 66.410000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_S-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_S-band.sdds", &
+	 ZWAKEFILE="wake_l_S-band.sdds", &
+	 TRWAKEFILE="wake_t_S-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0077.csr: CSRDRIFT, L=0.033500, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -318,8 +318,8 @@ SINSB03.RACC200   : RFCW, FREQ=2998800000.000000, CELL_LENGTH=1.0, &
 	 L=4.083000, VOLT=6.663456e+07, PHASE= 66.410000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_S-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_S-band.sdds", &
+	 ZWAKEFILE="wake_l_S-band.sdds", &
+	 TRWAKEFILE="wake_t_S-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0089.csr: CSRDRIFT, L=0.033500, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -368,8 +368,8 @@ SINSB04.RACC100   : RFCW, FREQ=2998800000.000000, CELL_LENGTH=1.0, &
 	 L=4.083000, VOLT=6.663456e+07, PHASE= 66.410000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_S-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_S-band.sdds", &
+	 ZWAKEFILE="wake_l_S-band.sdds", &
+	 TRWAKEFILE="wake_t_S-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0098.csr: CSRDRIFT, L=0.033500, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -408,8 +408,8 @@ SINSB04.RACC200   : RFCW, FREQ=2998800000.000000, CELL_LENGTH=1.0, &
 	 L=4.083000, VOLT=6.663456e+07, PHASE= 66.410000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_S-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_S-band.sdds", &
+	 ZWAKEFILE="wake_l_S-band.sdds", &
+	 TRWAKEFILE="wake_t_S-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0107.csr: CSRDRIFT, L=0.033500, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -503,8 +503,8 @@ SINXB01.RACC100   : RFCW, FREQ=11995200000.000000, CELL_LENGTH=1.0, &
 	 L=0.750000, VOLT=1.422000e+07, PHASE= 265.930000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_X-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_X-band.sdds", &
+	 ZWAKEFILE="wake_l_X-band.sdds", &
+	 TRWAKEFILE="wake_t_X-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0134: LSCDRIFT, L=0.107500, LEFFECTIVE=0.107500, BINS=100, SMOOTHING=1, LSC=0
@@ -518,8 +518,8 @@ SINXB01.RACC200   : RFCW, FREQ=11995200000.000000, CELL_LENGTH=1.0, &
 	 L=0.750000, VOLT=1.422000e+07, PHASE= 265.930000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_X-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_X-band.sdds", &
+	 ZWAKEFILE="wake_l_X-band.sdds", &
+	 TRWAKEFILE="wake_t_X-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0140: LSCDRIFT, L=0.107500, LEFFECTIVE=0.107500, BINS=100, SMOOTHING=1, LSC=0
@@ -1017,8 +1017,8 @@ S10CB01.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0274.csr: CSRDRIFT, L=0.035977, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -1034,8 +1034,8 @@ S10CB01.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0277.csr: CSRDRIFT, L=0.035977, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -1072,8 +1072,8 @@ S10CB01.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0286: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1083,8 +1083,8 @@ S10CB01.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0289: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1117,8 +1117,8 @@ S10CB02.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0299: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1128,8 +1128,8 @@ S10CB02.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0302: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1150,8 +1150,8 @@ S10CB02.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0311: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1161,8 +1161,8 @@ S10CB02.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0314: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1239,8 +1239,8 @@ S10CB03.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0344: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1250,8 +1250,8 @@ S10CB03.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0347: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1272,8 +1272,8 @@ S10CB03.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0356: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1283,8 +1283,8 @@ S10CB03.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0359: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1322,8 +1322,8 @@ S10CB04.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0372: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1333,8 +1333,8 @@ S10CB04.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0375: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1355,8 +1355,8 @@ S10CB04.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0384: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1366,8 +1366,8 @@ S10CB04.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0387: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1400,8 +1400,8 @@ S10CB05.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0397: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1411,8 +1411,8 @@ S10CB05.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0400: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1433,8 +1433,8 @@ S10CB05.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0409: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1444,8 +1444,8 @@ S10CB05.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0412: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1483,8 +1483,8 @@ S10CB06.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0425: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1494,8 +1494,8 @@ S10CB06.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0428: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1516,8 +1516,8 @@ S10CB06.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0437: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1527,8 +1527,8 @@ S10CB06.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0440: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1561,8 +1561,8 @@ S10CB07.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0450: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1572,8 +1572,8 @@ S10CB07.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0453: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1594,8 +1594,8 @@ S10CB07.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0462: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1605,8 +1605,8 @@ S10CB07.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0465: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1644,8 +1644,8 @@ S10CB08.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0478: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1655,8 +1655,8 @@ S10CB08.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0481: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1677,8 +1677,8 @@ S10CB08.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0490: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1688,8 +1688,8 @@ S10CB08.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0493: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1722,8 +1722,8 @@ S10CB09.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0503: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1733,8 +1733,8 @@ S10CB09.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0506: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1755,8 +1755,8 @@ S10CB09.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0515: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -1766,8 +1766,8 @@ S10CB09.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.566219e+07, PHASE= 68.550000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0518: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2205,8 +2205,8 @@ S20CB01.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0637.csr: CSRDRIFT, L=0.035977, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -2222,8 +2222,8 @@ S20CB01.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0640.csr: CSRDRIFT, L=0.035977, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -2239,8 +2239,8 @@ S20CB01.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0643.csr: CSRDRIFT, L=0.035977, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -2256,8 +2256,8 @@ S20CB01.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0646.csr: CSRDRIFT, L=0.035977, DZ=0.1, USE_STUPAKOV=1, CSR=0
@@ -2300,8 +2300,8 @@ S20CB02.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0659: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2311,8 +2311,8 @@ S20CB02.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0662: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2322,8 +2322,8 @@ S20CB02.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0665: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2333,8 +2333,8 @@ S20CB02.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0668: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2366,8 +2366,8 @@ S20CB03.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0678: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2377,8 +2377,8 @@ S20CB03.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0681: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2388,8 +2388,8 @@ S20CB03.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0684: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2399,8 +2399,8 @@ S20CB03.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0687: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2432,8 +2432,8 @@ S20CB04.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0697: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2443,8 +2443,8 @@ S20CB04.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0700: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2454,8 +2454,8 @@ S20CB04.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0703: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2465,8 +2465,8 @@ S20CB04.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.340722e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0706: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2673,8 +2673,8 @@ S30CB01.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0794: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2684,8 +2684,8 @@ S30CB01.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0797: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2695,8 +2695,8 @@ S30CB01.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0800: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2706,8 +2706,8 @@ S30CB01.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0803: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2744,8 +2744,8 @@ S30CB02.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0816: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2755,8 +2755,8 @@ S30CB02.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0819: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2766,8 +2766,8 @@ S30CB02.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0822: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2777,8 +2777,8 @@ S30CB02.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0825: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2810,8 +2810,8 @@ S30CB03.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0835: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2821,8 +2821,8 @@ S30CB03.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0838: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2832,8 +2832,8 @@ S30CB03.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0841: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2843,8 +2843,8 @@ S30CB03.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0844: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2876,8 +2876,8 @@ S30CB04.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0854: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2887,8 +2887,8 @@ S30CB04.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0857: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2898,8 +2898,8 @@ S30CB04.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0860: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2909,8 +2909,8 @@ S30CB04.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0863: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2942,8 +2942,8 @@ S30CB05.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0873: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2953,8 +2953,8 @@ S30CB05.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0876: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2964,8 +2964,8 @@ S30CB05.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0879: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -2975,8 +2975,8 @@ S30CB05.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0882: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3013,8 +3013,8 @@ S30CB06.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0895: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3024,8 +3024,8 @@ S30CB06.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0898: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3035,8 +3035,8 @@ S30CB06.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0901: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3046,8 +3046,8 @@ S30CB06.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0904: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3079,8 +3079,8 @@ S30CB07.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0914: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3090,8 +3090,8 @@ S30CB07.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0917: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3101,8 +3101,8 @@ S30CB07.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0920: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3112,8 +3112,8 @@ S30CB07.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0923: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3145,8 +3145,8 @@ S30CB08.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0933: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3156,8 +3156,8 @@ S30CB08.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0936: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3167,8 +3167,8 @@ S30CB08.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0939: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3178,8 +3178,8 @@ S30CB08.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0942: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3216,8 +3216,8 @@ S30CB09.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0955: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3227,8 +3227,8 @@ S30CB09.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0958: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3238,8 +3238,8 @@ S30CB09.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0961: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3249,8 +3249,8 @@ S30CB09.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0964: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3287,8 +3287,8 @@ S30CB10.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0977: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3298,8 +3298,8 @@ S30CB10.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0980: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3309,8 +3309,8 @@ S30CB10.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0983: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3320,8 +3320,8 @@ S30CB10.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0986: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3358,8 +3358,8 @@ S30CB11.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift0999: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3369,8 +3369,8 @@ S30CB11.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1002: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3380,8 +3380,8 @@ S30CB11.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1005: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3391,8 +3391,8 @@ S30CB11.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1008: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3424,8 +3424,8 @@ S30CB12.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1018: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3435,8 +3435,8 @@ S30CB12.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1021: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3446,8 +3446,8 @@ S30CB12.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1024: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3457,8 +3457,8 @@ S30CB12.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1027: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3495,8 +3495,8 @@ S30CB13.RACC100   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1040: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3506,8 +3506,8 @@ S30CB13.RACC200   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1043: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3517,8 +3517,8 @@ S30CB13.RACC300   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1046: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -3528,8 +3528,8 @@ S30CB13.RACC400   : RFCW, FREQ=5712000000.000000, CELL_LENGTH=1.0, &
 	 L=1.978045, VOLT=5.538526e+07, PHASE= 90.000000, &
 	 CHANGE_P0=1, END1_FOCUS=1, END2_FOCUS=1, &
 	 BODY_FOCUS_MODEL="NONE",INTERPOLATE=1, N_BINS=0, SMOOTHING=1, &
-	 ZWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_l_C-band.sdds", &
-	 TRWAKEFILE="/sf/data/applications/BD-Optics/ElegantRun/wake_t_C-band.sdds", &
+	 ZWAKEFILE="wake_l_C-band.sdds", &
+	 TRWAKEFILE="wake_t_C-band.sdds", &
 	 LSC=0, LSC_BINS=100, N_KICKS=10, &
 	 TCOLUMN="t",WXCOLUMN="W", WYCOLUMN="W", WZCOLUMN="W"
 Drift1049: LSCDRIFT, L=0.035977, LEFFECTIVE=0.035977, BINS=100, SMOOTHING=1, LSC=0
@@ -4712,12 +4712,15 @@ AFTER_STREAKER_2: MARKER, FITPOINT=1
 
 SARUN18.UDCP010_A: LSCDRIFT, L=0.500000, LEFFECTIVE=0.500000, BINS=100, SMOOTHING=1, LSC=0
 SARUN18.UDCP010_B: LSCDRIFT, L=0.500000, LEFFECTIVE=0.500000, BINS=100, SMOOTHING=1, LSC=0
-SARUN18.UDCP010_LW   : WAKE, INPUTFILE = "streaker1.sdds", CHANGE_P0 = 1, &
+SARUN18.UDCP010_LW   : WAKE, INPUTFILE = "streaker1.sdds", CHANGE_P0 = 0, &
 	 TCOLUMN="t",WCOLUMN="W", INTERPOLATE=1, FACTOR = 0.000000, N_BINS=0, SMOOTHING=1 
 SARUN18.UDCP010_DW   : TRWAKE, INPUTFILE = "streaker1.sdds", &
 	 TCOLUMN="t",WXCOLUMN="WX", WYCOLUMN="WX", XFACTOR = 1, YFACTOR = 0, &
 	 INTERPOLATE=1, N_BINS=0, SMOOTHING=1, X_DRIVE_EXPONENT=0, Y_DRIVE_EXPONENT=0
-SARUN18.UDCP010_QW   : TRWAKE, INPUTFILE = "/sf/data/applications/BD-Optics/ElegantRun/wake_SARUN18.UDCP010.sdds", &
+SARUN18.UDCP010_DWD   : TRWAKE, INPUTFILE = "streaker1.sdds", &
+	 TCOLUMN="t",WXCOLUMN="DWX", WYCOLUMN="DWX", XFACTOR = 0.000000, YFACTOR = 0, &
+	 INTERPOLATE=1, N_BINS=0, SMOOTHING=1, X_DRIVE_EXPONENT=1, Y_DRIVE_EXPONENT=1
+SARUN18.UDCP010_QW   : TRWAKE, INPUTFILE = "wake_SARUN18.UDCP010.sdds", &
 	 TCOLUMN="t",WXCOLUMN="WQ", WYCOLUMN="WQP", XFACTOR = 0, YFACTOR = 0, &
 	 INTERPOLATE=1, N_BINS=0, SMOOTHING=1, & 
 	 X_DRIVE_EXPONENT=0, Y_DRIVE_EXPONENT = 0, X_PROBE_EXPONENT = 1, Y_PROBE_EXPONENT = 1
@@ -4725,12 +4728,15 @@ SARUN18.UDCP010_QW   : TRWAKE, INPUTFILE = "/sf/data/applications/BD-Optics/Eleg
 Drift1428: LSCDRIFT, L=0.850000, LEFFECTIVE=0.850000, BINS=100, SMOOTHING=1, LSC=0
 SARUN18.UDCP020_A: LSCDRIFT, L=0.500000, LEFFECTIVE=0.500000, BINS=100, SMOOTHING=1, LSC=0
 SARUN18.UDCP020_B: LSCDRIFT, L=0.500000, LEFFECTIVE=0.500000, BINS=100, SMOOTHING=1, LSC=0
-SARUN18.UDCP020_LW   : WAKE, INPUTFILE = "streaker2.sdds", CHANGE_P0 = 1, &
-	 TCOLUMN="t",WCOLUMN="W", INTERPOLATE=1, FACTOR = 1.000000, N_BINS=0, SMOOTHING=1
+SARUN18.UDCP020_LW   : WAKE, INPUTFILE = "streaker2.sdds", CHANGE_P0 = 0, &
+	 TCOLUMN="t",WCOLUMN="W", INTERPOLATE=1, FACTOR = 0.000000, N_BINS=0, SMOOTHING=1
 SARUN18.UDCP020_DW   : TRWAKE, INPUTFILE = "streaker2.sdds", &
 	 TCOLUMN="t",WXCOLUMN="WX", WYCOLUMN="WX", XFACTOR = 1.000000, YFACTOR = 0, &
 	 INTERPOLATE=1, N_BINS=0, SMOOTHING=1, X_DRIVE_EXPONENT=0, Y_DRIVE_EXPONENT=0
-SARUN18.UDCP020_QW   : TRWAKE, INPUTFILE = "/sf/data/applications/BD-Optics/ElegantRun/wake_SARUN18.UDCP020.sdds", &
+SARUN18.UDCP020_DWD   : TRWAKE, INPUTFILE = "streaker2.sdds", &
+	 TCOLUMN="t",WXCOLUMN="DWX", WYCOLUMN="DWX", XFACTOR = 0.000000, YFACTOR = 0, &
+	 INTERPOLATE=1, N_BINS=0, SMOOTHING=1, X_DRIVE_EXPONENT=1, Y_DRIVE_EXPONENT=1
+SARUN18.UDCP020_QW   : TRWAKE, INPUTFILE = "wake_SARUN18.UDCP020.sdds", &
 	 TCOLUMN="t",WXCOLUMN="WQ", WYCOLUMN="WQP", XFACTOR = 0, YFACTOR = 0, &
 	 INTERPOLATE=1, N_BINS=0, SMOOTHING=1, & 
 	 X_DRIVE_EXPONENT=0, Y_DRIVE_EXPONENT = 0, X_PROBE_EXPONENT = 1, Y_PROBE_EXPONENT = 1
@@ -4751,7 +4757,7 @@ Drift1433: LSCDRIFT, L=0.027000, LEFFECTIVE=0.027000, BINS=100, SMOOTHING=1, LSC
 SARUN18.Start: MARKER
 SARUN18.End: MARKER
 
-SARUN18: Line=(SARUN18.Start, Drift1427, BEFORE_STREAKER_1, SARUN18.UDCP010_A, MIDDLE_STREAKER_1, SARUN18.UDCP010_LW, SARUN18.UDCP010_DW, SARUN18.UDCP010_QW, SARUN18.UDCP010_B, AFTER_STREAKER_1, Drift1428, BEFORE_STREAKER_2, SARUN18.UDCP020_A, MIDDLE_STREAKER_2, SARUN18.UDCP020_LW, SARUN18.UDCP020_DW, SARUN18.UDCP020_QW, SARUN18.UDCP020_B, AFTER_STREAKER_2, WATCHER, Drift1429, &
+SARUN18: Line=(SARUN18.Start, Drift1427, BEFORE_STREAKER_1, SARUN18.UDCP010_A, MIDDLE_STREAKER_1, SARUN18.UDCP010_LW, SARUN18.UDCP010_DW, SARUN18.UDCP010_DWD, SARUN18.UDCP010_QW, WATCHER, SARUN18.UDCP010_B, AFTER_STREAKER_1, Drift1428, BEFORE_STREAKER_2, SARUN18.UDCP020_A, MIDDLE_STREAKER_2, SARUN18.UDCP020_LW, SARUN18.UDCP020_DW, SARUN18.UDCP020_DWD, SARUN18.UDCP020_QW, SARUN18.UDCP020_B, WATCHER, AFTER_STREAKER_2, WATCHER, Drift1429, &
 	Drift1430, SARUN18.DBPM070, Drift1431, Drift1432, SARUN18.MQUA080, Drift1433, &
 	SARUN18.End)
 
@@ -4774,15 +4780,15 @@ SARUN19: Line=(SARUN19.Start, Drift1434, Drift1435, SARUN19.DBPM070, Drift1436, 
 
 Drift1439: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1440: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
-SARUN20.DWSC010: MARK 
+SARUN20.DWSC010: MARK, FITPOINT=1
 Drift1441: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1442: LSCDRIFT, L=2.157500, LEFFECTIVE=2.157500, BINS=100, SMOOTHING=1, LSC=0
 Drift1443: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
-SARUN20.DBAM020: MARK 
+SARUN20.DBAM020: MARK, FITPOINT=1
 Drift1444: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1445: LSCDRIFT, L=2.075500, LEFFECTIVE=2.075500, BINS=100, SMOOTHING=1, LSC=0
 Drift1446: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
-SARUN20.DBPM070: MARK 
+SARUN20.DBPM070: MARK, FITPOINT=1
 Drift1447: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1448: LSCDRIFT, L=0.060000, LEFFECTIVE=0.060000, BINS=100, SMOOTHING=1, LSC=0
 SARUN20.MQUA080.q1: QUADRUPOLE, L=0.040000, K1=2.817712e+00, Tilt=0.000000
@@ -4805,11 +4811,11 @@ SARBD01.MQUA020.q2: QUADRUPOLE, L=0.040000, K1=-8.949412e+00, Tilt=0.000000
 SARBD01.MQUA020: LINE=(SARBD01.MQUA020.q1,SARBD01.MQUA020.cor,SARBD01.MQUA020.q2)
 Drift1451: LSCDRIFT, L=0.288500, LEFFECTIVE=0.288500, BINS=100, SMOOTHING=1, LSC=0
 Drift1452: LSCDRIFT, L=0.020000, LEFFECTIVE=0.020000, BINS=100, SMOOTHING=1, LSC=0
-SARBD01.DICT030: MARK 
+SARBD01.DICT030: MARK, FITPOINT=1
 Drift1453: LSCDRIFT, L=0.020000, LEFFECTIVE=0.020000, BINS=100, SMOOTHING=1, LSC=0
 Drift1454: LSCDRIFT, L=0.067500, LEFFECTIVE=0.067500, BINS=100, SMOOTHING=1, LSC=0
 Drift1455: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
-SARBD01.DBPM040: MARK 
+SARBD01.DBPM040: MARK, FITPOINT=1
 Drift1456: LSCDRIFT, L=0.050000, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1457: LSCDRIFT, L=0.120000, LEFFECTIVE=0.120000, BINS=100, SMOOTHING=1, LSC=0
 Drift1458: LSCDRIFT, L=0.068500, LEFFECTIVE=0.068500, BINS=100, SMOOTHING=1, LSC=0
@@ -4834,7 +4840,7 @@ Drift1461: LINE=(Drift1461.csr,Drift1461.lsc)
 Drift1462.csr: CSRDRIFT, L=0.050000, DZ=0.1, USE_STUPAKOV=1, CSR=0
 Drift1462.lsc: LSCDRIFT, L=0, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1462: LINE=(Drift1462.csr,Drift1462.lsc)
-SARBD02.DBPM010: MARK 
+SARBD02.DBPM010: MARK, FITPOINT=1
 Drift1463.csr: CSRDRIFT, L=0.050000, DZ=0.1, USE_STUPAKOV=1, CSR=0
 Drift1463.lsc: LSCDRIFT, L=0, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1463: LINE=(Drift1463.csr,Drift1463.lsc)
@@ -4854,7 +4860,7 @@ Drift1467: LINE=(Drift1467.csr,Drift1467.lsc)
 Drift1468.csr: CSRDRIFT, L=0.050000, DZ=0.1, USE_STUPAKOV=1, CSR=0
 Drift1468.lsc: LSCDRIFT, L=0, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1468: LINE=(Drift1468.csr,Drift1468.lsc)
-SARBD02.DBPM040: MARK 
+SARBD02.DBPM040: MARK, FITPOINT=1
 Drift1469.csr: CSRDRIFT, L=0.050000, DZ=0.1, USE_STUPAKOV=1, CSR=0
 Drift1469.lsc: LSCDRIFT, L=0, LEFFECTIVE=0.050000, BINS=100, SMOOTHING=1, LSC=0
 Drift1469: LINE=(Drift1469.csr,Drift1469.lsc)

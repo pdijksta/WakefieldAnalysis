@@ -46,7 +46,7 @@ def wxd_lin_dipole(s, a, x):
 
 def s0yd(a, x):
     arg = pi*x/a
-    return 4*s0r(a) * (3/2 + arg * 1/sin(arg) - arg/(2*tan(arg)))**(-2)
+    return 4*s0r(a) * (3/2 + arg/sin(arg) - arg/(2*tan(arg)))**(-2)
 
 def wxd(s, a, x):
     t2 = pi**3 / (4*a**3)
@@ -171,7 +171,10 @@ def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
     if beam_offset == 0:
         w_wxd = np.zeros_like(xx)
     else:
-        w_wxd = wxd(xx, semigap, beam_offset)*L
+        w_wxd = -wxd(xx, semigap, beam_offset)*L
+    delta_offset = 1e-6
+    w_wxd2 = -wxd(xx, semigap, beam_offset+delta_offset)
+    w_wxd_deriv = (w_wxd2 - w_wxd)*L/delta_offset
     w_wld = wld(xx, semigap, beam_offset)*L
     tt = xx/c
 
@@ -188,16 +191,18 @@ def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
         fid.write('&column name=t,    units=s,    type=double,    &end\n')
         fid.write('&column name=W,    units=V/C,  type=double,    &end\n')
         fid.write('&column name=WX,   units=V/C,    type=double,    &end\n') # V/C for X_DRIVE_EXPONENT=0, otherwise V/C/m
+        fid.write('&column name=DWX,   units=V/C/m,    type=double,    &end\n')
         fid.write('&data mode=ascii, &end\n')
         fid.write('! page number 1\n')
+        fid.write('! semigap %.5e m ; beam_offset %.5e m ; Length %.5e m\n' % (semigap, beam_offset, L))
         fid.write('%i\n' % len(xx))
-        for t, wx, wl in zip(tt, w_wld, w_wxd):
-            fid.write('  %12.6e  %12.6e  %12.6e\n' % (t, wx, wl))
+        for t, wx, wl, dwx in zip(tt, w_wld, w_wxd, w_wxd_deriv):
+            fid.write('  %12.6e  %12.6e  %12.6e  %12.6e\n' % (t, wx, wl, dwx))
 
     return {
             't': tt,
             'W': w_wld,
             'WX': w_wxd,
+            'DWX': w_wxd_deriv,
             }
-
 

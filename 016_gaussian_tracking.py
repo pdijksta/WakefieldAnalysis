@@ -15,54 +15,64 @@ sp_current = subplot(sp_ctr, title='Current')
 sp_ctr += 1
 
 full_gap = 6e-3
-offset = 2.5e-3
+offset0 = 2.805e-3
+hist_bin_size = 8.7e-6
+del_offset_arr = np.array([-40, -20, 0, 20, 40])*2*1e-6
+n_particles = int(100e3)
+energy_eV = 5.95e9
 
 
-sigma_arr = np.array([10, 5, 25])*1e-15
+sigma_arr = np.array([7, 11, 22.5])*1e-15
+arr0 = np.zeros([len(del_offset_arr), len(sigma_arr), 6500], float)
 output = {
+        'energy_eV': energy_eV,
         'full_gap_s2': full_gap,
-        'beam_offset_s2': offset,
-        'proj_no_streak': [],
-        'axis_no_streak': [],
-        'proj_streak': [],
-        'axis_streak': [],
-        'R12_s2_to_screen': [],
+        'delta_offset': del_offset_arr,
+        'proj_no_streak': arr0.copy(),
+        'axis_no_streak': arr0.copy(),
+        'proj_streak': arr0.copy(),
+        'axis_streak': arr0.copy(),
         }
+timestamp = elegant_matrix.get_timestamp(2020, 2, 3, 21, 54, 24)
+xx = np.linspace(0., 200e-15, 1000)
+
 for n_sigma, sigma in enumerate(sigma_arr):
-    xx = np.linspace(0., 200e-15, 1000)
     curr = np.exp(-(xx-np.mean(xx))**2/(2*sigma**2))
+    curr[curr<0.01*curr.max()] = 0
 
     sp_current.plot(xx, curr/curr.max())
-
-
     simulator = elegant_matrix.get_simulator('/afs/psi.ch/intranet/SF/Beamdynamics/Philipp//data/archiver_api_data/2020-02-03.json11')
 
-    timestamp = elegant_matrix.get_timestamp(2020, 2, 3, 21, 54, 24)
-    sim0, mat0 = simulator.simulate_streaker(xx, curr, timestamp, (20e-3, full_gap), (0, 0))
-    sim1, mat1 = simulator.simulate_streaker(xx, curr, timestamp, (20e-3, full_gap), (0, offset))
+    for n_offset, del_offset in enumerate(del_offset_arr):
 
-    r0 = mat0['MIDDLE_STREAKER_2']
-    r1 = mat0['SARBD02.DSCR050']
+        if n_offset == 0:
+            sim0, mat0, _ = simulator.simulate_streaker(xx, curr, timestamp, (20e-3, full_gap), (0, 0), energy_eV, n_particles=n_particles)
+        sim1, mat1, _ = simulator.simulate_streaker(xx, curr, timestamp, (20e-3, full_gap), (0, offset0+del_offset), energy_eV, n_particles=n_particles)
 
-    rr = np.matmul(r1, np.linalg.inv(r0))
-    output['R12_s2_to_screen'].append(rr[0,1])
+        if n_offset == 0 and n_sigma == 0:
+            r0 = mat0['MIDDLE_STREAKER_2']
+            r1 = mat0['SARBD02.DSCR050']
 
-    for sim, label in [(sim0, 'no_streak'), (sim1, 'streak')]:
-        w = sim.watch[-1]
-        print(w.filename)
+            rr = np.matmul(r1, np.linalg.inv(r0))
+            output['R12_s2_to_screen'] = rr[0,1]
 
-        sp = subplot(sp_ctr, title='%i %s' % (sigma*1e15, label), scix=True)
-        sp_ctr += 1
+        for sim, label in [(sim0, 'no_streak'), (sim1, 'streak')]:
+            w = sim.watch[-1]
+            print(w.filename)
 
-        hist, bin_edges, _ = sp.hist(w['x'], density=True, bins=200)
+            if sp_ctr > 9:
+                ms.figure('Continued')
+                sp_ctr = 1
 
-        output['proj_'+label].append(hist)
-        output['axis_'+label].append(bin_edges[:-1])
+            sp = subplot(sp_ctr, title='%i %s' % (sigma*1e15, label), scix=True)
+            sp_ctr += 1
 
+            bin_edges = np.arange(w['x'].min(), w['x'].max()+hist_bin_size, hist_bin_size)
+            hist, bin_edges, _ = sp.hist(w['x'], density=True, bins=bin_edges)
 
-h5_storage.saveH5Recursive('./three_cases.h5', output)
+            output['proj_'+label][n_offset, n_sigma, :len(bin_edges)-1] = hist
+            output['axis_'+label][n_offset, n_sigma, :len(bin_edges)-1] = bin_edges[:-1]
 
-
-
+h5_storage.saveH5Recursive('./var_offsets2_linearized.h5', output)
 plt.show()
 

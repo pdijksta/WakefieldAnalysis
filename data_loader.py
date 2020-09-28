@@ -47,7 +47,7 @@ class DataLoader(dict):
         if file_json is not None:
             self.add_other_json(file_json)
 
-    def get_prev_datapoint(self, key, timestamp, verbose=True):
+    def get_prev_datapoint(self, key, timestamp, verbose=False):
         data_list = self[key]
         for index, (timestamp2, _) in enumerate(data_list):
             if timestamp2 > timestamp:

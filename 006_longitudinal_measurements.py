@@ -9,6 +9,8 @@ import data_loader
 
 
 data_dir = '/storage/data_2020-02-03/'
+data_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03/'
+data_dir = '/sf/data/measurements//2020/02/03/'
 bl_meas_file = data_dir + 'Bunch_length_meas_2020-02-03_15-59-13.h5'
 bl_meas = data_loader.load_blmeas(bl_meas_file)
 total_charge = 200e-12
@@ -67,16 +69,16 @@ for n_struct, (file_, Ls, title) in enumerate(zip(files, lengths, titles)):
     sp_espread = subplot(sp_ctr, title='Energy spread', xlabel='Gap [mm]', ylabel='Rel. energy spread', sciy=True)
     sp_ctr += 1
 
-    sp_charge_profile = subplot(sp_ctr, title='Charge profile', xlabel='s [$\mu$m]', ylabel='Charge profile [pC / $\mu$m]')
+    sp_charge_profile = subplot(sp_ctr, title='Charge profile', xlabel=r's [$\mu$m]', ylabel=r'Charge profile [pC / $\mu$m]')
     sp_ctr += 1
 
     xx_um = wf_calc.xx*1e6
     sp_charge_profile.plot(xx_um, wf_calc.charge_profile*1e12/np.diff(xx_um)[0])
 
-    sp_wake_functions = subplot(sp_ctr, title='Single particle wake functions', xlabel='s [$\mu$m]', ylabel='E [MV/(m nC)')
+    sp_wake_functions = subplot(sp_ctr, title='Single particle wake functions', xlabel=r's [$\mu$m]', ylabel='E [MV/(m nC)')
     sp_ctr += 1
 
-    sp_wake_potentials = subplot(sp_ctr, title='Wake potentials', xlabel='s [$\mu$m]', ylabel='E [MV/(m nC)')
+    sp_wake_potentials = subplot(sp_ctr, title='Wake potentials', xlabel=r's [$\mu$m]', ylabel='E [MV/(m nC)')
     sp_ctr += 1
 
     for key, data_dict in data['Energy_loss'].items():

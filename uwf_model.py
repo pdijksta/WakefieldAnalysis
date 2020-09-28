@@ -279,3 +279,33 @@ def calc_all(s, charge_profile, semigap, kappa=aramis_kappa, h=aramis_h, L=1.):
             }
     return outp
 
+def impedance_flat_integrand_re(q, a, lamb, k, im_or_re):
+    arg = q*a
+    t1 = np.cosh(arg)
+    t2 = lamb/k * t1
+    t3 = 1j*k/q * np.sinh(arg)
+    outp = 1/(t1*(t2-t3))
+    if im_or_re == RE:
+        return np.real(outp)
+    elif im_or_re == IM:
+        return np.imag(outp)
+
+
+def impedance_flat_re(k, a, sigma=sigma_cu):
+    lamb = sqrt((2*pi*sigma*np.abs(k))/c) * (1j + np.sign(k))
+    integral_re, err_re = quad(impedance_flat_integrand_re, -np.inf, np.inf, (a, lamb, k, RE))
+    #integral_im, err_im = quad(impedance_flat_integrand_re, -np.inf, np.inf, (a, lamb, k, IM))
+
+    return integral_re
+
+def integrand_wake_flat(k, a, s, sigma=sigma_cu):
+    z = impedance_flat_re(k, a, sigma)
+    return z * np.cos(k*s)
+
+def wake_flat(s, a, sigma=sigma_cu):
+    factor = 2*c / pi
+    integral, err = quad(integrand_wake_flat, 0, np.inf, (a, s, sigma))
+    return factor * integral
+
+
+

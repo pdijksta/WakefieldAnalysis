@@ -231,6 +231,7 @@ for n_streaker, gap_file in [
             sp.legend(title='BPM')
 
 ms.saveall('/tmp/005b_include_other', ending='.png', bottom=0.15, wspace=0.3)
+del sim
 
 plt.show()
 

@@ -7,13 +7,14 @@ import numpy as np
 from scipy.constants import c
 
 from ElegantWrapper.simulation import ElegantSimulation
-from ElegantWrapper.watcher import FileViewer, Watcher, Watcher2
+from ElegantWrapper.watcher import FileViewer, Watcher2
 
 import data_loader
 import wf_model
 
 pid = os.getpid()
 ctr = 0
+tmp_dir = '/tmp'
 
 # storage_path = '/mnt/usb/work/'
 streakers = ['SARUN18.UDCP010', 'SARUN18.UDCP020']
@@ -25,7 +26,7 @@ streakers = ['SARUN18.UDCP010', 'SARUN18.UDCP020']
 
 default_SF_par = FileViewer('./default.par.h5')
 default_SF_par_athos = FileViewer('./default_athos.par.h5')
-symlink_files = glob.glob(os.path.join(os.path.abspath(os.path.dirname('.')), './elegant_wakes/wake*.sdds'))
+symlink_files = glob.glob('/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/elegant_wakes/wake*.sdds')
 
 
 #mag_data = data_loader.DataLoader(mag_file)
@@ -41,50 +42,71 @@ def get_timestamp(year, month, day, hour, minute, second):
     timestamp = int(date.strftime('%s'))
     return timestamp
 
+def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()):
+    """
+    macro_dict must have  the following form:
+    {'_matrix_start_': 'MIDDLE_STREAKER_1$1',
+     '_sarun18.mqua080.k1_': 2.8821223408771512,
+     '_sarun19.mqua080.k1_': -2.7781958823761546,
+     '_sarun20.mqua080.k1_': 2.8206489094677942,
+     '_sarbd01.mqua020.k1_': -2.046012575644645,
+     '_sarbd02.mqua030.k1_': -0.7088921626501486}
+
+     returns elegant command and elegant simulation object
+
+    """
+    global ctr
+
+    now = datetime.datetime.now()
+    new_dir = os.path.join(tmp_dir, 'elegant_%i_%i-%02i-%02i_%02i-%02i-%02i_%i' % (pid, now.year, now.month, now.day, now.hour, now.minute, now.second, ctr))
+    os.makedirs(new_dir)
+    for f in copy_files:
+        shutil.copy(f, new_dir)
+    for f in move_files:
+        shutil.move(f, new_dir)
+    for f in symlink_files:
+        os.symlink(f, os.path.join(new_dir, os.path.basename(f)))
+    ctr += 1
+    new_ele_file = shutil.copy(ele, new_dir)
+    shutil.copy(lat, new_dir)
+    old_dir = os.getcwd()
+    try:
+        os.chdir(new_dir)
+        cmd = 'elegant %s ' % os.path.basename(new_ele_file)
+        for key, val in macro_dict.items():
+            cmd += ' -macro=%s=%s' % (key, val)
+        print(cmd)
+        with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
+            f.write(cmd+'\n')
+        os.system(cmd)
+    finally:
+        os.chdir(old_dir)
+
+    sim = ElegantSimulation(new_ele_file, del_sim=True)
+    return cmd, sim
+
+def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_duration, n_particles):
+    macro_dict = {
+            '_nemitx_': nemitx,
+            '_nemity_': nemity,
+            '_alphax_': alphax,
+            '_betax_': betax,
+            '_alphay_': alphay,
+            '_betay_': betay,
+            '_p_central_': p_central,
+            '_bunch_length_': rms_bunch_duration*c,
+            '_n_particles_': n_particles,
+            }
+    lat = './gen_beam.lat'
+    ele = './gen_beam.ele'
+
+    cmd, sim = run_sim(macro_dict, ele, lat)
+    w = sim.watch[-1]
+    return w
+
 class simulator:
     def __init__(self, file_json):
         self.mag_data = data_loader.DataLoader(file_json=file_json)
-
-    def run_sim(self, macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()):
-        """
-        macro_dict must have  the following form:
-        {'_matrix_start_': 'MIDDLE_STREAKER_1$1',
-         '_sarun18.mqua080.k1_': 2.8821223408771512,
-         '_sarun19.mqua080.k1_': -2.7781958823761546,
-         '_sarun20.mqua080.k1_': 2.8206489094677942,
-         '_sarbd01.mqua020.k1_': -2.046012575644645,
-         '_sarbd02.mqua030.k1_': -0.7088921626501486}
-
-         returns elegant command and elegant simulation object
-
-        """
-        global ctr
-        old_dir = os.getcwd()
-
-        now = datetime.datetime.now()
-        new_dir = '/tmp/elegant_%i_%i-%02i-%02i_%02i-%02i-%02i_%i' % (pid, now.year, now.month, now.day, now.hour, now.minute, now.second, ctr)
-        os.system('mkdir -p %s' % new_dir)
-        for f in copy_files:
-            shutil.copy(f, new_dir)
-        for f in move_files:
-            shutil.move(f, new_dir)
-        for f in symlink_files:
-            os.symlink(f, os.path.join(new_dir, os.path.basename(f)))
-        ctr += 1
-        new_ele_file = shutil.copy(ele, new_dir)
-        shutil.copy(lat, new_dir)
-        try:
-            os.chdir(new_dir)
-            cmd = 'elegant %s ' % os.path.basename(new_ele_file)
-            for key, val in macro_dict.items():
-                cmd += ' -macro=%s=%s' % (key, val)
-            print(cmd)
-            os.system(cmd)
-        finally:
-            os.chdir(old_dir)
-
-        sim = ElegantSimulation(new_ele_file)
-        return cmd, sim
 
     @functools.lru_cache(400)
     def get_magnet_length(self, mag_name, branch='Aramis'):
@@ -143,7 +165,7 @@ class simulator:
                     print(key, '%.2e' % k1)
 
 
-        cmd, sim = self.run_sim(macro_dict, ele, lat, symlink_files=symlink_files)
+        cmd, sim = run_sim(macro_dict, ele, lat, symlink_files=symlink_files)
         sim.del_sim = del_sim
 
         mat_dict = {}
@@ -179,21 +201,30 @@ class simulator:
 
         p_central = energy_eV/511e3
 
-        watcher0 = Watcher(os.path.join(os.path.dirname(__file__), 'SwissFEL0-001.w1.h5'))
+        #watcher0 = Watcher(os.path.join(os.path.dirname(__file__), 'SwissFEL0-001.w1.h5'))
+        #new_watcher_dict = {'t': interp_tt}
+        #for key in ('p', 'x', 'y', 'xp', 'yp'):
+        #    arr = watcher0[key]
+        #    xx = np.linspace(arr.min(), arr.max(), 1000.)
+        #    hist, bin_edges = np.histogram(arr, bins=xx)
+        #    arr_cum = np.cumsum(hist).astype(float)
+        #    arr_cum /= arr_cum.max()
+        #    randoms = np.random.rand(n_particles)
+        #    interp = np.interp(randoms, arr_cum, xx[:-1]+np.diff(xx)[0])
+        #    new_watcher_dict[key] = interp
+
+        beta_x = 5.067067
+        beta_y = 16.72606
+        alpha_x = -0.5774133
+        alpha_y = 1.781136
+
+
+        watcher0 = gen_beam(200e-9, 200e-9, alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
+
         new_watcher_dict = {'t': interp_tt}
         for key in ('p', 'x', 'y', 'xp', 'yp'):
-            arr = watcher0[key]
-            xx = np.linspace(arr.min(), arr.max(), 1000.)
-            hist, bin_edges = np.histogram(arr, bins=xx)
-            arr_cum = np.cumsum(hist).astype(float)
-            arr_cum /= arr_cum.max()
-            randoms = np.random.rand(n_particles)
-            interp = np.interp(randoms, arr_cum, xx[:-1]+np.diff(xx)[0])
-            new_watcher_dict[key] = interp
-
-        pp = new_watcher_dict['p']
-        pp = pp / pp.mean() * p_central
-        new_watcher_dict['p'] = pp
+            new_watcher_dict[key] = watcher0[key].copy()
+        del watcher0
 
         new_watcher = Watcher2({}, new_watcher_dict)
         new_watcher_file = '/tmp/input_beam.sdds'
@@ -219,7 +250,7 @@ class simulator:
             macro_dict[key] = k1
 
         move_files = (new_watcher_file,) + filenames
-        cmd, sim = self.run_sim(macro_dict, ele, lat, move_files=move_files, symlink_files=symlink_files)
+        cmd, sim = run_sim(macro_dict, ele, lat, move_files=move_files, symlink_files=symlink_files)
         sim.del_sim = del_sim
 
         mat_dict = {}

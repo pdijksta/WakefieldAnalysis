@@ -1,0 +1,4 @@
+Q: CHARGE, TOTAL=2.000000e-10
+WATCHER: WATCH, filename="%s-%03ld.w1"
+
+MINIMAL: Line=(Q, WATCHER)

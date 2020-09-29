@@ -173,17 +173,10 @@ def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
     else:
         w_wxd = -wxd(xx, semigap, beam_offset)*L
     delta_offset = 1e-6
-    w_wxd2 = -wxd(xx, semigap, beam_offset+delta_offset)
-    w_wxd_deriv = (w_wxd2 - w_wxd)*L/delta_offset
+    w_wxd2 = -wxd(xx, semigap, beam_offset+delta_offset)*L
+    w_wxd_deriv = (w_wxd2 - w_wxd)/delta_offset
     w_wld = wld(xx, semigap, beam_offset)*L
     tt = xx/c
-
-    #outp_arr = np.array([tt, w_wld, w_wxd])
-    #fname_txt = filename+'.txt'
-    #np.savetxt(fname_txt, outp_arr, delimiter=';')
-    #cmd = "plaindata2sdds %s %s -inputModel=ascii -outputModel=binary -separator=';' -noRowCount -column=t,double -column=W,double, -column=WD,double" % (fname_txt, filename)
-    #print(cmd)
-    #os.system(cmd)
 
     with open(filename, 'w') as fid:
         fid.write('SDDS1\n')

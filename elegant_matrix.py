@@ -14,26 +14,15 @@ import wf_model
 
 pid = os.getpid()
 ctr = 0
-tmp_dir = '/tmp'
+tmp_dir = '/home/philipp/tmp_elegant/'
 
-# storage_path = '/mnt/usb/work/'
 streakers = ['SARUN18.UDCP010', 'SARUN18.UDCP020']
-
-#storage_path = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03'
-#mag_file = storage_path + 'data_2020-02-03/quad_bnd.csv'
-#quad_file = storage_path + 'data_2020-02-03/sarun_18_19_quads.csv'
-#quad_file2 = storage_path + 'data_2020-02-03/sarbd01_quad_k1l.csv'
 
 default_SF_par = FileViewer('./default.par.h5')
 default_SF_par_athos = FileViewer('./default_athos.par.h5')
 symlink_files = glob.glob('/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/elegant_wakes/wake*.sdds')
 
 
-#mag_data = data_loader.DataLoader(mag_file)
-#mag_data.add_other_csv(quad_file)
-#mag_data.add_other_csv(quad_file2)
-
-#mag_data = data_loader.DataLoader(file_json='/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/2020-08-26.json11')
 quads = ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030']
 quads_athos = ['SATMA02.MQUA050', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030']
 
@@ -42,7 +31,7 @@ def get_timestamp(year, month, day, hour, minute, second):
     timestamp = int(date.strftime('%s'))
     return timestamp
 
-def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()):
+def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=(), del_sim=True):
     """
     macro_dict must have  the following form:
     {'_matrix_start_': 'MIDDLE_STREAKER_1$1',
@@ -82,7 +71,7 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
     finally:
         os.chdir(old_dir)
 
-    sim = ElegantSimulation(new_ele_file, del_sim=True)
+    sim = ElegantSimulation(new_ele_file, del_sim=del_sim)
     return cmd, sim
 
 def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_duration, n_particles):
@@ -102,26 +91,26 @@ def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_
 
     cmd, sim = run_sim(macro_dict, ele, lat)
     w = sim.watch[-1]
-    return w
+    return w, sim
+
+def get_magnet_length(mag_name, branch='Aramis'):
+    if branch == 'Aramis':
+        d = default_SF_par
+    elif branch == 'Athos':
+        d = default_SF_par_athos
+    for name, par, value in zip(d['ElementName'], d['ElementParameter'], d['ParameterValue']):
+        if name == mag_name and par == 'L':
+            return value
+        elif name == mag_name+'.Q1' and par == 'L':
+            return value*2
+    else:
+        #import pdb; pdb.set_trace()
+        raise KeyError(mag_name)
+
 
 class simulator:
     def __init__(self, file_json):
         self.mag_data = data_loader.DataLoader(file_json=file_json)
-
-    @functools.lru_cache(400)
-    def get_magnet_length(self, mag_name, branch='Aramis'):
-        if branch == 'Aramis':
-            d = default_SF_par
-        elif branch == 'Athos':
-            d = default_SF_par_athos
-        for name, par, value in zip(d['ElementName'], d['ElementParameter'], d['ParameterValue']):
-            if name == mag_name and par == 'L':
-                return value
-            elif name == mag_name+'.Q1' and par == 'L':
-                return value*2
-        else:
-            #import pdb; pdb.set_trace()
-            raise KeyError(mag_name)
 
     def get_data(self, mag_name, timestamp):
         new_key = mag_name.replace('.','-')+':K1L-SET'
@@ -144,7 +133,7 @@ class simulator:
             for quad in quads:
                 key = '_'+quad.lower()+'.k1_'
                 val = self.get_data(quad, timestamp)
-                length = self.get_magnet_length(quad)
+                length = get_magnet_length(quad)
                 k1 = val/length
                 macro_dict[key] = k1
                 if print_:
@@ -158,7 +147,7 @@ class simulator:
             for quad in quads_athos:
                 key = '_'+quad.lower()+'.k1_'
                 val = self.get_data(quad, timestamp)
-                length = self.get_magnet_length(quad, branch='Athos')
+                length = get_magnet_length(quad, branch='Athos')
                 k1 = val/length
                 macro_dict[key] = k1
                 if print_:
@@ -185,7 +174,7 @@ class simulator:
 
         return mat_dict
 
-    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3)):
+    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True):
         """
         Returns: sim, mat_dict
         """
@@ -219,12 +208,13 @@ class simulator:
         alpha_y = 1.781136
 
 
-        watcher0 = gen_beam(200e-9, 200e-9, alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
+        watcher0, sim0 = gen_beam(200e-9, 200e-9, alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
 
         new_watcher_dict = {'t': interp_tt}
         for key in ('p', 'x', 'y', 'xp', 'yp'):
             new_watcher_dict[key] = watcher0[key].copy()
         del watcher0
+        sim0.__del__()
 
         new_watcher = Watcher2({}, new_watcher_dict)
         new_watcher_file = '/tmp/input_beam.sdds'
@@ -241,11 +231,13 @@ class simulator:
 
         lat = './Aramis.lat'
         ele = './SwissFEL_in_streaker.ele'
-        macro_dict = {'_p_central_': p_central}
+        macro_dict = {
+                '_p_central_': p_central,
+                '_twf_factor_': int(linearize_twf)}
         for quad in quads:
             key = '_'+quad.lower()+'.k1_'
             val = self.get_data(quad, timestamp)
-            length = self.get_magnet_length(quad)
+            length = get_magnet_length(quad)
             k1 = val/length
             macro_dict[key] = k1
 

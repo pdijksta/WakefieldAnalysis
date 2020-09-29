@@ -48,6 +48,12 @@
 	value = <_sarbd02.mqua030.k1_>
 &end
 
+&alter_elements
+	name = "SARUN18.UDCP0[12]0_DWD",
+	item = XFACTOR,
+	value = <_twf_factor_>,
+&end
+
 &run_control
 	n_steps	= 1,
 	reset_rf_for_each_step = 1

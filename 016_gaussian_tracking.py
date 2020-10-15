@@ -86,6 +86,6 @@ for n_sigma, sigma in enumerate(sigma_arr):
 #sim0.__del__()
 #sim.__del__()
 
-h5_storage.saveH5Recursive('./bins_200_300e3_370um_different_cut.h5', output)
+h5_storage.saveH5Recursive('./bins_200_300e3_370um_larger_beamsize.h5', output)
 plt.show()
 

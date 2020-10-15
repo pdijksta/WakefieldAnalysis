@@ -174,7 +174,7 @@ for n_streaker, gap_file in [
             else:
                 gaps = (20e-3, gap_mm*1e-3)
                 beam_offsets = (0, beam_offset)
-            sim, mat_dict, wf_dicts = simulator.simulate_streaker(charge_xx/c, current_profile, timestamp, gaps, beam_offsets, energy_eV)
+            sim, mat_dict, wf_dicts, _ = simulator.simulate_streaker(charge_xx/c, current_profile, timestamp, gaps, beam_offsets, energy_eV, linearize_twf=False)
             bpm_index = list(sim.cen['ElementName']).index('SARBD02.DBPM040')
             simulated_kick_normalized.append(sim.cen['Cx'][bpm_index])
             #break

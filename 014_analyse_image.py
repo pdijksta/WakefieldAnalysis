@@ -4,6 +4,7 @@ import numpy as np
 from scipy.io import loadmat
 from h5_storage import loadH5Recursive
 import ImageSlicer.imageSlicer as slicer
+import elegant_matrix
 
 import myplotstyle as ms
 
@@ -17,9 +18,18 @@ data_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03/'
 data_file = data_dir + 'Eloss_UNDbis.mat'
 result_dict = loadH5Recursive(os.path.basename(data_file)+'_wake.h5')
 
+timestamp = elegant_matrix.get_timestamp(2020, 2, 3, 21, 35, 8)
+
+simulator = elegant_matrix.get_simulator('/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/2020-02-03.json11')
+_, disp_dict= simulator.get_elegant_matrix(1, timestamp)
+energy_eV = simulator.get_data('SARBD01-MBND100:P-SET', timestamp) * 1e6
+
+
+disp_factor = disp_dict['SARBD02.DSCR050'] / energy_eV
+
 data_dict = loadmat(data_file)
-x_axis = data_dict['x_axis'].squeeze()
-y_axis = data_dict['y_axis'].squeeze()
+x_axis = data_dict['x_axis'].squeeze() * 1e-6
+y_axis = data_dict['y_axis'].squeeze() * 1e-6
 
 n_images, n_gaps = data_dict['Image'].shape
 
@@ -44,7 +54,7 @@ sp_ctr += 1
 sp_ene = subplot0(sp_ctr, title='Energy change')
 sp_ctr += 1
 
-sp_ene2 = subplot0(sp_ctr, title='Energy change')
+sp_ene2 = subplot0(sp_ctr, title='Energy change', xlabel='Position [mm]', ylabel='Energy change [MeV]')
 sp_ctr += 1
 
 
@@ -115,13 +125,11 @@ for n_gap, gap in enumerate(gap_list):
     sp_current.plot(xx0, current, label=title)
 
     if n_gap % 3 == 0 or gap*1e3 <= 5:
-        sp_ene2.errorbar(interp_xx, np.mean(interp_yy, axis=0), yerr=np.std(interp_yy, axis=0), label=title)
+        sp_ene2.errorbar(interp_xx*1e3, np.mean(interp_yy, axis=0)/disp_factor/1e6, yerr=np.std(interp_yy, axis=0)/disp_factor/1e6, label=title)
         sp_current2.errorbar(interp_xx, np.mean(interp_current, axis=0), yerr=np.std(interp_current, axis=0), label=title)
-
 
 for sp_ in sp_ene, sp_current, sp_ene2, sp_current2:
     sp_.legend()
-
 
 plt.show()
 

@@ -40,12 +40,14 @@ def json_to_dict(file_):
     return outp
 
 class DataLoader(dict):
-    def __init__(self, file_csv=None, file_json=None):
+    def __init__(self, file_csv=None, file_json=None, file_h5=None):
         if file_csv is not None:
             dict_ = csv_to_dict(file_csv)
             super().__init__(dict_)
         if file_json is not None:
             self.add_other_json(file_json)
+        if file_h5 is not None:
+            self.add_other_h5(file_h5)
 
     def get_prev_datapoint(self, key, timestamp, verbose=False):
         data_list = self[key]
@@ -53,11 +55,13 @@ class DataLoader(dict):
             if timestamp2 > timestamp:
                 out_index = index-1
                 if out_index in (-1, len(data_list-1)):
+                    #import pdb; pdb.set_trace()
                     raise KeyError('Requested data at border of data array. Key %s' % key)
                 if verbose:
                     print(key, out_index)
                 return data_list[index-1,1]
         else:
+            #return data_list[-1,1]
             #import pdb; pdb.set_trace()
             raise KeyError('Requested data at border of data array')
 
@@ -71,6 +75,12 @@ class DataLoader(dict):
         new_dict = json_to_dict(file_)
         assert len(set(new_dict.keys()).intersection(set(self.keys()))) == 0
         self.update(new_dict)
+
+    def add_other_h5(self, file_):
+        new_dict = loadH5Recursive(file_)
+        assert len(set(new_dict.keys()).intersection(set(self.keys()))) == 0
+        self.update(new_dict)
+
 
 @functools.lru_cache(5)
 def load_blmeas(file_):

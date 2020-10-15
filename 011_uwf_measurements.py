@@ -91,7 +91,7 @@ ylabel = 'Centroid position'
 sp0 = subplot(sp_ctr, title='Normalized with dispersion', xlabel=xlabel, ylabel=r'Energy loss [MeV]')
 sp_ctr += 1
 
-sp_charge = subplot(sp_ctr, title='Charge profile', xlabel='s [$\mu$m]', ylabel='Current (arb. units)')
+sp_charge = subplot(sp_ctr, title='Charge profile', xlabel=r's [$\mu$m]', ylabel='Current (arb. units)')
 sp_ctr += 1
 
 bl_meas_file = data_dir + 'Bunch_length_meas_2020-02-03_21-54-24.h5'
@@ -119,7 +119,7 @@ for title, data_str, delta_str in zip(['BPM', 'Screen'], ['y1', 'y'], ['delta1',
     yy = yy0.mean(axis=1)
     yy -= yy[0]
     yy_err = yy0.std(axis=1)
-    sp.errorbar(xx, yy, yerr=yy_err)
+    sp.errorbar(xx*1e3, yy, yerr=yy_err)
 
     yy0 = dd[delta_str].squeeze() * energy
     if title == 'Screen':
@@ -127,7 +127,7 @@ for title, data_str, delta_str in zip(['BPM', 'Screen'], ['y1', 'y'], ['delta1',
     yy = yy0.mean(axis=1)
     yy -= yy[0]
     yy_err = yy0.std(axis=1)
-    sp0.errorbar(xx, yy/1e6, yerr=yy_err/1e6, label=title)
+    sp0.errorbar(xx*1e3, yy/1e6, yerr=yy_err/1e6, label=title)
 
 
 #for gap in gap_list:

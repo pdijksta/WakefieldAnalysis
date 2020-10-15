@@ -22,7 +22,6 @@ default_SF_par = FileViewer('./default.par.h5')
 default_SF_par_athos = FileViewer('./default_athos.par.h5')
 symlink_files = glob.glob('/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/elegant_wakes/wake*.sdds')
 
-
 quads = ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030']
 quads_athos = ['SATMA02.MQUA050', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030']
 
@@ -109,12 +108,20 @@ def get_magnet_length(mag_name, branch='Aramis'):
 
 
 class simulator:
-    def __init__(self, file_json):
-        self.mag_data = data_loader.DataLoader(file_json=file_json)
+    def __init__(self, file_):
+        file_h5, file_json = None, None
+        if file_.endswith('.json'):
+            file_json = file_
+        elif file_.endswith('.h5'):
+            file_h5 = file_
+        self.mag_data = data_loader.DataLoader(file_json=file_json, file_h5=file_h5)
 
-    def get_data(self, mag_name, timestamp):
+    def get_data_quad(self, mag_name, timestamp):
         new_key = mag_name.replace('.','-')+':K1L-SET'
-        return self.mag_data.get_prev_datapoint(new_key, timestamp)
+        return self.get_data(new_key, timestamp)
+
+    def get_data(self, key, timestamp):
+        return self.mag_data.get_prev_datapoint(key, timestamp)
 
     @functools.lru_cache()
     def get_elegant_matrix(self, streaker_index, timestamp, del_sim=True, print_=False, branch='Aramis'):
@@ -132,7 +139,7 @@ class simulator:
             macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_%i$1' % (streaker_index+1)}
             for quad in quads:
                 key = '_'+quad.lower()+'.k1_'
-                val = self.get_data(quad, timestamp)
+                val = self.get_data_quad(quad, timestamp)
                 length = get_magnet_length(quad)
                 k1 = val/length
                 macro_dict[key] = k1
@@ -146,7 +153,7 @@ class simulator:
 
             for quad in quads_athos:
                 key = '_'+quad.lower()+'.k1_'
-                val = self.get_data(quad, timestamp)
+                val = self.get_data_quad(quad, timestamp)
                 length = get_magnet_length(quad, branch='Athos')
                 k1 = val/length
                 macro_dict[key] = k1
@@ -158,21 +165,24 @@ class simulator:
         sim.del_sim = del_sim
 
         mat_dict = {}
+        disp_dict = {}
         mat = sim.mat
         #try:
         #    mat['ElementName']
         #except:
         #    import pdb; pdb.set_trace()
-        for name, r11, r12, r21, r22 in zip(
+        for name, r11, r12, r21, r22, r36 in zip(
                 mat['ElementName'],
                 mat['R11'],
                 mat['R12'],
                 mat['R21'],
                 mat['R22'],
+                mat['R36'],
                 ):
             mat_dict[name] = np.array([[r11, r12], [r21, r22]])
+            disp_dict[name] = r36
 
-        return mat_dict
+        return mat_dict, disp_dict
 
     def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True):
         """
@@ -207,8 +217,9 @@ class simulator:
         alpha_x = -0.5774133
         alpha_y = 1.781136
 
+        n_emittance = 300e-9
 
-        watcher0, sim0 = gen_beam(200e-9, 200e-9, alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
+        watcher0, sim0 = gen_beam(n_emittance, n_emittance, alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
 
         new_watcher_dict = {'t': interp_tt}
         for key in ('p', 'x', 'y', 'xp', 'yp'):
@@ -236,7 +247,7 @@ class simulator:
                 '_twf_factor_': int(linearize_twf)}
         for quad in quads:
             key = '_'+quad.lower()+'.k1_'
-            val = self.get_data(quad, timestamp)
+            val = self.get_data_quad(quad, timestamp)
             length = get_magnet_length(quad)
             k1 = val/length
             macro_dict[key] = k1
@@ -246,23 +257,24 @@ class simulator:
         sim.del_sim = del_sim
 
         mat_dict = {}
+        disp_dict = {}
         mat = sim.mat
 
-        for name, r11, r12, r21, r22 in zip(
+        for name, r11, r12, r21, r22, r16 in zip(
                 mat['ElementName'],
                 mat['R11'],
                 mat['R12'],
                 mat['R21'],
                 mat['R22'],
+                mat['R16'],
                 ):
             mat_dict[name] = np.array([[r11, r12], [r21, r22]])
+            disp_dict[name] = r16
 
-        return sim, mat_dict, wf_dicts
+        return sim, mat_dict, wf_dicts, disp_dict
 
 #@functools.wraps(simulator)
 @functools.lru_cache(400)
 def get_simulator(file_json):
     return simulator(file_json)
-
-
 

@@ -133,7 +133,7 @@ def loadH5Recursive(h5_file):
             #if not hasattr(group_or_val, 'value'):
             #    print('Could not store key %s with type %s in dict' % (key, dtype))
             #    return
-            if dtype in (np.dtype('int64'), np.dtype('int32'), np.dtype('int16'), np.dtype('int8')):
+            if dtype in (np.dtype('int64'), np.dtype('int32'), np.dtype('int16'), np.dtype('int8'), np.dtype('uint32'), np.dtype('uint16'), np.dtype('uint8')):
                 saved_dict_curr[key] = np.array(group_or_val[()], int).squeeze()
             elif dtype == np.dtype('bool'):
                 try:

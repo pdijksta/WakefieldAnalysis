@@ -14,16 +14,26 @@ import wf_model
 
 pid = os.getpid()
 ctr = 0
-tmp_dir = '/home/philipp/tmp_elegant/'
 
 streakers = ['SARUN18.UDCP010', 'SARUN18.UDCP020']
 
-default_SF_par = FileViewer('./default.par.h5')
-default_SF_par_athos = FileViewer('./default_athos.par.h5')
-symlink_files = glob.glob('/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/elegant_wakes/wake*.sdds')
+this_dir = os.path.abspath(os.path.dirname(__file__))
+
+default_SF_par = FileViewer(os.path.join(this_dir, './default.par.h5'))
+default_SF_par_athos = FileViewer(os.path.join(this_dir, './default_athos.par.h5'))
+symlink_files = glob.glob(os.path.join(this_dir, './elegant_wakes/wake*.sdds'))
 
 quads = ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030']
 quads_athos = ['SATMA02.MQUA050', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030']
+
+
+#tmp_dir = '/home/philipp/tmp_elegant/'
+tmp_dir = None
+mute_elegant = True
+
+def set_tmp_dir(_tmp_dir):
+    global tmp_dir
+    tmp_dir = _tmp_dir
 
 def get_timestamp(year, month, day, hour, minute, second):
     date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
@@ -46,6 +56,9 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
     global ctr
 
     now = datetime.datetime.now()
+    if tmp_dir is None:
+        raise NameError('Error: Set tmp_dir first!')
+
     new_dir = os.path.join(tmp_dir, 'elegant_%i_%i-%02i-%02i_%02i-%02i-%02i_%i' % (pid, now.year, now.month, now.day, now.hour, now.minute, now.second, ctr))
     os.makedirs(new_dir)
     for f in copy_files:
@@ -63,6 +76,8 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
         cmd = 'elegant %s ' % os.path.basename(new_ele_file)
         for key, val in macro_dict.items():
             cmd += ' -macro=%s=%s' % (key, val)
+        if mute_elegant:
+            cmd += ' >/dev/null'
         print(cmd)
         with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
             f.write(cmd+'\n')
@@ -110,10 +125,12 @@ def get_magnet_length(mag_name, branch='Aramis'):
 class simulator:
     def __init__(self, file_):
         file_h5, file_json = None, None
-        if file_.endswith('.json'):
+        if '.json' in file_:
             file_json = file_
-        elif file_.endswith('.h5'):
+        elif '.h5' in file_:
             file_h5 = file_
+        else:
+            raise ValueError(file_)
         self.mag_data = data_loader.DataLoader(file_json=file_json, file_h5=file_h5)
 
     def get_data_quad(self, mag_name, timestamp):
@@ -186,7 +203,7 @@ class simulator:
 
     def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True):
         """
-        Returns: sim, mat_dict
+        Returns: sim, mat_dict, wf_dicts, disp_dict
         """
 
         n_particles = int(n_particles)

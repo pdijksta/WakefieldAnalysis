@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import wf_model
 import elegant_matrix
 import data_loader
+from gaussfit import GaussFit
 
 import myplotstyle as ms
 
@@ -18,6 +19,8 @@ gap = 10e-3
 beam_offset = 4.7e-3
 fit_order = 4
 zoom_sig = 3
+sig_t = 40e-15 # for Gaussian beam
+tt_halfrange = 200e-15
 
 investigate_wake = False
 timestamp = elegant_matrix.get_timestamp(2020, 7, 26, 17, 49, 0)
@@ -32,19 +35,25 @@ else:
 
 ### Generate Gaussian beam to calculate initial wake potential
 
-# approximate 40 fs beam
-sig_t = 40e-15
-time = np.linspace(0., 400e-15, 1000)
+tt_dict, wake_dict = {}, {}
+for sig_t2 in (30e-15, sig_t, 50e-15):
+    time_gauss = np.linspace(-tt_halfrange, tt_halfrange, 1000)
 
-curr = np.exp(-(time-np.mean(time))**2/(2*sig_t**2))
-curr[curr<0.001*curr.max()] = 0
-curr = curr * 200e-12/np.sum(curr)
+    current_gauss = np.exp(-(time_gauss-np.mean(time_gauss))**2/(2*sig_t2**2))
+    current_gauss[current_gauss<0.001*current_gauss.max()] = 0
+    current_gauss = current_gauss * 200e-12/np.sum(current_gauss)
 
-wf_calc = wf_model.WakeFieldCalculator(time*c, curr, energy_eV, 1.)
-wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
+    wf_calc = wf_model.WakeFieldCalculator((time_gauss-time_gauss.min())*c, current_gauss, energy_eV, 1.)
+    wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
 
-wake_zz = wf_dict['input']['charge_xx']
-convoluted_wake = wf_dict['dipole']['wake_potential']
+    gaussian_wake_tt = time_gauss
+    gaussian_wake = wf_dict['dipole']['wake_potential']
+
+    tt_dict[sig_t2] = time_gauss
+    wake_dict[sig_t2] = gaussian_wake
+
+time_gauss = tt_dict[sig_t]
+gaussian_wake = wake_dict[sig_t]
 
 
 if investigate_wake:
@@ -53,11 +62,11 @@ if investigate_wake:
     simulator = elegant_matrix.get_simulator(magnet_file)
     #mat_dict, disp_dict = simulator.get_elegant_matrix(0, timestamp)
 
-    sim, mat_dict, wf_dicts, disp_dict = simulator.simulate_streaker(time, curr, timestamp, (gap, 10e-3), (beam_offset, 0), energy_eV, linearize_twf=False)
+    sim, mat_dict, wf_dicts, disp_dict = simulator.simulate_streaker(time_gauss, current_gauss, timestamp, (gap, 10e-3), (beam_offset, 0), energy_eV, linearize_twf=False)
     r12 = mat_dict['SARBD02.DSCR050'][0,1]
 
-    single_wake2 = np.interp(time, wf_dicts[0]['t'], wf_dicts[0]['WX'])
-    convoluted_wake2 = np.convolve(curr, single_wake2)[:len(curr)]
+    single_wake2 = np.interp(time_gauss, wf_dicts[0]['t'], wf_dicts[0]['WX'])
+    convoluted_wake2 = np.convolve(current_gauss, single_wake2)[:len(current_gauss)]
 
 
     ### Look at used wakefield
@@ -65,23 +74,23 @@ if investigate_wake:
     subplot = ms.subplot_factory(2,2)
     sp_ctr = 1
 
-    sp_wake = subplot(sp_ctr, title='Initial wake from Gaussian $\sigma_t$=%i fs' % (sig_t*1e15), xlabel='s [$\mu$m]', ylabel='kV/m')
+    sp_wake = subplot(sp_ctr, title='Initial wake from Gaussian $\sigma_t$=%i fs' % (sig_t*1e15), xlabel='t [fs]', ylabel='kV/m')
     sp_ctr += 1
 
-    sp_wake.plot(wake_zz*1e6, convoluted_wake/1e3, label='Wake', lw=3)
-    sp_wake.plot(time*c*1e6, -convoluted_wake2/1e3, label='Wake 2')
+    sp_wake.plot(gaussian_wake_tt*1e15, gaussian_wake/1e3, label='Wake', lw=3)
+    sp_wake.plot(time_gauss*1e15, -convoluted_wake2/1e3, label='Wake 2')
 
     for fit_order2 in [fit_order]:
-        poly_fit = np.poly1d(np.polyfit(wake_zz, convoluted_wake, fit_order2))
-        fitted_wake = poly_fit(wake_zz)
-        sp_wake.plot(wake_zz*1e6, fitted_wake/1e3, label='Fit %ith order' % fit_order2)
+        poly_fit = np.poly1d(np.polyfit(gaussian_wake_tt, gaussian_wake, fit_order2))
+        fitted_wake = poly_fit(gaussian_wake_tt)
+        sp_wake.plot(gaussian_wake_tt*1e15, fitted_wake/1e3, label='Fit %ith order' % fit_order2)
 
     sp_wake.legend()
 
 
 ### Forward track with elegant for measured beam profile
 
-ms.figure('Forward and backward tracking')
+ms.figure('Forward and backward tracking - Ignore natural beamsize (200 nm emittance)')
 subplot = ms.subplot_factory(2,3)
 sp_ctr = 1
 
@@ -89,9 +98,16 @@ sp_ctr = 1
 bl_meas = data_loader.load_blmeas(bl_meas_file)
 simulator = elegant_matrix.get_simulator(magnet_file)
 
-time_meas = bl_meas['time_profile1']
-current_meas = bl_meas['current1']
-current_meas *= 200e-12/current_meas.sum()
+time_meas0 = bl_meas['time_profile1']
+current_meas0 = bl_meas['current1']
+current_meas0 *= 200e-12/current_meas0.sum()
+gf_blmeas = GaussFit(time_meas0, current_meas0)
+time_meas0 -= gf_blmeas.mean
+
+time_meas1 = np.arange(-tt_halfrange, time_meas0.min(), np.diff(time_meas0).mean())
+time_meas2 = np.arange(time_meas0.max(), tt_halfrange, np.diff(time_meas0).mean())
+time_meas = np.concatenate([time_meas1, time_meas0, time_meas2])
+current_meas = np.concatenate([np.zeros_like(time_meas1), current_meas0, np.zeros_like(time_meas2)])
 
 sim1, mat_dict, wf_dicts, disp_dict = simulator.simulate_streaker(time_meas, current_meas, timestamp, (gap, 10e-3), (beam_offset, 0), energy_eV, linearize_twf=False)
 
@@ -102,7 +118,8 @@ mean_X0 = sim0.watch[-1]['x'].mean()
 sp = subplot(sp_ctr, title='Current profile', xlabel='t [fs]', ylabel='Current (arb. units)')
 sp_ctr += 1
 
-sp.plot(time_meas*1e15, current_meas/current_meas.max())
+sp.plot(time_meas*1e15, current_meas/current_meas.max(), label='Measured')
+sp.plot(time_gauss*1e15, current_gauss/current_gauss.max(), label='Gauss')
 
 sp = subplot(sp_ctr, title='Screen distribution', xlabel='x [mm]', ylabel='Current (arb. units)')
 sp_ctr += 1
@@ -120,17 +137,30 @@ sp.legend()
 
 ### Backward tracking
 
-xx_wake = convoluted_wake / energy_eV * r12
+xx_wake = gaussian_wake / energy_eV * r12
+
+real_wf_calc = wf_model.WakeFieldCalculator((time_meas-time_meas.min())*c, current_meas, energy_eV, 1)
+real_wake = -real_wf_calc.calc_all(gap/2., 1, beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)['dipole']['wake_potential']
+
+#real_wake_spw2 = np.interp(time_meas, real_wake_tt, real_wake_spw)
+#real_wake = np.convolve(current_meas, real_wake_spw2)[:len(current_meas)]
+xx_real_wake = real_wake / energy_eV * r12
 
 sp = subplot(sp_ctr, title='Guessed wake effect', xlabel='t [fs]', ylabel='x [mm]')
 sp_ctr += 1
-wake_tt = wake_zz/c
 
-sp.plot(wake_tt*1e15, xx_wake*1e3)
+sp.plot(time_meas*1e15, -xx_real_wake*1e3, label='Real')
 
-t_interp = np.interp(screen_xx, xx_wake, wake_tt)
+for sig_t2 in (30e-15, sig_t, 50e-15):
+    xx_wake2 = wake_dict[sig_t2] / energy_eV * r12
+    sp.plot(tt_dict[sig_t2]*1e15, xx_wake2*1e3, label='Gaussian %i fs' % (sig_t2*1e15))
+
+sp.legend()
+
+t_interp = np.interp(screen_xx, xx_wake, gaussian_wake_tt)
 charge_interp = -screen_hist[1:] / np.diff(t_interp)
 charge_interp[charge_interp == np.inf] = np.nan
+charge_interp[charge_interp == -np.inf] = np.nan
 
 sp = subplot(sp_ctr, title='Backpropagated time', xlabel='t [fs]', ylabel='Current (arb. units)')
 sp_ctr += 1
@@ -145,9 +175,16 @@ sp.legend()
 sp = subplot(sp_ctr, title='Comparison', xlabel='t [fs]', ylabel='Current (arb. units)')
 sp_ctr += 1
 
-sp.plot(time_meas*1e15, current_meas/current_meas.max(), label='Input')
-sp.plot(t_interp[1:]*1e15, charge_corrected, label='Backtracked')
-sp.legend()
+for time, current, label in [(t_interp[1:], charge_corrected, 'Backtracked'), (time_meas, current_meas, 'Input'),]:
+
+    nan_arr = np.logical_or(np.isnan(time), np.isnan(current))
+    gf = GaussFit(time[~nan_arr], current[~nan_arr])
+    time2 = time - gf.mean
+
+    sp.plot(time2*1e15, current/np.nanmax(current), label=label+' %i' % (gf.sigma*1e15))
+sp.legend(title='Gaussian RMS [fs]')
+
+ms.saveall('/tmp/017a_pure_elegant', transparent=False)
 
 plt.show()
 

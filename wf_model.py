@@ -179,6 +179,10 @@ def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
     w_wxd_deriv = (w_wxd2 - w_wxd)/delta_offset
     w_wld = wld(xx, semigap, beam_offset)*L
     tt = xx/c
+    comment_str = 'semigap %.5e m ; beam_offset %.5e m ; Length %.5e m' % (semigap, beam_offset, L)
+    return write_sdds(filename, tt, w_wld, w_wxd, w_wxd_deriv, comment_str)
+
+def write_sdds(filename, tt, w_wld, w_wxd, w_wxd_deriv, comment_str=''):
 
     with open(filename, 'w') as fid:
         fid.write('SDDS1\n')
@@ -189,8 +193,8 @@ def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
         fid.write('&column name=DWX,   units=V/C/m,    type=double,    &end\n')
         fid.write('&data mode=ascii, &end\n')
         fid.write('! page number 1\n')
-        fid.write('! semigap %.5e m ; beam_offset %.5e m ; Length %.5e m\n' % (semigap, beam_offset, L))
-        fid.write('%i\n' % len(xx))
+        fid.write('! %s\n' % comment_str)
+        fid.write('%i\n' % len(tt))
         for t, wx, wl, dwx in zip(tt, w_wld, w_wxd, w_wxd_deriv):
             fid.write('  %12.6e  %12.6e  %12.6e  %12.6e\n' % (t, wx, wl, dwx))
 

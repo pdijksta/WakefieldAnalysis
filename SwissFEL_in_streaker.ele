@@ -54,6 +54,12 @@
 	value = <_twf_factor_>,
 &end
 
+&alter_elements
+	name = "Q",
+	item = TOTAL,
+	value = <_charge_>),
+&end
+
 &run_control
 	n_steps	= 1,
 	reset_rf_for_each_step = 1

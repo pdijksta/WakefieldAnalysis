@@ -81,13 +81,16 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
         print(cmd)
         with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
             f.write(cmd+'\n')
-        os.system(cmd)
+        status = os.system(cmd)
+        if status != 0:
+            raise RuntimeError('Elegant failed! %s' % new_dir)
     finally:
         os.chdir(old_dir)
 
     sim = ElegantSimulation(new_ele_file, del_sim=del_sim)
     return cmd, sim
 
+@functools.lru_cache(5)
 def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_duration, n_particles):
     macro_dict = {
             '_nemitx_': nemitx,
@@ -201,8 +204,9 @@ class simulator:
 
         return mat_dict, disp_dict
 
-    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True):
+    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True, wf_files=None, charge=200e-12):
         """
+        gaps can be 'file', then wf_files must be specified. Else, wf_files is ignored.
         Returns: sim, mat_dict, wf_dicts, disp_dict
         """
 
@@ -253,15 +257,21 @@ class simulator:
 
         filenames = ('/tmp/streaker1.sdds', '/tmp/streaker2.sdds')
         wf_dicts = []
-        for gap, beam_offset, filename in zip(gaps, beam_offsets, filenames):
-            wf_dict = wf_model.generate_elegant_wf(filename, xx, gap/2., beam_offset, L=1.)
-            wf_dicts.append(wf_dict)
+        if gaps == 'file':
+            shutil.copy(wf_files[0], filenames[0])
+            shutil.copy(wf_files[1], filenames[1])
+        else:
+            for gap, beam_offset, filename in zip(gaps, beam_offsets, filenames):
+                wf_dict = wf_model.generate_elegant_wf(filename, xx, gap/2., beam_offset, L=1.)
+                wf_dicts.append(wf_dict)
 
         lat = './Aramis.lat'
         ele = './SwissFEL_in_streaker.ele'
         macro_dict = {
                 '_p_central_': p_central,
-                '_twf_factor_': int(linearize_twf)}
+                '_twf_factor_': int(linearize_twf),
+                '_charge_': '%e' % charge,
+                }
         for quad in quads:
             key = '_'+quad.lower()+'.k1_'
             val = self.get_data_quad(quad, timestamp)

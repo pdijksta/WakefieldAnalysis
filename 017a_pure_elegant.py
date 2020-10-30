@@ -18,7 +18,6 @@ energy_eV = 6.14e9
 gap = 10e-3
 beam_offset = 4.7e-3
 fit_order = 4
-zoom_sig = 3
 sig_t = 40e-15 # for Gaussian beam
 tt_halfrange = 200e-15
 
@@ -35,13 +34,14 @@ else:
 
 ### Generate Gaussian beam to calculate initial wake potential
 
-tt_dict, wake_dict = {}, {}
+tt_dict, wake_dict, current_dict = {}, {}, {}
 for sig_t2 in (30e-15, sig_t, 50e-15):
     time_gauss = np.linspace(-tt_halfrange, tt_halfrange, 1000)
 
     current_gauss = np.exp(-(time_gauss-np.mean(time_gauss))**2/(2*sig_t2**2))
     current_gauss[current_gauss<0.001*current_gauss.max()] = 0
     current_gauss = current_gauss * 200e-12/np.sum(current_gauss)
+    current_dict[sig_t2] = current_gauss
 
     wf_calc = wf_model.WakeFieldCalculator((time_gauss-time_gauss.min())*c, current_gauss, energy_eV, 1.)
     wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
@@ -54,6 +54,7 @@ for sig_t2 in (30e-15, sig_t, 50e-15):
 
 time_gauss = tt_dict[sig_t]
 gaussian_wake = wake_dict[sig_t]
+current_gauss0 = current_dict[sig_t]
 
 
 if investigate_wake:
@@ -63,6 +64,7 @@ if investigate_wake:
     #mat_dict, disp_dict = simulator.get_elegant_matrix(0, timestamp)
 
     sim, mat_dict, wf_dicts, disp_dict = simulator.simulate_streaker(time_gauss, current_gauss, timestamp, (gap, 10e-3), (beam_offset, 0), energy_eV, linearize_twf=False)
+    mat_dict, _ = simulator.get_elegant_matrix(0, timestamp)
     r12 = mat_dict['SARBD02.DSCR050'][0,1]
 
     single_wake2 = np.interp(time_gauss, wf_dicts[0]['t'], wf_dicts[0]['WX'])
@@ -119,7 +121,9 @@ sp = subplot(sp_ctr, title='Current profile', xlabel='t [fs]', ylabel='Current (
 sp_ctr += 1
 
 sp.plot(time_meas*1e15, current_meas/current_meas.max(), label='Measured')
-sp.plot(time_gauss*1e15, current_gauss/current_gauss.max(), label='Gauss')
+sp.plot(time_gauss*1e15, current_gauss/current_gauss.max(), label='Initial guess')
+
+sp.legend()
 
 sp = subplot(sp_ctr, title='Screen distribution', xlabel='x [mm]', ylabel='Current (arb. units)')
 sp_ctr += 1
@@ -170,21 +174,23 @@ charge_uncorrected = screen_hist/screen_hist.max()
 
 sp.step(t_interp[1:]*1e15, charge_corrected, label='Corrected')
 sp.step(t_interp*1e15, charge_uncorrected, label='Uncorrected')
-sp.legend()
+sp.legend(title='Nonlinearity')
 
 sp = subplot(sp_ctr, title='Comparison', xlabel='t [fs]', ylabel='Current (arb. units)')
 sp_ctr += 1
 
-for time, current, label in [(t_interp[1:], charge_corrected, 'Backtracked'), (time_meas, current_meas, 'Input'),]:
+for time, current, label in [(t_interp[1:], charge_corrected, 'Backtracked'), (time_meas, current_meas, 'Input'), (time_gauss, current_gauss0, 'Initial guess'),]:
 
     nan_arr = np.logical_or(np.isnan(time), np.isnan(current))
     gf = GaussFit(time[~nan_arr], current[~nan_arr])
     time2 = time - gf.mean
 
-    sp.plot(time2*1e15, current/np.nanmax(current), label=label+' %i' % (gf.sigma*1e15))
+    color = sp.plot(time2*1e15, current/np.nanmax(current), label=label+' %i' % (gf.sigma*1e15))[0].get_color()
+    sp.plot(gf.xx*1e15, gf.reconstruction/gf.reconstruction.max(), color=color, ls='--')
+
 sp.legend(title='Gaussian RMS [fs]')
 
-ms.saveall('/tmp/017a_pure_elegant', transparent=False)
+#ms.saveall('/tmp/017a_pure_elegant', transparent=False)
 
 plt.show()
 

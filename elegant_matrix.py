@@ -35,6 +35,13 @@ def set_tmp_dir(_tmp_dir):
     global tmp_dir
     tmp_dir = _tmp_dir
 
+def clear_tmp_dir():
+    dirs = os.path.listdir(tmp_dir)
+    for dir_ in dirs:
+        path = tmp_dir+'/'+dir_
+        shutil.rmtree(path)
+        print('Removed %s' % path)
+
 def get_timestamp(year, month, day, hour, minute, second):
     date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
     timestamp = int(date.strftime('%s'))
@@ -78,7 +85,7 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
             cmd += ' -macro=%s=%s' % (key, val)
         if mute_elegant:
             cmd += ' >/dev/null'
-        print(cmd)
+        #print(cmd)
         with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
             f.write(cmd+'\n')
         status = os.system(cmd)
@@ -204,7 +211,7 @@ class simulator:
 
         return mat_dict, disp_dict
 
-    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True, wf_files=None, charge=200e-12):
+    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True, wf_files=None, charge=200e-12, n_emittances=(300e-9, 300e-9)):
         """
         gaps can be 'file', then wf_files must be specified. Else, wf_files is ignored.
         Returns: sim, mat_dict, wf_dicts, disp_dict
@@ -238,9 +245,7 @@ class simulator:
         alpha_x = -0.5774133
         alpha_y = 1.781136
 
-        n_emittance = 300e-9
-
-        watcher0, sim0 = gen_beam(n_emittance, n_emittance, alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
+        watcher0, sim0 = gen_beam(n_emittances[0], n_emittances[1], alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
 
         new_watcher_dict = {'t': interp_tt}
         for key in ('p', 'x', 'y', 'xp', 'yp'):

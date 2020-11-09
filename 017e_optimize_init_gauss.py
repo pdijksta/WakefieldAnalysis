@@ -29,10 +29,10 @@ screen_cutoff = 0.05
 backtrack_cutoff = 0
 len_profile = 1e3
 struct_lengths = [1., 1.]
-n_bins=300
-#smoothen = 30e-6
+n_bins=500
+smoothen = 0e-6
 n_emittances = (10e-9, 10e-9)
-n_particles = int(200e3)
+n_particles = int(60e3)
 
 if hostname == 'desktop':
     magnet_file = '/storage/Philipp_data_folder/archiver_api_data/2020-07-26.h5'
@@ -42,7 +42,7 @@ else:
     bl_meas_file = '/sf/data/measurements/2020/02/03/Bunch_length_meas_2020-02-03_15-59-13.h5'
 
 
-tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_bins=n_bins, n_particles=n_particles)
+tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_bins=n_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=backtrack_cutoff, screen_cutoff=screen_cutoff)
 energy_eV = tracker.energy_eV
 
 profile_meas = tracking.profile_from_blmeas(bl_meas_file, tt_halfrange, charge, energy_eV, subtract_min=False)
@@ -66,23 +66,22 @@ meas_screen3 = tracker.back_and_forward(meas_screen, meas_screen0, profile_gauss
 ms.figure('Back and forward with real profile')
 
 subplot = ms.subplot_factory(2,2)
-sp_ctr = 1
+sp_ctr0 = 1
 
-sp = subplot(sp_ctr, title='Current profiles', xlabel='t [fs]', ylabel='Intensity (arb. units)')
-sp_ctr += 1
+sp = subplot(sp_ctr0, title='Current profiles', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+sp_ctr0 += 1
 
 for bp, label in [
         (profile_meas, 'Measured'),
         #(profile_back_real, 'Reconstructed using real'),
         #(profile_back_gauss, 'Reconstructed using gauss'),
         ]:
-    norm = np.trapz(bp.current, bp.time)
-    sp.plot(bp.time*1e15, bp.current/norm, label=label)
+    sp.plot(bp.time*1e15, bp.current/bp.integral, label=label)
 
 sp.legend()
 
-sp = subplot(sp_ctr, title='Screen distributions')
-sp_ctr += 1
+sp = subplot(sp_ctr0, title='Screen distributions')
+sp_ctr0 += 1
 #meas_screen = tracker.elegant_forward(profile_meas, gaps, beam_offsets)['screen']
 #meas_screen0 = tracker.elegant_forward(profile_meas, gaps, [0, 0])['screen']
 
@@ -101,13 +100,13 @@ sp.legend()
 opt_ctr = 0
 
 plot_ctr = 5
-sp_ctr = 7
+sp_ctr = 10
 subplot = ms.subplot_factory(3,3)
 
 nfev_ctr = 0
 max_nfev = 15
 
-opt_plot = False
+opt_plot = True
 
 def get_meas_screen_shift(screen_cutoff, smoothen):
     meas_screen_max_x = np.copy(meas_screen.x[np.argmax(meas_screen.intensity)])
@@ -128,21 +127,23 @@ def opt_func(sig_t_fs, count_nfev, backtrack_cutoff, screen_cutoff, smoothen):
 
     sig_t = sig_t_fs/1e15
 
-
-
-
     bp_wake = tracking.get_gaussian_profile(sig_t, tt_halfrange, len_profile, charge, tracker.energy_eV)
     baf = tracker.back_and_forward(meas_screen, meas_screen0, bp_wake, gaps, beam_offsets, n_streaker, output='Full')
     screen_recon = baf['screen']
-    #screen_max_x = screen_recon.x[np.argmax(screen_recon.intensity)]
-    #screen_shift = tracking.ScreenDistribution(screen_recon.x-screen_max_x, screen_recon.intensity.copy())
-    screen_shift = screen_recon
-    screen_shift.cutoff(screen_cutoff)
-    screen_shift.normalize()
+    #screen_shift = screen_recon
+    #screen_shift.cutoff(screen_cutoff)
+    #screen_shift.normalize()
+
+    #baf_self = tracker.back_and_forward(meas_screen, meas_screen0, baf['beam_profile'], gaps, beam_offsets, n_streaker, output='Full')
+    #screen_self = baf_self['screen']
+
+    screen_self = screen_recon
 
     #meas_screen_shift = get_meas_screen_shift(screen_cutoff, smoothen)
 
-    diff = screen_shift.compare(meas_screen)
+    diff = screen_self.compare(meas_screen)
+
+    #diff = screen_shift.compare(meas_screen)
 
     print(opt_ctr, '%f fs' % sig_t_fs, '%.1e' % diff)
     opt_ctr += 1
@@ -150,7 +151,7 @@ def opt_func(sig_t_fs, count_nfev, backtrack_cutoff, screen_cutoff, smoothen):
     if opt_plot:
         if plot_ctr == 5:
             plot_ctr = 0
-            if sp_ctr == 7:
+            if sp_ctr == 10:
                 ms.figure('Optimization')
                 sp_ctr = 1
             sp = subplot(sp_ctr, title='Profile')
@@ -158,7 +159,7 @@ def opt_func(sig_t_fs, count_nfev, backtrack_cutoff, screen_cutoff, smoothen):
             sp.plot(meas_screen_shift.x*1e3, meas_screen_shift.intensity/meas_screen_shift.integral, label='Original')
 
         plot_ctr += 1
-        sp.plot(screen_shift.x*1e3, screen_shift.intensity/screen_shift.integral, label='%i: %.1f fs %.3e' % (opt_ctr, sig_t_fs, diff))
+        sp.plot(screen_self.x*1e3, screen_self.intensity/screen_self.integral, label='%i: %.1f fs %.3e' % (opt_ctr, sig_t_fs, diff))
         sp.legend()
         plt.show()
         plt.pause(0.01)
@@ -169,37 +170,37 @@ def opt_func(sig_t_fs, count_nfev, backtrack_cutoff, screen_cutoff, smoothen):
             raise StopIteration(sig_t_fs)
 
     opt_func_values.append((float(sig_t_fs), diff))
-    opt_func_screens.append(screen_shift)
+    opt_func_screens.append(screen_self)
     opt_func_profiles.append(baf['beam_profile'])
 
     return diff
 
 
 ms.figure('Scan results')
-sp_ctr = 1
+sp_ctr2 = 1
 
 real_lw=4
 
-sp_opt = subplot(sp_ctr, title='Optimization results', xlabel='Gaussian sigma [fs]', ylabel='Optimization func (arb. units)')
-sp_ctr += 1
+sp_opt = subplot(sp_ctr2, title='Optimization results', xlabel='Gaussian sigma [fs]', ylabel='Optimization func (arb. units)')
+sp_ctr2 += 1
 
-sp_profile = subplot(sp_ctr, title='Reconstructed profile using Gauss', xlabel='t [fs]', ylabel='Intensity (arb. units)')
-sp_ctr += 1
+sp_profile = subplot(sp_ctr2, title='Reconstructed profile using Gauss', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+sp_ctr2 += 1
 
-sp_screen = subplot(sp_ctr, title='Reconstructed screen using Gauss', xlabel='x [mm]', ylabel='Intensity (arb. units)')
-sp_ctr += 1
+sp_screen = subplot(sp_ctr2, title='Reconstructed screen using Gauss', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+sp_ctr2 += 1
 
-sp_profile2 = subplot(sp_ctr, title='Reconstructed profile using real', xlabel='t [fs]', ylabel='Intensity (arb. units)')
-sp_ctr += 1
+sp_profile2 = subplot(sp_ctr2, title='Reconstructed profile using real', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+sp_ctr2 += 1
 
-sp_screen2 = subplot(sp_ctr, title='Reconstructed screen using real', xlabel='x [mm]', ylabel='Intensity (arb. units)')
-sp_ctr += 1
+sp_screen2 = subplot(sp_ctr2, title='Reconstructed screen using real', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+sp_ctr2 += 1
 
-sp_profile3 = subplot(sp_ctr, title='Reconstructed profile using Gauss+', xlabel='t [fs]', ylabel='Intensity (arb. units)')
-sp_ctr += 1
+sp_profile3 = subplot(sp_ctr2, title='Reconstructed profile using Gauss+', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+sp_ctr2 += 1
 
-sp_screen3 = subplot(sp_ctr, title='Reconstructed screen using Gauss+', xlabel='x [mm]', ylabel='Intensity (arb. units)')
-sp_ctr += 1
+sp_screen3 = subplot(sp_ctr2, title='Reconstructed screen using Gauss+', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+sp_ctr2 += 1
 
 
 
@@ -224,12 +225,12 @@ for backtrack_cutoff, screen_cutoff, smoothen in itertools.product([0.,], [0., ]
 
     label = '%.2f/%.2f/%i' % (backtrack_cutoff, screen_cutoff, smoothen*1e6)
 
-    sig_t_fs_arr = np.arange(20, 60.01, 5)
+    sig_t_fs_arr = np.arange(30, 60.01, 5)
     diff_arr = np.array([opt_func(t, False, backtrack_cutoff, screen_cutoff, smoothen) for t in sig_t_fs_arr])
     index = np.argmin(diff_arr)
     sig_t_fs_min = sig_t_fs_arr[index]
 
-    for sig_t_fs in range(int(sig_t_fs_min-4), int(sig_t_fs_min+4)):
+    for sig_t_fs in range(int(round(sig_t_fs_min-4)), int(round(sig_t_fs_min+4))):
         opt_func(sig_t_fs, False, backtrack_cutoff, screen_cutoff, smoothen)
 
     opt_func_values = np.array(opt_func_values)

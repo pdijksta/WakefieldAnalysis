@@ -25,13 +25,13 @@ sig_t = 40e-15 # for Gaussian beam
 tt_halfrange = 200e-15
 charge = 200e-12
 timestamp = elegant_matrix.get_timestamp(2020, 7, 26, 17, 49, 0)
-screen_cutoff = 0.03
-profile_cutoff = 0.00
+screen_cutoff = 0.05
+backtrack_cutoff = 0.03
 len_profile = 1e3
 struct_lengths = [1., 1.]
 n_bins=500
 smoothen = 0e-6
-n_emittances = (1e-9, 1e-9)
+n_emittances = (10e-9, 10e-9)
 n_particles = int(100e3)
 
 if hostname == 'desktop':
@@ -42,55 +42,60 @@ else:
     bl_meas_file = '/sf/data/measurements/2020/02/03/Bunch_length_meas_2020-02-03_15-59-13.h5'
 
 
-#profile_gauss = tracking.get_gaussian_profile(sig_t, tt_halfrange, len_profile, charge, energy_eV)
-#
-#fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker, output='Full')
-#fab_dict_real['bp_back'].cutoff(screen_cutoff)
-##fab_dict_gauss = tracker.forward_and_back(profile_meas, profile_gauss, gaps, beam_offsets, n_streaker, output='Full')
-##fab_dict_gauss['bp_back'].cutoff(0.1)
-##forward_dict_real = tracker.elegant_forward(fab_dict_real['bp_back'], gaps, beam_offsets)
-##forward_dict_gauss = tracker.elegant_forward(fab_dict_gauss['bp_back'], gaps, beam_offsets)
-#
-##profile_back_real = fab_dict_real['bp_back']
-##profile_back_gauss = fab_dict_gauss['bp_back']
-#meas_screen = fab_dict_real['track_dict_forward']['screen']
-#meas_screen0 = fab_dict_real['track_dict_forward0']['screen']
-#
-#meas_screen2 = tracker.back_and_forward(meas_screen, meas_screen0, profile_meas, gaps, beam_offsets, n_streaker)
-#meas_screen3 = tracker.back_and_forward(meas_screen, meas_screen0, profile_gauss, gaps, beam_offsets, n_streaker)
-#
-#ms.figure('Back and forward with real profile')
-#
-#subplot = ms.subplot_factory(2,2)
-#sp_ctr0 = 1
-#
-#sp = subplot(sp_ctr0, title='Current profiles', xlabel='t [fs]', ylabel='Intensity (arb. units)')
-#sp_ctr0 += 1
-#
-#for bp, label in [
-#        (profile_meas, 'Measured'),
-#        #(profile_back_real, 'Reconstructed using real'),
-#        #(profile_back_gauss, 'Reconstructed using gauss'),
-#        ]:
-#    sp.plot(bp.time*1e15, bp.current/bp.integral, label=label)
-#
-#sp.legend()
-#
-#sp = subplot(sp_ctr0, title='Screen distributions')
-#sp_ctr0 += 1
-##meas_screen = tracker.elegant_forward(profile_meas, gaps, beam_offsets)['screen']
-##meas_screen0 = tracker.elegant_forward(profile_meas, gaps, [0, 0])['screen']
-#
-#for sd, label in [
-#        (meas_screen, 'Streaking'),
-#        #(meas_screen0, 'No streaking'),
-#        (meas_screen2, 'Streaking back and forward real'),
-#        (meas_screen3, 'Streaking back and forward gauss'),
-#        #(forward_dict_gauss['screen'], 'Forward gauss'),
-#        #(forward_dict_real['screen'], 'Forward real'),
-#        ]:
-#    sp.plot(sd.x*1e3, sd.intensity/sd.integral, label=label)
-#sp.legend()
+tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_bins=n_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=backtrack_cutoff, screen_cutoff=screen_cutoff)
+energy_eV = tracker.energy_eV
+
+profile_meas = tracking.profile_from_blmeas(bl_meas_file, tt_halfrange, charge, energy_eV, subtract_min=False)
+profile_meas.cutoff(profile_cutoff)
+profile_gauss = tracking.get_gaussian_profile(sig_t, tt_halfrange, len_profile, charge, energy_eV)
+
+fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker, output='Full')
+fab_dict_real['bp_back'].cutoff(screen_cutoff)
+#fab_dict_gauss = tracker.forward_and_back(profile_meas, profile_gauss, gaps, beam_offsets, n_streaker, output='Full')
+#fab_dict_gauss['bp_back'].cutoff(0.1)
+#forward_dict_real = tracker.elegant_forward(fab_dict_real['bp_back'], gaps, beam_offsets)
+#forward_dict_gauss = tracker.elegant_forward(fab_dict_gauss['bp_back'], gaps, beam_offsets)
+
+#profile_back_real = fab_dict_real['bp_back']
+#profile_back_gauss = fab_dict_gauss['bp_back']
+meas_screen = fab_dict_real['track_dict_forward']['screen']
+meas_screen0 = fab_dict_real['track_dict_forward0']['screen']
+
+meas_screen2 = tracker.back_and_forward(meas_screen, meas_screen0, profile_meas, gaps, beam_offsets, n_streaker)
+meas_screen3 = tracker.back_and_forward(meas_screen, meas_screen0, profile_gauss, gaps, beam_offsets, n_streaker)
+
+ms.figure('Back and forward with real profile')
+
+subplot = ms.subplot_factory(2,2)
+sp_ctr0 = 1
+
+sp = subplot(sp_ctr0, title='Current profiles', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+sp_ctr0 += 1
+
+for bp, label in [
+        (profile_meas, 'Measured'),
+        #(profile_back_real, 'Reconstructed using real'),
+        #(profile_back_gauss, 'Reconstructed using gauss'),
+        ]:
+    sp.plot(bp.time*1e15, bp.current/bp.integral, label=label)
+
+sp.legend()
+
+sp = subplot(sp_ctr0, title='Screen distributions')
+sp_ctr0 += 1
+#meas_screen = tracker.elegant_forward(profile_meas, gaps, beam_offsets)['screen']
+#meas_screen0 = tracker.elegant_forward(profile_meas, gaps, [0, 0])['screen']
+
+for sd, label in [
+        (meas_screen, 'Streaking'),
+        #(meas_screen0, 'No streaking'),
+        (meas_screen2, 'Streaking back and forward real'),
+        (meas_screen3, 'Streaking back and forward gauss'),
+        #(forward_dict_gauss['screen'], 'Forward gauss'),
+        #(forward_dict_real['screen'], 'Forward real'),
+        ]:
+    sp.plot(sd.x*1e3, sd.intensity/sd.integral, label=label)
+sp.legend()
 
 
 opt_ctr = 0
@@ -114,7 +119,7 @@ def get_meas_screen_shift(screen_cutoff, smoothen):
     return meas_screen_shift
 
 
-def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
+def opt_func(sig_t_fs, count_nfev, backtrack_cutoff, screen_cutoff, smoothen):
     a = np.array(opt_func_values)
     if len(a) > 0 and np.any(a[:,0] == sig_t_fs):
         index = np.argwhere(sig_t_fs == a[:,0])[0]
@@ -207,30 +212,17 @@ sp_ctr2 += 1
 
 
 
-for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.product([profile_cutoff,], [screen_cutoff, ], [smoothen, ])):
+for sp_ in sp_profile, sp_profile2, sp_profile3:
+    sp_.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real', lw=real_lw)
 
-    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_bins=n_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff)
-    energy_eV = tracker.energy_eV
+for sp_ in sp_screen, sp_screen2, sp_screen3:
+    #meas_screen_shift = get_meas_screen_shift(0, 0)
+    meas_screen_shift = meas_screen
+    sp_.plot(meas_screen_shift.x*1e3, meas_screen_shift.intensity/meas_screen_shift.integral, label='Real', lw=real_lw)
 
-    profile_meas = tracking.profile_from_blmeas(bl_meas_file, tt_halfrange, charge, energy_eV, subtract_min=False)
-    profile_meas.cutoff(profile_cutoff)
-    profile_meas.reshape(len_profile)
-    fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker, output='Full')
-    meas_screen = fab_dict_real['track_dict_forward']['screen']
-    meas_screen0 = fab_dict_real['track_dict_forward0']['screen']
+for backtrack_cutoff, screen_cutoff, smoothen in itertools.product([0.,], [0., ], [0., ]):
 
-
-
-    if n_loop == 0:
-        for sp_ in sp_profile, sp_profile2, sp_profile3:
-            sp_.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real', lw=real_lw)
-
-        for sp_ in sp_screen, sp_screen2, sp_screen3:
-            #meas_screen_shift = get_meas_screen_shift(0, 0)
-            meas_screen_shift = meas_screen
-            sp_.plot(meas_screen_shift.x*1e3, meas_screen_shift.intensity/meas_screen_shift.integral, label='Real', lw=real_lw)
-
-
+    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_bins=n_bins, profile_cutoff=backtrack_cutoff, screen_cutoff=screen_cutoff, smoothen=smoothen, n_particles=n_particles)
 
     # Using gaussian wake profile
     opt_ctr = 0
@@ -238,15 +230,15 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     opt_func_screens = []
     opt_func_profiles = []
 
-    label = '%.2f/%.2f/%i' % (profile_cutoff, screen_cutoff, smoothen*1e6)
+    label = '%.2f/%.2f/%i' % (backtrack_cutoff, screen_cutoff, smoothen*1e6)
 
     sig_t_fs_arr = np.arange(25, 45.01, 5)
-    diff_arr = np.array([opt_func(t, False, profile_cutoff, screen_cutoff, smoothen) for t in sig_t_fs_arr])
+    diff_arr = np.array([opt_func(t, False, backtrack_cutoff, screen_cutoff, smoothen) for t in sig_t_fs_arr])
     index = np.argmin(diff_arr)
     sig_t_fs_min = sig_t_fs_arr[index]
 
     for sig_t_fs in range(int(round(sig_t_fs_min-4)), int(round(sig_t_fs_min+4))):
-        opt_func(sig_t_fs, False, profile_cutoff, screen_cutoff, smoothen)
+        opt_func(sig_t_fs, False, backtrack_cutoff, screen_cutoff, smoothen)
 
     opt_func_values = np.array(opt_func_values)
     best_index = np.argmin(opt_func_values[:,1])
@@ -279,23 +271,25 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     screen_shift.normalize()
 
     meas_screen_shift = get_meas_screen_shift(screen_cutoff, smoothen)
+
     sp_profile2.plot(profile_real.time*1e15, profile_real.current/profile_real.integral, label=label)
 
     sp_screen2.plot(screen_shift.x*1e3, screen_shift.intensity/screen_shift.integral, label=label)
     sp_screen.plot(best_screen.x*1e3, best_screen.intensity/best_screen.integral, label=label)
 
-    ms.figure('Investigation emittance %i' % (n_emittances[0]*1e9))
-    sp_ctr = 1
+ms.figure('Investigation')
+sp_ctr = 1
+for smoothen in (0,): # 30e-6):
     screen = copy.deepcopy(meas_screen)
     screen.smoothen(30e-6)
-    sp_p = subplot(sp_ctr, title='Profiles')
+    sp_p = subplot(sp_ctr, title='Profiles smoothen=%i' % (smoothen*1e6))
     sp_ctr += 1
-    sp_s = subplot(sp_ctr, title='Screens')
+    sp_s = subplot(sp_ctr, title='Screens smoothen=%i' % (smoothen*1e6))
     sp_s.plot(screen.x, screen.intensity/screen.integral, color='black', label='Real')
     sp_ctr += 1
     #sp_b = subplot(3, title='Back agaun')
     r12 = tracker.calcR12()[0]
-    for profile, label in [(best_profile, 'Reconstructed'), (profile_final, 'Final self-consistent'), (profile_meas, 'Measured')]:
+    for profile, label in [(profile_meas, 'Meas'), (best_profile, 'Reconstructed'), (profile_final, 'Final self-consistent')]:
         profile.shift()
         track_dict = tracker.elegant_forward(profile, gaps, beam_offsets)
         screen_forward = track_dict['screen']
@@ -304,13 +298,10 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, r12)
         bp_back = tracker.track_backward(screen, meas_screen0, wake_effect)
-        #bp_back.find_agreement(profile_meas)
-        profile2 = copy.deepcopy(profile_meas)
-        profile2.find_agreement(profile_meas)
-        #bp_back.shift()
+        bp_back.shift()
 
-        color = sp_p.plot((profile.time-profile.gaussfit.mean)*1e15, profile.current/profile.integral, label=label+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
-        sp_p.plot((bp_back.time-bp_back.gaussfit.mean)*1e15, bp_back.current/bp_back.integral, ls='--', label=label+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))
+        color = sp_p.plot(profile.time*1e15, profile.current/profile.integral, label=label)[0].get_color()
+        sp_p.plot(bp_back.time*1e15, bp_back.current/bp_back.integral, ls='--', label=label + ' back')
         sp_s.plot(screen_forward.x*1e3, screen_forward.intensity/screen_forward.integral, label=label, color=color)
     sp_p.legend()
     sp_s.legend()

@@ -1,4 +1,4 @@
-import copy
+#import copy
 import functools
 import numpy as np
 from scipy.constants import c
@@ -313,9 +313,10 @@ class Tracker:
         charge_interp[np.isnan(charge_interp)] = 0
 
         bp = BeamProfile(t_interp, charge_interp, self.energy_eV, wake_effect['charge'])
+        bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
         if np.any(np.isnan(charge_interp)):
-            import pdb; pdb.set_trace()
+            raise ValueError('NaNs in beam profile')
         return bp
 
     def forward_and_back(self, bp_forward, bp_wake, gaps, beam_offsets, n_streaker, output='BeamProfile'):

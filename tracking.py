@@ -142,6 +142,12 @@ class ScreenDistribution(Profile):
     def intensity(self):
         return self._yy
 
+def getScreenDistributionFromPoints(x_points, n_bins):
+    screen_hist, bin_edges0 = np.histogram(x_points, bins=n_bins, density=True)
+    screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
+    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
+
+
 class BeamProfile(Profile):
     def __init__(self, time, current, energy_eV, charge):
         self._xx = time
@@ -177,7 +183,7 @@ class BeamProfile(Profile):
         else:
             w_wxd = wf_model.wxd(new_s, gap/2., beam_offset)*struct_length
         w_wxd_deriv = np.zeros_like(w_wxd)
-        wf_model.write_sdds(filename, new_s/c, w_wld, w_wxd, w_wxd_deriv)
+        return wf_model.write_sdds(filename, new_s/c, w_wld, w_wxd, w_wxd_deriv)
 
 
     def wake_effect_on_screen(self, wf_dict, r12):
@@ -253,14 +259,91 @@ class Tracker:
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
+    def get_wake_potential_from_profile(self, time_points, gap, beam_offset, charge):
+
+        wf_hist, bin_edges = np.histogram(time_points, bins=1000)
+        wf_hist = wf_hist / np.sum(wf_hist) * charge
+        wake_tt = (bin_edges[1:] + bin_edges[:-1])/2
+        wake_tt_range = wake_tt.max() - wake_tt.min()
+        add_on = np.arange(wake_tt.max(), wake_tt.max() + wake_tt_range*0.1, np.mean(np.diff(wake_tt)))
+        wake_tt = np.concatenate([wake_tt, add_on])
+        wf_hist = np.concatenate([wf_hist, np.zeros_like(add_on)])
+        wake_tt -= wake_tt.min()
+        wf_xx = wake_tt*c
+        wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_hist, self.energy_eV, Ls=self.struct_lengths[0])
+        wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
+        wake = wf_dict['dipole']['wake_potential']
+
+        return wake_tt, wake
+
+
+    def matrix_forward(self, beamProfile, gaps, beam_offsets):
+        mat_dict = self.simulator.get_streaker_matrices(self.timestamp)
+
+        s1 = mat_dict['start_to_s1']
+
+        beta_x = 5.067067
+        beta_y = 16.72606
+        alpha_x = -0.5774133
+        alpha_y = 1.781136
+
+        watch, sim = elegant_matrix.gen_beam(*self.n_emittances, alpha_x, beta_x, alpha_y, beta_y, self.energy_eV, 40e-15, self.n_particles)
+
+        curr = beamProfile.current
+        tt = beamProfile.time
+        integrated_curr = np.cumsum(curr)
+        integrated_curr /= integrated_curr.max()
+
+        randoms = np.random.rand(self.n_particles)
+        interp_tt = np.interp(randoms, integrated_curr, tt)
+        interp_tt -= interp_tt.min()
+
+        p_arr = np.ones_like(watch['x'])*self.energy_eV/511e3
+        beam_start = np.array([watch['x'], watch['xp'], watch['y'], watch['yp'], interp_tt, p_arr])
+        beam_before_s1 = np.matmul(s1, beam_start)
+
+        delta_xp_list = []
+
+        for gap, beam_offset in zip(gaps, beam_offsets):
+            if beam_offset == 0:
+                delta_xp_list.append(0)
+            else:
+                wake_tt, wake = self.get_wake_potential_from_profile(interp_tt, gap, beam_offset, beamProfile.charge)
+                wake_energy = np.interp(beam_before_s1[4,:], wake_tt, wake)
+                delta_xp = wake_energy/self.energy_eV
+                delta_xp_list.append(delta_xp)
+
+
+        beam_after_s1 = np.copy(beam_before_s1)
+        beam_after_s1[1,:] += delta_xp_list[0]
+
+        beam_before_s2 = np.matmul(mat_dict['s1_to_s2'], beam_after_s1)
+
+        beam_after_s2 = np.copy(beam_before_s2)
+        beam_after_s2[1,:] += delta_xp_list[1]
+
+        beam_at_screen = np.matmul(mat_dict['s2_to_screen'], beam_after_s2)
+        beam0_at_screen = mat_dict['s2_to_screen'] @ mat_dict['s1_to_s2'] @ beam_before_s1
+        beam_at_screen[0] -= beam0_at_screen[0].mean()
+
+        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], n_bins=self.n_bins)
+
+        return {
+                'beam_at_screen': beam_at_screen,
+                'beam0_at_screen': beam0_at_screen,
+                'screen': screen,
+                }
+
     def elegant_forward(self, beamProfile, gaps, beam_offsets):
         # Generate wakefield
 
         filenames = []
+        sdds_wakes = []
         for ctr, (gap, beam_offset, struct_length) in enumerate(zip(gaps, beam_offsets, self.struct_lengths)):
             filename = tmp_folder+'/streaker%i.sdds' % (ctr+1)
             filenames.append(filename)
-            beamProfile.write_sdds(filename, gap, beam_offset, struct_length)
+            sdds_wake = beamProfile.write_sdds(filename, gap, beam_offset, struct_length)
+            sdds_wakes.append(sdds_wake)
 
         tt, cc = beamProfile.time, beamProfile.current
         mask = cc != 0
@@ -281,9 +364,7 @@ class Tracker:
             r12_dict[n_streaker] = rr[0,1]
 
         screen_watcher = sim.watch[-1]
-        screen_hist, bin_edges0 = np.histogram(screen_watcher['x'], bins=self.n_bins, density=True)
-        screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
-        screen = ScreenDistribution(screen_xx, screen_hist, real_x=screen_watcher['x'])
+        screen = getScreenDistributionFromPoints(screen_watcher['x'], self.n_bins)
         screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
         screen.reshape(self.len_screen)
@@ -295,6 +376,7 @@ class Tracker:
                 'screen_watcher': screen_watcher,
                 'screen': screen,
                 'beam_profile': beamProfile,
+                'sdds_wakes': sdds_wakes,
                 }
 
         return forward_dict
@@ -390,6 +472,4 @@ class Tracker:
                'reconstructed_screen': best_screen,
                'reconstructed_profile': best_profile,
                }
-
-
 

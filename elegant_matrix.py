@@ -1,4 +1,5 @@
 import functools
+import itertools
 import glob
 import os
 import shutil
@@ -156,14 +157,15 @@ class simulator:
         streaker_index must be in (0,1)
         """
 
-        #streaker = streakers[streaker_index]
-        #bpm = bpms[bpm_index]
-
-        macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_%i$1' % (streaker_index+1)}
         if branch == 'Aramis':
             lat = './Elegant-Aramis-Reference.lat'
             ele = './SwissFEL_in0.ele'
-            macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_%i$1' % (streaker_index+1)}
+
+            if streaker_index != 'NULL':
+                macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_%i$1' % (streaker_index+1)}
+            else:
+                macro_dict = {'_matrix_start_': 'Q'}
+
             for quad in quads:
                 key = '_'+quad.lower()+'.k1_'
                 val = self.get_data_quad(quad, timestamp)
@@ -206,10 +208,31 @@ class simulator:
                 mat['R22'],
                 mat['R36'],
                 ):
-            mat_dict[name] = np.array([[r11, r12], [r21, r22]])
+            #mat_dict[name] = np.array([[r11, r12], [r21, r22]])
             disp_dict[name] = r36
 
+        for index, name in enumerate(mat['ElementName']):
+            mat_dict[name] = a = np.zeros([6,6])
+            for i,j in itertools.product(range(6), repeat=2):
+                a[i,j] = mat['R%i%i' % (i+1,j+1)][index]
+
         return mat_dict, disp_dict
+
+    def get_streaker_matrices(self, timestamp, del_sim=True):
+        mat_dict = self.get_elegant_matrix('NULL', timestamp, del_sim=del_sim)[0]
+        s1 = mat_dict['MIDDLE_STREAKER_1']
+        s2 = mat_dict['MIDDLE_STREAKER_2']
+        screen = mat_dict['SARBD02.DSCR050']
+        s1_to_s2 = np.matmul(s2, np.linalg.inv(s1))
+        s2_to_screen = np.matmul(screen, np.linalg.inv(s2))
+
+        # s2_to_screen @ s1_to_s2 @ s1 == screen -> checked
+
+        return {
+                'start_to_s1': s1,
+                's1_to_s2': s1_to_s2,
+                's2_to_screen': s2_to_screen,
+                }
 
     def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True, wf_files=None, charge=200e-12, n_emittances=(300e-9, 300e-9)):
         """
@@ -307,6 +330,6 @@ class simulator:
 
 #@functools.wraps(simulator)
 @functools.lru_cache(400)
-def get_simulator(file_json):
-    return simulator(file_json)
+def get_simulator(file_):
+    return simulator(file_)
 

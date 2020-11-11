@@ -103,7 +103,7 @@ sp_ctr = ny*nx+1
 nfev_ctr = 0
 max_nfev = 15
 
-opt_plot = True
+opt_plot = False
 
 def get_meas_screen_shift(screen_cutoff, smoothen):
     meas_screen_max_x = np.copy(meas_screen.x[np.argmax(meas_screen.intensity)])
@@ -291,7 +291,7 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     sp_p = subplot(sp_ctr, title='Profiles')
     sp_ctr += 1
     sp_s = subplot(sp_ctr, title='Screens')
-    sp_s.plot(screen.x, screen.intensity/screen.integral, color='black', label='Real')
+    sp_s.plot(screen.x*1e3, screen.intensity/screen.integral, color='black', label='Real')
     sp_ctr += 1
     #sp_b = subplot(3, title='Back agaun')
     r12 = tracker.calcR12()[0]

@@ -31,7 +31,7 @@ len_profile = 1e3
 struct_lengths = [1., 1.]
 n_bins=500
 smoothen = 0e-6
-n_emittances = (1e-9, 1e-9)
+n_emittances = (300e-9, 300e-9)
 n_particles = int(100e3)
 
 if hostname == 'desktop':
@@ -44,9 +44,9 @@ else:
 
 #profile_gauss = tracking.get_gaussian_profile(sig_t, tt_halfrange, len_profile, charge, energy_eV)
 #
-#fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker, output='Full')
+#fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker)
 #fab_dict_real['bp_back'].cutoff(screen_cutoff)
-##fab_dict_gauss = tracker.forward_and_back(profile_meas, profile_gauss, gaps, beam_offsets, n_streaker, output='Full')
+##fab_dict_gauss = tracker.forward_and_back(profile_meas, profile_gauss, gaps, beam_offsets, n_streaker)
 ##fab_dict_gauss['bp_back'].cutoff(0.1)
 ##forward_dict_real = tracker.elegant_forward(fab_dict_real['bp_back'], gaps, beam_offsets)
 ##forward_dict_gauss = tracker.elegant_forward(fab_dict_gauss['bp_back'], gaps, beam_offsets)
@@ -215,7 +215,7 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     profile_meas = tracking.profile_from_blmeas(bl_meas_file, tt_halfrange, charge, energy_eV, subtract_min=False)
     profile_meas.cutoff(profile_cutoff)
     profile_meas.reshape(len_profile)
-    fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker, output='Full')
+    fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker)
     meas_screen = fab_dict_real['track_dict_forward']['screen']
     meas_screen0 = fab_dict_real['track_dict_forward0']['screen']
 

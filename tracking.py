@@ -269,7 +269,7 @@ class Tracker:
             sim, mat_dict, wf_dicts, disp_dict = self.simulator.simulate_streaker(tt[mask], cc[mask], self.timestamp, 'file', None, self.energy_eV, linearize_twf=False, wf_files=filenames, n_particles=self.n_particles, n_emittances=self.n_emittances)
         except Exception as e:
             print(e)
-            #raise
+            raise
             import pdb; pdb.set_trace()
 
         r12_dict = {}
@@ -281,9 +281,8 @@ class Tracker:
             r12_dict[n_streaker] = rr[0,1]
 
         screen_watcher = sim.watch[-1]
-        hist, bin_edges0 = np.histogram(screen_watcher['x'], bins=self.n_bins, density=True)
+        screen_hist, bin_edges0 = np.histogram(screen_watcher['x'], bins=self.n_bins, density=True)
         screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
-        screen_hist = hist / hist.max()
         screen = ScreenDistribution(screen_xx, screen_hist, real_x=screen_watcher['x'])
         screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
@@ -319,7 +318,7 @@ class Tracker:
             raise ValueError('NaNs in beam profile')
         return bp
 
-    def forward_and_back(self, bp_forward, bp_wake, gaps, beam_offsets, n_streaker, output='BeamProfile'):
+    def forward_and_back(self, bp_forward, bp_wake, gaps, beam_offsets, n_streaker):
         track_dict_forward = self.elegant_forward(bp_forward, gaps, beam_offsets)
         track_dict_forward0 = self.elegant_forward(bp_forward, gaps, [0,0])
 
@@ -327,15 +326,12 @@ class Tracker:
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, track_dict_forward0['r12_dict'][n_streaker])
         bp_back = self.track_backward(track_dict_forward['screen'], track_dict_forward0['screen'], wake_effect)
 
-        if output == 'BeamProfile':
-            return bp_back
-        elif output == 'Full':
-            return {
-                    'track_dict_forward': track_dict_forward,
-                    'track_dict_forward0': track_dict_forward0,
-                    'wake_effect': wake_effect,
-                    'bp_back': bp_back,
-                    }
+        return {
+                'track_dict_forward': track_dict_forward,
+                'track_dict_forward0': track_dict_forward0,
+                'wake_effect': wake_effect,
+                'bp_back': bp_back,
+                }
 
     def back_and_forward(self, screen, screen0, bp_wake, gaps, beam_offsets, n_streaker, output='Screen'):
         wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], 1.)

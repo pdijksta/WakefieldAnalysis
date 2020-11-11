@@ -33,6 +33,8 @@ n_bins=500
 smoothen = 0e-6
 n_emittances = (300e-9, 300e-9)
 n_particles = int(100e3)
+forward_method = 'matrix'
+
 
 if hostname == 'desktop':
     magnet_file = '/storage/Philipp_data_folder/archiver_api_data/2020-07-26.h5'
@@ -212,10 +214,20 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_bins=n_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff)
     energy_eV = tracker.energy_eV
 
+    if forward_method == 'matrix':
+        forward_fun = tracker.matrix_forward
+    elif forward_method == 'elegant':
+        forward_fun = tracker.elegant_forward
+
+
+
+
     profile_meas = tracking.profile_from_blmeas(bl_meas_file, tt_halfrange, charge, energy_eV, subtract_min=False)
+    print(profile_meas.charge, profile_meas.current.sum())
     profile_meas.cutoff(profile_cutoff)
     profile_meas.reshape(len_profile)
-    fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker)
+    print(profile_meas.charge, profile_meas.current.sum())
+    fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets, n_streaker, forward_method=forward_method)
     meas_screen = fab_dict_real['track_dict_forward']['screen']
     meas_screen0 = fab_dict_real['track_dict_forward0']['screen']
 
@@ -258,17 +270,17 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     sp_opt.scatter(opt_func_values[:,0], opt_func_values[:,1], label=label)
 
     # Using best gaussian recon for final step
-    baf_dict_final = tracker.back_and_forward(meas_screen, meas_screen0, best_profile, gaps, beam_offsets, n_streaker, output='Full')
+    baf_dict_final = tracker.back_and_forward(meas_screen, meas_screen0, best_profile, gaps, beam_offsets, n_streaker, output='Full', forward_method=forward_method)
     screen_final = baf_dict_final['screen']
     screen_final.shift()
     screen_final.cutoff(screen_cutoff)
     screen_final.normalize()
     profile_final = baf_dict_final['beam_profile']
     sp_screen3.plot(screen_final.x*1e3, screen_final.intensity, label=label)
-    sp_profile3.plot(profile_final.time*1e15, profile_final.current/profile_final.integral, label=label)
+    sp_profile3.plot((profile_final.time-profile_final.gaussfit.mean)*1e15, profile_final.current/profile_final.integral, label=label)
 
     # Using real wake profile
-    baf = tracker.back_and_forward(meas_screen, meas_screen0, profile_meas, gaps, beam_offsets, n_streaker, output='Full')
+    baf = tracker.back_and_forward(meas_screen, meas_screen0, profile_meas, gaps, beam_offsets, n_streaker, output='Full', forward_method=forward_method)
     profile_real = baf['beam_profile']
     screen_recon = baf['screen']
     #screen_max_x = screen_recon.x[np.argmax(screen_recon.intensity)]
@@ -297,7 +309,7 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     r12 = tracker.calcR12()[0]
     for profile, label in [(best_profile, 'Reconstructed'), (profile_final, 'Final self-consistent'), (profile_meas, 'Measured')]:
         profile.shift()
-        track_dict = tracker.elegant_forward(profile, gaps, beam_offsets)
+        track_dict = forward_fun(profile, gaps, beam_offsets)
         screen_forward = track_dict['screen']
         #screen.cutoff(0.05)
 

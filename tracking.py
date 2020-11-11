@@ -29,6 +29,8 @@ class Profile:
             return
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
         _yy = np.interp(_xx, self._xx, self._yy)
+        old_sum = np.sum(self._yy)
+        _yy *= old_sum / _yy.sum()
         self._xx, self._yy = _xx, _yy
 
     def cutoff(self, cutoff_factor):
@@ -259,6 +261,26 @@ class Tracker:
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
+    def get_wake_potential_from_profile_alt(self, profile, gap, beam_offset):
+
+        mask_curr = profile.current != 0
+        wake_tt0 = profile.time[mask_curr]
+        #wake_tt_range = profile.time.max() - profile.time.min()
+        #diff = np.mean(np.diff(wake_tt0))
+        #add_on = np.arange(wake_tt0.max(), wake_tt0.max() + wake_tt_range*0.1, diff) + diff
+        #wake_tt = np.concatenate([wake_tt0, add_on])
+        #wf_current = np.concatenate([profile.current, np.zeros_like(add_on)])
+        wf_current = profile.current[mask_curr]
+        wake_tt = wake_tt0
+        wake_tt = wake_tt - wake_tt.min()
+        wf_xx = wake_tt*c
+        #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
+        wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_current, self.energy_eV, Ls=self.struct_lengths[0])
+        wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
+        wake = wf_dict['dipole']['wake_potential']
+
+        return wake_tt, wake
+
     def get_wake_potential_from_profile(self, time_points, gap, beam_offset, charge):
 
         wf_hist, bin_edges = np.histogram(time_points, bins=1000)
@@ -270,17 +292,21 @@ class Tracker:
         wf_hist = np.concatenate([wf_hist, np.zeros_like(add_on)])
         wake_tt -= wake_tt.min()
         wf_xx = wake_tt*c
-        wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_hist, self.energy_eV, Ls=self.struct_lengths[0])
+        wf_current = wf_hist
+        #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
+        wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_current, self.energy_eV, Ls=self.struct_lengths[0])
         wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
         wake = wf_dict['dipole']['wake_potential']
 
         return wake_tt, wake
 
 
-    def matrix_forward(self, beamProfile, gaps, beam_offsets):
-        mat_dict = self.simulator.get_streaker_matrices(self.timestamp)
 
-        s1 = mat_dict['start_to_s1']
+    def matrix_forward(self, beamProfile, gaps, beam_offsets):
+        streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
+        mat_dict = streaker_matrices['mat_dict']
+
+        s1 = streaker_matrices['start_to_s1']
 
         beta_x = 5.067067
         beta_y = 16.72606
@@ -308,7 +334,10 @@ class Tracker:
             if beam_offset == 0:
                 delta_xp_list.append(0)
             else:
-                wake_tt, wake = self.get_wake_potential_from_profile(interp_tt, gap, beam_offset, beamProfile.charge)
+                #wake_tt, wake = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset)
+                #wake_tt, wake = self.get_wake_potential_from_profile(interp_tt, gap, beam_offset, beamProfile.charge)
+                wake_tt, wake = self.get_wake_potential_from_profile_alt(beamProfile, gap, beam_offset)
+                #import pdb; pdb.set_trace()
                 wake_energy = np.interp(beam_before_s1[4,:], wake_tt, wake)
                 delta_xp = wake_energy/self.energy_eV
                 delta_xp_list.append(delta_xp)
@@ -317,21 +346,32 @@ class Tracker:
         beam_after_s1 = np.copy(beam_before_s1)
         beam_after_s1[1,:] += delta_xp_list[0]
 
-        beam_before_s2 = np.matmul(mat_dict['s1_to_s2'], beam_after_s1)
+        beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
 
         beam_after_s2 = np.copy(beam_before_s2)
         beam_after_s2[1,:] += delta_xp_list[1]
 
-        beam_at_screen = np.matmul(mat_dict['s2_to_screen'], beam_after_s2)
-        beam0_at_screen = mat_dict['s2_to_screen'] @ mat_dict['s1_to_s2'] @ beam_before_s1
+        beam_at_screen = np.matmul(streaker_matrices['s2_to_screen'], beam_after_s2)
+        beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
         beam_at_screen[0] -= beam0_at_screen[0].mean()
 
         screen = getScreenDistributionFromPoints(beam_at_screen[0,:], n_bins=self.n_bins)
+
+        r12_dict = {}
+        for n_streaker in (0, 1):
+            r0 = mat_dict['MIDDLE_STREAKER_%i' % (n_streaker+1)]
+            r1 = mat_dict['SARBD02.DSCR050']
+
+            rr = np.matmul(r1, np.linalg.inv(r0))
+            r12_dict[n_streaker] = rr[0,1]
+
 
         return {
                 'beam_at_screen': beam_at_screen,
                 'beam0_at_screen': beam0_at_screen,
                 'screen': screen,
+                'beam_profile': beamProfile,
+                'r12_dict': r12_dict,
                 }
 
     def elegant_forward(self, beamProfile, gaps, beam_offsets):
@@ -400,9 +440,14 @@ class Tracker:
             raise ValueError('NaNs in beam profile')
         return bp
 
-    def forward_and_back(self, bp_forward, bp_wake, gaps, beam_offsets, n_streaker):
-        track_dict_forward = self.elegant_forward(bp_forward, gaps, beam_offsets)
-        track_dict_forward0 = self.elegant_forward(bp_forward, gaps, [0,0])
+    def forward_and_back(self, bp_forward, bp_wake, gaps, beam_offsets, n_streaker, forward_method='matrix'):
+        if forward_method == 'matrix':
+            forward_fun = self.matrix_forward
+        elif forward_method == 'elegant':
+            forward_fun = self.elegant_forward
+
+        track_dict_forward = forward_fun(bp_forward, gaps, beam_offsets)
+        track_dict_forward0 = forward_fun(bp_forward, gaps, [0,0])
 
         wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], 1.)
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, track_dict_forward0['r12_dict'][n_streaker])
@@ -415,14 +460,20 @@ class Tracker:
                 'bp_back': bp_back,
                 }
 
-    def back_and_forward(self, screen, screen0, bp_wake, gaps, beam_offsets, n_streaker, output='Screen'):
+    def back_and_forward(self, screen, screen0, bp_wake, gaps, beam_offsets, n_streaker, output='Screen', forward_method='matrix'):
+
+        if forward_method == 'matrix':
+            forward_fun = self.matrix_forward
+        elif forward_method == 'elegant':
+            forward_fun = self.elegant_forward
+
         wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], 1.)
         r12 = self.calcR12()[n_streaker]
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, r12)
 
         bp_back = self.track_backward(screen, screen0, wake_effect)
         bp_back.reshape(len(bp_wake.time))
-        track_dict = self.elegant_forward(bp_back, gaps, beam_offsets)
+        track_dict = forward_fun(bp_back, gaps, beam_offsets)
 
         if output == 'Screen':
             return track_dict['screen']

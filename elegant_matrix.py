@@ -232,6 +232,7 @@ class simulator:
                 'start_to_s1': s1,
                 's1_to_s2': s1_to_s2,
                 's2_to_screen': s2_to_screen,
+                'mat_dict': mat_dict,
                 }
 
     def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True, wf_files=None, charge=200e-12, n_emittances=(300e-9, 300e-9)):

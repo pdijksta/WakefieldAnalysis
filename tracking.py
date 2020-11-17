@@ -11,6 +11,25 @@ import wf_model
 
 tmp_folder = './'
 
+
+def get_average_profile(p_list):
+    len_profile = max(len(p) for p in p_list)
+
+    xx_list = [p._xx - p.gaussfit.mean for p in p_list]
+    yy_list = [p._yy for p in p_list]
+
+    min_profile = min(x.min() for x in xx_list)
+    max_profile = max(x.max() for x in xx_list)
+
+    xx_interp = np.linspace(min_profile, max_profile, len_profile)
+    yy_interp_arr = np.zeros([len(p_list), len_profile])
+
+    for n, (xx, yy) in enumerate(zip(xx_list, yy_list)):
+        yy_interp_arr[n] = np.interp(xx_interp, xx, yy)
+
+    yy_mean = np.mean(yy_interp_arr, axis=0)
+    return xx_interp, yy_mean
+
 class Profile:
 
     def compare(self, other):
@@ -22,7 +41,6 @@ class Profile:
         diff = (yy1-yy2)**2
         norm = ((yy1+yy2)/2)**2
         return np.sqrt(np.nanmean(diff/norm))
-        #return np.nanmean(diff)
 
     def reshape(self, new_shape):
         if new_shape is None:
@@ -45,16 +63,12 @@ class Profile:
         return len(self._xx)
 
     @property
-    @functools.lru_cache(1)
     def gaussfit(self):
         return GaussFit(self._xx, self._yy)
 
     @property
     def integral(self):
         return np.trapz(self._yy, self._xx)
-
-    def normalize(self, norm=1.):
-        self._yy = self._yy / self.integral * norm
 
     def smoothen(self, gauss_sigma):
         if gauss_sigma is None or gauss_sigma == 0:
@@ -63,71 +77,74 @@ class Profile:
         new_yy = gaussian_filter1d(self._yy, real_sigma)
         self._yy = new_yy
 
-    def shift(self):
+    def shift(self, where_max=0):
         max_x = self._xx[np.argmax(self._yy)]
-        self._xx = self._xx - max_x
+        self._xx = self._xx - max_x + where_max
 
-    def find_agreement(self, other, step_factor=0.2, max_iter=50):
-        if len(self) < len(other):
-            self.reshape(len(other))
-        elif len(self) > len(other):
-            other.reshape(len(self))
+    def center(self):
+        self._xx = self._xx - self.gaussfit.mean
 
-        y01 = self._yy
-        y02 = other._yy
-
-        x01 = self._xx
-        x02 = self._yy
-
-        def min_func(n_shift0):
-            n_shift = int(round(n_shift0))
-
-            if n_shift == 0:
-                a1, a2 = y01, y02
-            elif n_shift > 0:
-                a1, a2 = y01[n_shift:], y02[:-n_shift]
-            elif n_shift < 0:
-                a1, a2 = y01[:n_shift], y02[-n_shift:]
-
-            diff = np.mean((a1-a2)**2) / np.mean(a1+a2)**2
-
-            return diff
-
-        step = 5
-
-        def newton_step(current_shift):
-            opt_curr = min_func(current_shift)
-            opt_deriv = (min_func(current_shift+step) - opt_curr)/step
-            delta = - opt_curr/opt_deriv * step_factor
-            new_shift = current_shift + delta
-            opt_new = min_func(new_shift)
-            return new_shift, opt_curr, opt_new, delta
-
-
-        shift = 0
-        for i in range(max_iter):
-            shift, opt_last, opt_new, delta = newton_step(shift)
-            if opt_last < opt_new or abs(delta) < 1:
-                shift = shift-delta
-                break
-
-        n_shift = int(round(shift))
-
-        if n_shift == 0:
-            y1, y2 = y01, y02
-            x1, x2 = x01, x02
-        elif shift > 0:
-            y1, y2 = y01[n_shift:], y02[:-n_shift]
-            x1, x2 = x01[n_shift:], x02[:-n_shift]
-        elif shift < 0:
-            y1, y2 = y01[:n_shift], y02[-n_shift:]
-            x1, x2 = x01[:n_shift], x02[-n_shift:]
-
-        x1 = x1 - x1.min() + x2.min()
-        y2 # for syntax checkers
-
-        self._xx = x1
-        self._yy = y1
+#    def find_agreement(self, other, step_factor=0.2, max_iter=50):
+#        if len(self) < len(other):
+#            self.reshape(len(other))
+#        elif len(self) > len(other):
+#            other.reshape(len(self))
+#
+#        y01 = self._yy
+#        y02 = other._yy
+#
+#        x01 = self._xx
+#        x02 = self._yy
+#
+#        def min_func(n_shift0):
+#            n_shift = int(round(n_shift0))
+#
+#            if n_shift == 0:
+#                a1, a2 = y01, y02
+#            elif n_shift > 0:
+#                a1, a2 = y01[n_shift:], y02[:-n_shift]
+#            elif n_shift < 0:
+#                a1, a2 = y01[:n_shift], y02[-n_shift:]
+#
+#            diff = np.mean((a1-a2)**2) / np.mean(a1+a2)**2
+#
+#            return diff
+#
+#        step = 5
+#
+#        def newton_step(current_shift):
+#            opt_curr = min_func(current_shift)
+#            opt_deriv = (min_func(current_shift+step) - opt_curr)/step
+#            delta = - opt_curr/opt_deriv * step_factor
+#            new_shift = current_shift + delta
+#            opt_new = min_func(new_shift)
+#            return new_shift, opt_curr, opt_new, delta
+#
+#
+#        shift = 0
+#        for i in range(max_iter):
+#            shift, opt_last, opt_new, delta = newton_step(shift)
+#            if opt_last < opt_new or abs(delta) < 1:
+#                shift = shift-delta
+#                break
+#
+#        n_shift = int(round(shift))
+#
+#        if n_shift == 0:
+#            y1, y2 = y01, y02
+#            x1, x2 = x01, x02
+#        elif shift > 0:
+#            y1, y2 = y01[n_shift:], y02[:-n_shift]
+#            x1, x2 = x01[n_shift:], x02[:-n_shift]
+#        elif shift < 0:
+#            y1, y2 = y01[:n_shift], y02[-n_shift:]
+#            x1, x2 = x01[:n_shift], x02[-n_shift:]
+#
+#        x1 = x1 - x1.min() + x2.min()
+#        y2 # for syntax checkers
+#
+#        self._xx = x1
+#        self._yy = y1
 
 
 class ScreenDistribution(Profile):
@@ -144,8 +161,12 @@ class ScreenDistribution(Profile):
     def intensity(self):
         return self._yy
 
-def getScreenDistributionFromPoints(x_points, n_bins):
-    screen_hist, bin_edges0 = np.histogram(x_points, bins=n_bins, density=True)
+    def normalize(self, norm=1.):
+        self._yy = self._yy / self.integral * norm
+
+
+def getScreenDistributionFromPoints(x_points, screen_bins):
+    screen_hist, bin_edges0 = np.histogram(x_points, bins=screen_bins, density=True)
     screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
     return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
 
@@ -157,6 +178,8 @@ class BeamProfile(Profile):
         self.energy_eV = energy_eV
         self.charge = charge
         self.wake_dict = {}
+
+        #self._xx = self._xx - self.gaussfit.mean # Dangerous!
 
     @property
     def time(self):
@@ -237,7 +260,7 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
 
 
 class Tracker:
-    def __init__(self, magnet_file, timestamp, struct_lengths, energy_eV='file', n_particles=20e3, n_emittances=(300e-9, 300e-9), n_bins=300, screen_cutoff=0.05, smoothen=30e-6, profile_cutoff=0.01, len_screen=1e3):
+    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file'):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
@@ -247,7 +270,7 @@ class Tracker:
         self.struct_lengths = struct_lengths
         self.n_particles = n_particles
         self.n_emittances = n_emittances
-        self.n_bins = n_bins
+        self.screen_bins = screen_bins
         self.screen_cutoff = screen_cutoff
         self.smoothen = smoothen
         self.profile_cutoff = profile_cutoff
@@ -261,17 +284,15 @@ class Tracker:
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
-    def get_wake_potential_from_profile_alt(self, profile, gap, beam_offset):
+    def get_wake_potential_from_profile(self, profile, gap, beam_offset):
 
         mask_curr = profile.current != 0
         wake_tt0 = profile.time[mask_curr]
-        #wake_tt_range = profile.time.max() - profile.time.min()
-        #diff = np.mean(np.diff(wake_tt0))
-        #add_on = np.arange(wake_tt0.max(), wake_tt0.max() + wake_tt_range*0.1, diff) + diff
-        #wake_tt = np.concatenate([wake_tt0, add_on])
-        #wf_current = np.concatenate([profile.current, np.zeros_like(add_on)])
-        wf_current = profile.current[mask_curr]
-        wake_tt = wake_tt0
+        wake_tt_range = wake_tt0.max() - wake_tt0.min()
+        diff = np.mean(np.diff(wake_tt0))
+        add_on = np.arange(wake_tt0.max(), wake_tt0.max() + wake_tt_range*0.1, diff) + diff
+        wake_tt = np.concatenate([wake_tt0, add_on])
+        wf_current = np.concatenate([profile.current[mask_curr], np.zeros_like(add_on)])
         wake_tt = wake_tt - wake_tt.min()
         wf_xx = wake_tt*c
         #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
@@ -280,27 +301,6 @@ class Tracker:
         wake = wf_dict['dipole']['wake_potential']
 
         return wake_tt, wake
-
-    def get_wake_potential_from_profile(self, time_points, gap, beam_offset, charge):
-
-        wf_hist, bin_edges = np.histogram(time_points, bins=1000)
-        wf_hist = wf_hist / np.sum(wf_hist) * charge
-        wake_tt = (bin_edges[1:] + bin_edges[:-1])/2
-        wake_tt_range = wake_tt.max() - wake_tt.min()
-        add_on = np.arange(wake_tt.max(), wake_tt.max() + wake_tt_range*0.1, np.mean(np.diff(wake_tt)))
-        wake_tt = np.concatenate([wake_tt, add_on])
-        wf_hist = np.concatenate([wf_hist, np.zeros_like(add_on)])
-        wake_tt -= wake_tt.min()
-        wf_xx = wake_tt*c
-        wf_current = wf_hist
-        #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
-        wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_current, self.energy_eV, Ls=self.struct_lengths[0])
-        wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
-        wake = wf_dict['dipole']['wake_potential']
-
-        return wake_tt, wake
-
-
 
     def matrix_forward(self, beamProfile, gaps, beam_offsets):
         streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
@@ -334,10 +334,7 @@ class Tracker:
             if beam_offset == 0:
                 delta_xp_list.append(0)
             else:
-                #wake_tt, wake = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset)
-                #wake_tt, wake = self.get_wake_potential_from_profile(interp_tt, gap, beam_offset, beamProfile.charge)
-                wake_tt, wake = self.get_wake_potential_from_profile_alt(beamProfile, gap, beam_offset)
-                #import pdb; pdb.set_trace()
+                wake_tt, wake = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset)
                 wake_energy = np.interp(beam_before_s1[4,:], wake_tt, wake)
                 delta_xp = wake_energy/self.energy_eV
                 delta_xp_list.append(delta_xp)
@@ -355,7 +352,12 @@ class Tracker:
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
         beam_at_screen[0] -= beam0_at_screen[0].mean()
 
-        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], n_bins=self.n_bins)
+        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], screen_bins=self.screen_bins)
+
+        screen.smoothen(self.smoothen)
+        screen.cutoff(self.screen_cutoff)
+        screen.reshape(self.len_screen)
+        screen.normalize()
 
         r12_dict = {}
         for n_streaker in (0, 1):
@@ -404,7 +406,7 @@ class Tracker:
             r12_dict[n_streaker] = rr[0,1]
 
         screen_watcher = sim.watch[-1]
-        screen = getScreenDistributionFromPoints(screen_watcher['x'], self.n_bins)
+        screen = getScreenDistributionFromPoints(screen_watcher['x'], self.screen_bins)
         screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
         screen.reshape(self.len_screen)
@@ -428,7 +430,7 @@ class Tracker:
         screen_intensity = screen.intensity
 
         t_interp = np.interp(screen_x, wake_x, wake_time)
-        charge_interp = screen_intensity / np.concatenate([np.diff(t_interp), [0]])
+        charge_interp = screen_intensity / np.concatenate([np.diff(t_interp), [np.inf]])
         charge_interp[charge_interp == np.inf] = 0
         charge_interp[charge_interp == -np.inf] = 0
         charge_interp[np.isnan(charge_interp)] = 0
@@ -436,6 +438,7 @@ class Tracker:
         bp = BeamProfile(t_interp, charge_interp, self.energy_eV, wake_effect['charge'])
         bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
+        bp.reshape(self.len_screen)
         if np.any(np.isnan(charge_interp)):
             raise ValueError('NaNs in beam profile')
         return bp
@@ -449,7 +452,7 @@ class Tracker:
         track_dict_forward = forward_fun(bp_forward, gaps, beam_offsets)
         track_dict_forward0 = forward_fun(bp_forward, gaps, [0,0])
 
-        wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], 1.)
+        wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, track_dict_forward0['r12_dict'][n_streaker])
         bp_back = self.track_backward(track_dict_forward['screen'], track_dict_forward0['screen'], wake_effect)
 
@@ -467,12 +470,11 @@ class Tracker:
         elif forward_method == 'elegant':
             forward_fun = self.elegant_forward
 
-        wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], 1.)
+        wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         r12 = self.calcR12()[n_streaker]
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, r12)
 
         bp_back = self.track_backward(screen, screen0, wake_effect)
-        bp_back.reshape(len(bp_wake.time))
         track_dict = forward_fun(bp_back, gaps, beam_offsets)
 
         if output == 'Screen':
@@ -482,33 +484,43 @@ class Tracker:
         else:
             raise ValueError('Invalid value for parameter output:', output)
 
-    def gaussian_baf(self, sig_t, tt_halfrange, meas_screen, meas_screen0, gaps, beam_offsets, n_streaker, charge):
 
-        bp_gauss = get_gaussian_profile(sig_t, tt_halfrange, self.len_screen, charge, self.energy_eV)
-        baf = self.back_and_forward(meas_screen, meas_screen0, bp_gauss, gaps, beam_offsets, n_streaker, output='Full')
-        screen = baf['screen']
-        #screen.shift()
+    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, meas_screen0, gaps, beam_offsets, n_streaker, charge, self_consistent=True):
 
-        #meas_screen_shift = copy.deepcopy(meas_screen)
-        #meas_screen_shift.shift()
+        @functools.lru_cache(50)
+        def gaussian_baf(sig_t):
 
-        diff = screen.compare(meas_screen)
+            bp_gauss = get_gaussian_profile(sig_t, tt_halfrange, self.len_screen, charge, self.energy_eV)
+            if self_consistent:
+                r12 = self.calcR12()[n_streaker]
 
-        return {
-                'diff': diff,
-                'screen': screen,
-                'baf': baf,
-                'bp_gauss': bp_gauss,
-                'bp_reconstructed': baf['beam_profile'],
-                }
+                wf_dict0 = bp_gauss.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
+                wake_effect0 = bp_gauss.wake_effect_on_screen(wf_dict0, r12)
+                bp_back0 = self.track_backward(meas_screen, meas_screen0, wake_effect0)
 
-    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, meas_screen0, gaps, beam_offsets, n_streaker, charge):
+
+            else:
+                bp_back0 = bp_gauss
+
+            baf = self.back_and_forward(meas_screen, meas_screen0, bp_back0, gaps, beam_offsets, n_streaker, output='Full')
+            screen = baf['screen']
+            diff = screen.compare(meas_screen)
+            bp_out = baf['beam_profile']
+
+            return {
+                    'diff': diff,
+                    #'baf': baf,
+                    'screen': screen,
+                    'bp_gauss': bp_gauss,
+                    'bp_reconstructed': bp_out,
+                    }
+
         opt_func_values = []
         opt_func_screens = []
         opt_func_profiles = []
 
         for sig_t in sig_t_range:
-            gbaf = self.gaussian_baf(sig_t, tt_halfrange, meas_screen, meas_screen0, gaps, beam_offsets, n_streaker, charge)
+            gbaf = gaussian_baf(sig_t)
             opt_func_values.append(gbaf['diff'])
             opt_func_screens.append(gbaf['screen'])
             opt_func_profiles.append(gbaf['bp_reconstructed'])

@@ -21,19 +21,20 @@ gaps = [10e-3, 10e-3]
 beam_offsets = [4.7e-3, 0]
 n_streaker = 0
 fit_order = 4
-sig_t = 40e-15 # for Gaussian beam
+#sig_t = 40e-15 # for Gaussian beam
 tt_halfrange = 200e-15
 charge = 200e-12
 timestamp = elegant_matrix.get_timestamp(2020, 7, 26, 17, 49, 0)
-screen_cutoff = 0.03
+screen_cutoff = 0.00
 profile_cutoff = 0.00
 len_profile = 1e3
 struct_lengths = [1., 1.]
-n_bins=500
+screen_bins = 400
 smoothen = 0e-6
 n_emittances = (300e-9, 300e-9)
 n_particles = int(100e3)
 forward_method = 'matrix'
+show_module = False
 
 
 if hostname == 'desktop':
@@ -107,13 +108,13 @@ max_nfev = 15
 
 opt_plot = False
 
-def get_meas_screen_shift(screen_cutoff, smoothen):
-    meas_screen_max_x = np.copy(meas_screen.x[np.argmax(meas_screen.intensity)])
-    meas_screen_shift = tracking.ScreenDistribution(meas_screen.x-meas_screen_max_x, meas_screen.intensity.copy())
-    meas_screen_shift.cutoff(screen_cutoff)
-    meas_screen_shift.smoothen(smoothen)
-    meas_screen_shift.normalize()
-    return meas_screen_shift
+#def get_meas_screen_shift(screen_cutoff, smoothen):
+#    meas_screen_max_x = np.copy(meas_screen.x[np.argmax(meas_screen.intensity)])
+#    meas_screen_shift = tracking.ScreenDistribution(meas_screen.x-meas_screen_max_x, meas_screen.intensity.copy())
+#    meas_screen_shift.cutoff(screen_cutoff)
+#    meas_screen_shift.smoothen(smoothen)
+#    meas_screen_shift.normalize()
+#    return meas_screen_shift
 
 
 def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
@@ -128,14 +129,15 @@ def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
 
     bp_wake = tracking.get_gaussian_profile(sig_t, tt_halfrange, len_profile, charge, tracker.energy_eV)
     baf = tracker.back_and_forward(meas_screen, meas_screen0, bp_wake, gaps, beam_offsets, n_streaker, output='Full')
-    #screen_shift = screen_recon
-    #screen_shift.cutoff(screen_cutoff)
-    #screen_shift.normalize()
 
-    #baf_self = tracker.back_and_forward(meas_screen, meas_screen0, baf['beam_profile'], gaps, beam_offsets, n_streaker, output='Full')
-    #screen_self = baf_self['screen']
+    self_consistent=True
+    if self_consistent:
 
-    screen_self = baf['screen']
+        baf_self = tracker.back_and_forward(meas_screen, meas_screen0, baf['beam_profile'], gaps, beam_offsets, n_streaker, output='Full')
+        screen_self = baf_self['screen']
+
+    else:
+        screen_self = baf['screen']
     profile = baf['beam_profile']
 
     #meas_screen_shift = get_meas_screen_shift(screen_cutoff, smoothen)
@@ -180,7 +182,7 @@ def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
     return diff
 
 
-ms.figure('Scan results')
+ms.figure('Scan results', figsize=(16, 12))
 sp_ctr2 = 1
 
 real_lw=4
@@ -200,18 +202,31 @@ sp_ctr2 += 1
 sp_screen2 = subplot(sp_ctr2, title='Reconstructed screen using real', xlabel='x [mm]', ylabel='Intensity (arb. units)')
 sp_ctr2 += 1
 
-sp_profile3 = subplot(sp_ctr2, title='Reconstructed profile using Gauss+', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+sp_profile3 = subplot(sp_ctr2, title='Reconstructed profile using self-consistent', xlabel='t [fs]', ylabel='Intensity (arb. units)')
 sp_ctr2 += 1
 
-sp_screen3 = subplot(sp_ctr2, title='Reconstructed screen using Gauss+', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+if show_module:
+
+    sp_profile4 = subplot(sp_ctr2, title='Reconstructed profile using Module', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+    sp_ctr2 += 1
+else:
+    sp_profile4 = None
+
+sp_screen3 = subplot(sp_ctr2, title='Reconstructed screen using self-consistent', xlabel='x [mm]', ylabel='Intensity (arb. units)')
 sp_ctr2 += 1
+
+if show_module:
+    sp_screen4 = subplot(sp_ctr2, title='Reconstructed screen using Module', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+    sp_ctr2 += 1
+else:
+    sp_screen4 = None
 
 
 
 
 for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.product([profile_cutoff,], [screen_cutoff, ], [smoothen, ])):
 
-    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_bins=n_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff)
+    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, screen_bins=screen_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff, len_screen=len_profile)
     energy_eV = tracker.energy_eV
 
     if forward_method == 'matrix':
@@ -234,11 +249,14 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
 
 
     if n_loop == 0:
-        for sp_ in sp_profile, sp_profile2, sp_profile3:
+        for sp_ in sp_profile, sp_profile2, sp_profile3, sp_profile4:
+            if sp_ is None:
+                continue
             sp_.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real', lw=real_lw)
 
-        for sp_ in sp_screen, sp_screen2, sp_screen3:
-            #meas_screen_shift = get_meas_screen_shift(0, 0)
+        for sp_ in sp_screen, sp_screen2, sp_screen3, sp_screen4:
+            if sp_ is None:
+                continue
             meas_screen_shift = meas_screen
             sp_.plot(meas_screen_shift.x*1e3, meas_screen_shift.intensity/meas_screen_shift.integral, label='Real', lw=real_lw)
 
@@ -252,12 +270,13 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
 
     label = '%.2f/%.2f/%i' % (profile_cutoff, screen_cutoff, smoothen*1e6)
 
-    sig_t_fs_arr = np.arange(25, 45.01, 5)
+    sig_t_fs_arr = np.arange(25, 55.01, 5)
     diff_arr = np.array([opt_func(t, False, profile_cutoff, screen_cutoff, smoothen) for t in sig_t_fs_arr])
     index = np.argmin(diff_arr)
     sig_t_fs_min = sig_t_fs_arr[index]
 
-    for sig_t_fs in range(int(round(sig_t_fs_min-4)), int(round(sig_t_fs_min+4))):
+    sig_t_fs_range2 = list(range(int(round(sig_t_fs_min-4)), int(round(sig_t_fs_min+4))))
+    for sig_t_fs in sig_t_fs_range2:
         opt_func(sig_t_fs, False, profile_cutoff, screen_cutoff, smoothen)
 
     opt_func_values = np.array(opt_func_values)
@@ -272,12 +291,23 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     # Using best gaussian recon for final step
     baf_dict_final = tracker.back_and_forward(meas_screen, meas_screen0, best_profile, gaps, beam_offsets, n_streaker, output='Full', forward_method=forward_method)
     screen_final = baf_dict_final['screen']
-    screen_final.shift()
+    #screen_final.shift()
     screen_final.cutoff(screen_cutoff)
     screen_final.normalize()
     profile_final = baf_dict_final['beam_profile']
     sp_screen3.plot(screen_final.x*1e3, screen_final.intensity, label=label)
     sp_profile3.plot((profile_final.time-profile_final.gaussfit.mean)*1e15, profile_final.current/profile_final.integral, label=label)
+
+
+    # Module code
+    if show_module:
+        sig_t_range = np.array(sig_t_fs_range2)*1e-15
+        module_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, meas_screen, meas_screen0, gaps, beam_offsets, n_streaker, charge, self_consistent=True)
+        profile_module = module_dict['reconstructed_profile']
+        screen_module = module_dict['reconstructed_screen']
+        sp_screen4.plot(screen_module.x*1e3, screen_module.intensity, label=label)
+        sp_profile4.plot((profile_module.time-profile_module.gaussfit.mean)*1e15, profile_module.current/profile_final.integral, label=label)
+
 
     # Using real wake profile
     baf = tracker.back_and_forward(meas_screen, meas_screen0, profile_meas, gaps, beam_offsets, n_streaker, output='Full', forward_method=forward_method)
@@ -290,7 +320,6 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     screen_shift.cutoff(screen_cutoff)
     screen_shift.normalize()
 
-    meas_screen_shift = get_meas_screen_shift(screen_cutoff, smoothen)
     sp_profile2.plot(profile_real.time*1e15, profile_real.current/profile_real.integral, label=label)
 
     sp_screen2.plot(screen_shift.x*1e3, screen_shift.intensity/screen_shift.integral, label=label)
@@ -307,8 +336,8 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     sp_ctr += 1
     #sp_b = subplot(3, title='Back agaun')
     r12 = tracker.calcR12()[0]
-    for profile, label in [(best_profile, 'Reconstructed'), (profile_final, 'Final self-consistent'), (profile_meas, 'Measured')]:
-        profile.shift()
+    for profile, label in [(best_profile, 'Gaussian'), (profile_final, 'Final self-consistent'), (profile_meas, 'Measured')]:
+        #profile.shift()
         track_dict = forward_fun(profile, gaps, beam_offsets)
         screen_forward = track_dict['screen']
         #screen.cutoff(0.05)
@@ -316,10 +345,6 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, r12)
         bp_back = tracker.track_backward(screen, meas_screen0, wake_effect)
-        #bp_back.find_agreement(profile_meas)
-        profile2 = copy.deepcopy(profile_meas)
-        profile2.find_agreement(profile_meas)
-        #bp_back.shift()
 
         color = sp_p.plot((profile.time-profile.gaussfit.mean)*1e15, profile.current/profile.integral, label=label+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
         sp_p.plot((bp_back.time-bp_back.gaussfit.mean)*1e15, bp_back.current/bp_back.integral, ls='--', label=label+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))
@@ -327,9 +352,13 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     sp_p.legend()
     sp_s.legend()
 
-for sp_ in sp_profile, sp_opt, sp_profile2, sp_profile3, sp_screen, sp_screen2, sp_screen3:
-    sp_.legend(title='Back / screen / smoothen')
+for sp_ in sp_profile, sp_opt, sp_profile2, sp_profile3, sp_profile4, sp_screen, sp_screen2, sp_screen3, sp_screen4:
+    if sp_ is None:
+        continue
+    pass
+    #sp_.legend(title='Back / screen / smoothen')
 
+ms.saveall('./group_metting_2020-11-17/opt_gauss', hspace=0.4, vspace=0.3)
 
 plt.show()
 

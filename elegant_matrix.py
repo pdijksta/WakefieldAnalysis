@@ -98,8 +98,9 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
     sim = ElegantSimulation(new_ele_file, del_sim=del_sim)
     return cmd, sim
 
-@functools.lru_cache(5)
+@functools.lru_cache(50)
 def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_duration, n_particles):
+    print('Gen beam  called')
     macro_dict = {
             '_nemitx_': nemitx,
             '_nemity_': nemity,

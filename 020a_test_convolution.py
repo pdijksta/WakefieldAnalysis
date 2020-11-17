@@ -41,21 +41,14 @@ convolved_xx = np.arange(0, len(convoluted_screen)*diff, diff) - len(cut_gauss)/
 
 zero_arr = np.zeros([len(cut_gauss)//2])
 intensity_padded = np.concatenate([zero_arr, screen_meas.intensity, zero_arr[:-1]])
-#deconvolved, remainder = deconvolve(intensity_padded, cut_gauss)
+deconvolved, remainder = deconvolve(intensity_padded, cut_gauss)
 
 
 #random_distortion = np.random.randn(len(convoluted_screen))*0.01*convoluted_screen.max()
 #random_distortion = 0
-deconvolved, remainder = deconvolve(intensity_padded, cut_gauss)
+#deconvolved, remainder = deconvolve(intensity_padded, cut_gauss)
 
 screen_decon = tracking.ScreenDistribution(screen_meas.x, deconvolved)
-screen_decon.smoothen(54e-6)
-
-
-
-
-
-
 
 ms.figure('Screens')
 
@@ -75,13 +68,4 @@ sp0.legend()
 
 
 plt.show()
-
-
-
-
-
-
-
-
-
 

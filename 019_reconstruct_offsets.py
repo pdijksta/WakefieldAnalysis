@@ -41,7 +41,7 @@ else:
     bl_meas_file = '/sf/data/measurements/2020/02/03/Bunch_length_meas_2020-02-03_15-59-13.h5'
 
 
-tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, n_particles=n_particles, screen_cutoff=screen_cutoff, screen_bins=screen_bins, smoothen=smoothen, profile_cutoff=profile_cutoff, len_screen=len_profile)
+tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, screen_bins=screen_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff, len_screen=len_profile)
 energy_eV = tracker.energy_eV
 
 profile_meas = tracking.profile_from_blmeas(bl_meas_file, tt_halfrange, charge, energy_eV, subtract_min=False)
@@ -121,7 +121,7 @@ for n_oe, offset_error_s1 in enumerate(offset_errors_s1):
         #final_profile_list.append(bp)
 
 
-        final_baf = tracker.back_and_forward(meas_screen, meas_screen0, reconstructed_profile, gaps, beam_offsets, n_streaker, output='Full')
+        final_baf = tracker.back_and_forward(meas_screen, reconstructed_profile, gaps, beam_offsets, n_streaker)
         final_bp = final_baf['beam_profile']
         final_screen = final_baf['screen']
         final_screen.normalize()
@@ -161,7 +161,7 @@ for sp, xlim, ylim in zip(sp_screen_dict.values(), [2, 3, 2], [3e3, 1.5e3, 4e3])
     sp.set_ylim(0, ylim)
     sp.legend()
 
-ms.saveall('./group_metting_2020-11-17/offset_scan')
+#ms.saveall('./group_metting_2020-11-17/offset_scan')
 
 plt.show()
 

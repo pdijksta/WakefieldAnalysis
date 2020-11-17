@@ -128,12 +128,12 @@ def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
     sig_t = sig_t_fs/1e15
 
     bp_wake = tracking.get_gaussian_profile(sig_t, tt_halfrange, len_profile, charge, tracker.energy_eV)
-    baf = tracker.back_and_forward(meas_screen, meas_screen0, bp_wake, gaps, beam_offsets, n_streaker, output='Full')
+    baf = tracker.back_and_forward(meas_screen, bp_wake, gaps, beam_offsets, n_streaker)
 
     self_consistent=True
     if self_consistent:
 
-        baf_self = tracker.back_and_forward(meas_screen, meas_screen0, baf['beam_profile'], gaps, beam_offsets, n_streaker, output='Full')
+        baf_self = tracker.back_and_forward(meas_screen, baf['beam_profile'], gaps, beam_offsets, n_streaker)
         screen_self = baf_self['screen']
 
     else:
@@ -285,18 +285,18 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     best_screen = opt_func_screens[best_index]
     best_profile = opt_func_profiles[best_index]
 
-    sp_profile.plot(best_profile.time*1e15, best_profile.current/best_profile.integral, label=label)
+    sp_profile.plot(best_profile.time*1e15, best_profile.current/best_profile.integral, label=label+' %i' % (best_profile.gaussfit.sigma*1e15))
     sp_opt.scatter(opt_func_values[:,0], opt_func_values[:,1], label=label)
 
     # Using best gaussian recon for final step
-    baf_dict_final = tracker.back_and_forward(meas_screen, meas_screen0, best_profile, gaps, beam_offsets, n_streaker, output='Full', forward_method=forward_method)
+    baf_dict_final = tracker.back_and_forward(meas_screen, best_profile, gaps, beam_offsets, n_streaker, forward_method=forward_method)
     screen_final = baf_dict_final['screen']
     #screen_final.shift()
     screen_final.cutoff(screen_cutoff)
     screen_final.normalize()
     profile_final = baf_dict_final['beam_profile']
     sp_screen3.plot(screen_final.x*1e3, screen_final.intensity, label=label)
-    sp_profile3.plot((profile_final.time-profile_final.gaussfit.mean)*1e15, profile_final.current/profile_final.integral, label=label)
+    sp_profile3.plot((profile_final.time-profile_final.gaussfit.mean)*1e15, profile_final.current/profile_final.integral, label=label+' %i' % (profile_final.gaussfit.sigma*1e15))
 
 
     # Module code
@@ -306,11 +306,11 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
         profile_module = module_dict['reconstructed_profile']
         screen_module = module_dict['reconstructed_screen']
         sp_screen4.plot(screen_module.x*1e3, screen_module.intensity, label=label)
-        sp_profile4.plot((profile_module.time-profile_module.gaussfit.mean)*1e15, profile_module.current/profile_final.integral, label=label)
+        sp_profile4.plot((profile_module.time-profile_module.gaussfit.mean)*1e15, profile_module.current/profile_final.integral, label=label+' %i' % (profile_module.gaussfit.sigma*1e15))
 
 
     # Using real wake profile
-    baf = tracker.back_and_forward(meas_screen, meas_screen0, profile_meas, gaps, beam_offsets, n_streaker, output='Full', forward_method=forward_method)
+    baf = tracker.back_and_forward(meas_screen, profile_meas, gaps, beam_offsets, n_streaker, forward_method=forward_method)
     profile_real = baf['beam_profile']
     screen_recon = baf['screen']
     #screen_max_x = screen_recon.x[np.argmax(screen_recon.intensity)]
@@ -320,7 +320,7 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
     screen_shift.cutoff(screen_cutoff)
     screen_shift.normalize()
 
-    sp_profile2.plot(profile_real.time*1e15, profile_real.current/profile_real.integral, label=label)
+    sp_profile2.plot(profile_real.time*1e15, profile_real.current/profile_real.integral, label=label+' %i' % (profile_real.gaussfit.sigma*1e15))
 
     sp_screen2.plot(screen_shift.x*1e3, screen_shift.intensity/screen_shift.integral, label=label)
     sp_screen.plot(best_screen.x*1e3, best_screen.intensity/best_screen.integral, label=label)
@@ -344,7 +344,7 @@ for n_loop, (profile_cutoff, screen_cutoff, smoothen) in enumerate(itertools.pro
 
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, r12)
-        bp_back = tracker.track_backward(screen, meas_screen0, wake_effect)
+        bp_back = tracker.track_backward(screen, wake_effect)
 
         color = sp_p.plot((profile.time-profile.gaussfit.mean)*1e15, profile.current/profile.integral, label=label+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
         sp_p.plot((bp_back.time-bp_back.gaussfit.mean)*1e15, bp_back.current/bp_back.integral, ls='--', label=label+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))
@@ -356,9 +356,9 @@ for sp_ in sp_profile, sp_opt, sp_profile2, sp_profile3, sp_profile4, sp_screen,
     if sp_ is None:
         continue
     pass
-    #sp_.legend(title='Back / screen / smoothen')
+    sp_.legend(title='Back / screen / smoothen')
 
-ms.saveall('./group_metting_2020-11-17/opt_gauss', hspace=0.4, vspace=0.3)
+#ms.saveall('./group_metting_2020-11-17/opt_gauss', hspace=0.4, vspace=0.3)
 
 plt.show()
 

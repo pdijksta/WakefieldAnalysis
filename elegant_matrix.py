@@ -271,6 +271,7 @@ class simulator:
         alpha_y = 1.781136
 
         watcher0, sim0 = gen_beam(n_emittances[0], n_emittances[1], alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
+        #import pdb; pdb.set_trace()
 
         new_watcher_dict = {'t': interp_tt}
         for key in ('p', 'x', 'y', 'xp', 'yp'):

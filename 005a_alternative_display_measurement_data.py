@@ -157,7 +157,7 @@ for n_streaker, gap_file in [
 
 
 
-ms.saveall('~/Dropbox/plots/005a_alternate', ending='.pdf', bottom=0.15, wspace=0.3)
+#ms.saveall('~/Dropbox/plots/005a_alternate', ending='.pdf', bottom=0.15, wspace=0.3)
 
 plt.show()
 

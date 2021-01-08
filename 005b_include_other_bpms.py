@@ -11,13 +11,15 @@ import data_loader
 import elegant_matrix
 import wf_model
 
-#data_dir = '/storage/data_2020-02-03/'
-data_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03/'
+data_dir = '/storage/data_2020-02-03/'
+#data_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/data_2020-02-03/'
 reverse_current_profile = True
 linear_fit_details = True
 quadratic_fit_details = True
 
-simulator = elegant_matrix.get_simulator(file_json='/afs/psi.ch/intranet//SF/Beamdynamics/Philipp/data/archiver_api_data/2020-02-03.json11')
+archiver_dir = '/storage/Philipp_data_folder/archiver_api_data/'
+
+simulator = elegant_matrix.get_simulator(archiver_dir+'2020-02-03.json11')
 
 plt.close('all')
 
@@ -155,7 +157,7 @@ for n_streaker, gap_file in [
             date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
             timestamp = int(date.strftime('%s'))
 
-            mat_dict = simulator.get_elegant_matrix(n_streaker-1, timestamp, print_=True)
+            mat_dict = simulator.get_elegant_matrix(n_streaker-1, timestamp, print_=True)[0]
             mat = mat_dict[bpm.replace('-','.')]
             r12 = mat[0,1]
 

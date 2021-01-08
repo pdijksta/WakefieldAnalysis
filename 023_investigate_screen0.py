@@ -55,6 +55,7 @@ screen0 = fdict0['screen']
 screen1 = fdict1['screen']
 
 
+ms.figure('Investigate screen')
 subplot = ms.subplot_factory(2,2)
 sp_ctr = 1
 
@@ -72,7 +73,6 @@ screen1.plot_standard(sp, label='Matrix')
 
 sp.legend()
 
-ms.figure('Investigate screen')
 
 plt.show()
 

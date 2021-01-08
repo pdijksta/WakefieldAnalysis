@@ -1,3 +1,9 @@
+
+"""
+Issues:
+    - self_consistent = True does not work
+"""
+
 #import itertools
 from collections import OrderedDict
 import copy; copy
@@ -24,7 +30,7 @@ sig_t = 40e-15 # for Gaussian beam
 tt_halfrange = 200e-15
 charge = 200e-12
 timestamp = elegant_matrix.get_timestamp(2020, 7, 26, 17, 49, 0)
-screen_cutoff = 0.02
+screen_cutoff = 0.00
 profile_cutoff = 0
 len_profile = 1e3
 struct_lengths = [1., 1.]
@@ -32,6 +38,11 @@ screen_bins = 400
 smoothen = 0e-6
 n_emittances = (300e-9, 300e-9)
 n_particles = int(100e3)
+self_consistent = True
+
+
+offset_errors_s1 = (np.arange(-20, 20.01, 5)+0)*1e-6
+total_diff_list = []
 
 if hostname == 'desktop':
     magnet_file = '/storage/Philipp_data_folder/archiver_api_data/2020-07-26.h5'
@@ -51,13 +62,15 @@ meas_screen_dict = {}
 
 ms.figure('Compare offset errors')
 sp_ctr = 1
-subplot = ms.subplot_factory(2,2)
+subplot = ms.subplot_factory(2,3)
 
 sp_profile0 = subplot(sp_ctr, title='Beam profiles', xlabel='t [fs]', ylabel='Current (arb. units)')
 sp_ctr += 1
+
 sp_profile0.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real / %i' % (profile_meas.gaussfit.sigma*1e15), color='black', lw=3)
 
-offset_errors_s1 = (np.arange(-20, 20.01, 10)+0)*1e-6
+sp_error = subplot(sp_ctr, title='Screen errors', xlabel='Offset error [$\mu$m]', ylabel='Difference at screen (arb. units)')
+sp_ctr += 1
 
 
 sp_screen_dict = OrderedDict()
@@ -92,34 +105,30 @@ for n_oe, offset_error_s1 in enumerate(offset_errors_s1):
     for n_bo, beam_offsets0 in enumerate(beam_offset_list):
 
         beam_offsets = np.array(beam_offsets0) + np.array(offset_error)
-        f_dict_meas = tracker.matrix_forward(profile_meas, gaps, beam_offsets0)
-        meas_screen = f_dict_meas['screen']
-        meas_screen.normalize()
-        meas_screen_dict[n_bo] = meas_screen
+
+        if n_oe == 0:
+            f_dict_meas = tracker.matrix_forward(profile_meas, gaps, beam_offsets0)
+            meas_screen = f_dict_meas['screen']
+            meas_screen.normalize()
+            meas_screen_dict[n_bo] = meas_screen
+        else:
+            meas_screen = meas_screen_dict[n_bo]
+
         if n_oe == 0:
             sp_screen_dict[n_bo].plot(meas_screen.x*1e3, meas_screen.intensity/meas_screen.integral, color='Black', label='Measured')
-
-
 
         label = '%.2f' % (beam_offsets[0]*1e3)
         color = sp_screen.plot(meas_screen.x*1e3, meas_screen.intensity, label=label)[0].get_color()
 
         sig_t_range = np.arange(20, 60.01, 5)*1e-15
-        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, meas_screen, meas_screen0, gaps, beam_offsets, n_streaker, charge, self_consistent=False)
+        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=self_consistent)
         sig_t_range2 = np.arange(-3, 3, 1)*1e-15 + gauss_dict['gauss_sigma']
-        gauss_dict2 = tracker.find_best_gauss(sig_t_range2, tt_halfrange, meas_screen, meas_screen0, gaps, beam_offsets, n_streaker, charge, self_consistent=False)
+        gauss_dict2 = tracker.find_best_gauss(sig_t_range2, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=self_consistent)
 
         reconstructed_screen = gauss_dict2['reconstructed_screen']
         reconstructed_screen.normalize()
-        #sp_screen.plot(reconstructed_screen.x*1e3, reconstructed_screen.intensity, ls='-.', color=color)
 
         reconstructed_profile = gauss_dict2['reconstructed_profile']
-
-
-        #bp = copy.deepcopy(reconstructed_profile)
-        #sp_profile.plot(bp.time*1e15, bp.current/bp.integral, label=label, color=color)
-        #final_profile_list.append(bp)
-
 
         final_baf = tracker.back_and_forward(meas_screen, reconstructed_profile, gaps, beam_offsets, n_streaker)
         final_bp = final_baf['beam_profile']
@@ -127,25 +136,35 @@ for n_oe, offset_error_s1 in enumerate(offset_errors_s1):
         final_screen.normalize()
         final_profile_list.append(final_bp)
         final_bp.center()
-        #final_bp.shift(profile_meas._xx[np.argmax(profile_meas._yy)])
+
         sp_profile.plot(final_bp.time*1e15, final_bp.current/final_bp.integral, color=color)
-        sp_screen.plot(final_screen.x*1e3, final_screen.intensity, color=color, ls='--')
+
+        label2 = 'Reconstructed' if n_bo == 0 else None
+        sp_screen.plot(final_screen.x*1e3, final_screen.intensity, color=color, ls='--', label=label2)
 
 
     xx, yy = tracking.get_average_profile(final_profile_list)
     avg_profile = tracking.BeamProfile(xx, yy, tracker.energy_eV, charge)
-    #avg_profile.shift(profile_meas._xx[np.argmax(profile_meas._yy)])
+
     avg_profile.center()
     sp_profile.plot(avg_profile.time*1e15, avg_profile.current/avg_profile.integral, label='Average', color='red')
     sp_profile0.plot(avg_profile.time*1e15, avg_profile.current/avg_profile.integral, label='%i / %i' % (offset_error_s1*1e6, avg_profile.gaussfit.sigma*1e15))
 
+
+    total_diff = 0
     for n_bo, beam_offsets0 in enumerate(beam_offset_list):
 
         beam_offsets = np.array(beam_offsets0) + np.array(offset_error)
         f_avg = tracker.matrix_forward(avg_profile, gaps, beam_offsets)
         screen_avg = f_avg['screen']
+        diff = screen_avg.compare(meas_screen_dict[n_bo])
+        total_diff += diff
 
-        sp_screen_dict[n_bo].plot(screen_avg.x*1e3, screen_avg.intensity, label='%i' % (offset_error_s1*1e6))
+        label_avg = 'From average' if n_bo == 0 else None
+        for sp_, label, ls, color in [(sp_screen_dict[n_bo], '%i' % (offset_error_s1*1e6), None, None), (sp_screen, label_avg, 'dotted', 'black')]:
+            sp_.plot(screen_avg.x*1e3, screen_avg.intensity, label=label, ls=ls, color=color)
+
+    total_diff_list.append(total_diff)
 
     sp_screen.set_xlim(0, 3)
     sp_screen.set_ylim(0, 3e3)
@@ -154,6 +173,8 @@ for n_oe, offset_error_s1 in enumerate(offset_errors_s1):
     sp_screen.legend(title='Beam offset')
 
 sp_profile0.legend(title='Error [$\mu$m] / $\sigma$ [fs]')
+
+sp_error.plot(offset_errors_s1*1e6, total_diff_list, marker='.')
 
 
 for sp, xlim, ylim in zip(sp_screen_dict.values(), [2, 3, 2], [3e3, 1.5e3, 4e3]):

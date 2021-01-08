@@ -42,13 +42,20 @@ class GaussFit:
     @staticmethod
     def fit_func(xx, scale, mean, sig, const):
         #return scale*stats.norm.pdf(xx, mean, sig)
-        return scale*np.exp(-(xx-mean)**2/(2*sig**2))+const
+        if sig != 0:
+            return scale*np.exp(-(xx-mean)**2/(2*sig**2))+const
+        else:
+            return 0
 
     def jacobi(self, xx, scale, mean, sig, const):
         g_minus_const = self.fit_func(xx, scale, mean, sig, 0)
         self.jacobi_arr[:,0] = g_minus_const/scale
-        self.jacobi_arr[:,1] = g_minus_const * (xx-mean)/sig**2
-        self.jacobi_arr[:,2] = g_minus_const * (xx-mean)**2/sig**3
+        if sig != 0:
+            self.jacobi_arr[:,1] = g_minus_const * (xx-mean)/sig**2
+            self.jacobi_arr[:,2] = g_minus_const * (xx-mean)**2/sig**3
+        else:
+            self.jacobi_arr[:,1] = self.jacobi_arr[:,2] = np.inf
+
         return self.jacobi_arr
 
     def plot_data_and_fit(self, sp):

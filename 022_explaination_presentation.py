@@ -28,7 +28,7 @@ screen_cutoff = 0.00
 profile_cutoff = 0
 len_profile = 1e3
 struct_lengths = [1., 1.]
-screen_bins = 100
+screen_bins = 200
 smoothen = 0e-6
 n_emittances = (300e-9, 300e-9)
 n_particles = int(100e3)
@@ -97,31 +97,23 @@ for p_ctr, (p, label) in enumerate([(profile_meas, 'Measured'), (profile_gauss, 
     sp_Wake.plot(wake_effect['t']*1e15, wake_effect['x']*1e3, label=label)
 
     screen = tracker.matrix_forward(p, gaps, beam_offsets)['screen']
-
     sp_screen.plot(screen.x*1e3, screen.intensity/screen.integral, label=label)
 
-
-    bp_recon = tracker.track_backward(meas_screen, screen0, wake_effect)
-
-
+    bp_recon = tracker.track_backward(meas_screen, wake_effect)
     sp_recon.plot(bp_recon.time*1e15, bp_recon.current/bp_recon.integral, label=label + '/ %i' % (bp_recon.gaussfit.sigma*1e15))
 
     if True:
         screen_forward = tracker.matrix_forward(bp_recon, gaps, beam_offsets)['screen']
-
         sp_screen.plot(screen_forward.x*1e3, screen_forward.intensity/screen_forward.integral, label=label+' rec', ls='--')
 
-
 sp_screen.set_ylim(0, 2e3)
-
 
 sp_profile0.legend(title='Duration [fs]')
 sp_screen.legend()
 sp_Wake.legend()
 sp_recon.legend(title='Duration [fs]')
 
-
 ms.saveall('./group_metting_2020-11-17/explain')
 
-
 plt.show()
+

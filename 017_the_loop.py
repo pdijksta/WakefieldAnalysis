@@ -43,12 +43,12 @@ plt.close('all')
 
 
 # files from alex
-
 files_labels = [
         ('SpectrumAnalysis_2020_07_26_17_56_25_401050.h5', 'no streaking'),
         ('SpectrumAnalysis_2020_07_26_17_55_28_676729.h5', '-4.04 mm dump'),
         ('SpectrumAnalysis_2020_07_26_17_46_52_221317.h5', '-4.09 mm dump'),
         ]
+
 energy_eV = 6.14e9
 gap = 10e-3
 fit_order = 4

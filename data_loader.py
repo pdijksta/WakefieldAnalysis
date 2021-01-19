@@ -1,6 +1,7 @@
 import functools
 import json
 import numpy as np
+import h5py
 
 from h5_storage import loadH5Recursive
 
@@ -84,13 +85,14 @@ class DataLoader(dict):
 
 @functools.lru_cache(5)
 def load_blmeas(file_):
-    bl_meas = loadH5Recursive(file_)
-    time_profile1, current1 = bl_meas['Meta_data']['Time axes'][::-1]*1e-15, bl_meas['Meta_data']['Current profile'][::-1]
-    try:
-        time_profile2, current2 = bl_meas['Meta_data']['Time axes 2'][::-1]*1e-15, bl_meas['Meta_data']['Current profile 2'][::-1]
-    except KeyError:
-        time_profile2, current2 = None, None
-    energy_eV = bl_meas['Input']['Energy'].squeeze()*1e6
+    #bl_meas = loadH5Recursive(file_)
+    with h5py.File(file_, 'r') as f:
+        time_profile1, current1 = np.array(f['Meta_data']['Time axes'])[::-1]*1e-15, np.array(f['Meta_data']['Current profile'])[::-1]
+        try:
+            time_profile2, current2 = np.array(f['Meta_data']['Time axes 2'])[::-1]*1e-15, np.array(f['Meta_data']['Current profile 2'])[::-1]
+        except KeyError:
+            time_profile2, current2 = None, None
+        energy_eV = np.array(f['Input']['Energy']).squeeze()*1e6
 
     return {
             'time_profile1': time_profile1,
@@ -98,15 +100,6 @@ def load_blmeas(file_):
             'current1': current1,
             'current2': current2,
             'energy_eV': energy_eV,
-            'all_data': bl_meas
+            #'all_data': bl_meas
             }
-
-
-if __name__ == '__main__':
-    file_ = '/storage/data_2020-02-03/sarun_18_19_quads.csv'
-    dict_ = csv_to_dict(file_)
-    data_loader = DataLoader(file_)
-    file_json = '/storage/data_2020-02-03/2020-02-03.json1'
-    data_loader.add_other_jason(file_json)
-
 

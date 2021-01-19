@@ -101,6 +101,10 @@ class Profile:
         self._xx = self._xx[mask]
         self._yy = self._yy[mask]
 
+    def flipx(self):
+        self._xx = -self._xx[::-1]
+        self._yy = self._yy[::-1]
+
 class ScreenDistribution(Profile):
     def __init__(self, x, intensity, real_x=None):
         self._xx = x
@@ -140,7 +144,6 @@ class BeamProfile(Profile):
         if np.sum(current) <= 0:
             raise ValueError('Sum of current must be larger than 0')
 
-
         self._xx = time
         self._yy = current / current.sum() * charge
         self.energy_eV = energy_eV
@@ -160,6 +163,10 @@ class BeamProfile(Profile):
         super().scale_yy(scale_factor)
 
     def calc_wake(self, gap, beam_offset, struct_length):
+
+        if abs(beam_offset) > gap/2.:
+            raise ValueError('Beam offset is too large!')
+
         if (gap, beam_offset, struct_length) in self.wake_dict:
             return self.wake_dict[(gap, beam_offset, struct_length)]
 
@@ -167,8 +174,6 @@ class BeamProfile(Profile):
         wf_dict = wf_calc.calc_all(gap/2., R12=0., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=True)
 
         self.wake_dict[(gap, beam_offset, struct_length)] = wf_dict
-
-
 
         return wf_dict
 
@@ -203,10 +208,10 @@ class BeamProfile(Profile):
 
 
 
-def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False):
+def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False, zero_crossing=1):
     bl_meas = data_loader.load_blmeas(file_)
-    time_meas0 = bl_meas['time_profile1']
-    current_meas0 = bl_meas['current1']
+    time_meas0 = bl_meas['time_profile%i' % zero_crossing]
+    current_meas0 = bl_meas['current%i' % zero_crossing]
 
     if subtract_min:
         current_meas0 -= current_meas0.min()

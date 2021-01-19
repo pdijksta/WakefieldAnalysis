@@ -34,7 +34,7 @@ mute_elegant = True
 
 def set_tmp_dir(_tmp_dir):
     global tmp_dir
-    tmp_dir = _tmp_dir
+    tmp_dir = os.path.expanduser(_tmp_dir)
 
 def clear_tmp_dir():
     dirs = os.path.listdir(tmp_dir)

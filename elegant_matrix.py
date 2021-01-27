@@ -98,9 +98,9 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
     sim = ElegantSimulation(new_ele_file, del_sim=del_sim)
     return cmd, sim
 
-@functools.lru_cache(50)
+@functools.lru_cache(5)
 def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_duration, n_particles):
-    print('Gen beam  called')
+    print('Gen beam  called with emittances %.1e %.1e' % (nemitx, nemity))
     macro_dict = {
             '_nemitx_': nemitx,
             '_nemity_': nemity,
@@ -135,6 +135,12 @@ def get_magnet_length(mag_name, branch='Aramis'):
 
 
 class simulator:
+
+    beta_x0 = 4.968
+    alpha_x0 = -0.563
+    beta_y0 = 16.807
+    alpha_y0 = 1.782
+
     def __init__(self, file_):
         file_h5, file_json = None, None
         if '.json' in file_:
@@ -236,7 +242,7 @@ class simulator:
                 'mat_dict': mat_dict,
                 }
 
-    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True, wf_files=None, charge=200e-12, n_emittances=(300e-9, 300e-9)):
+    def simulate_streaker(self, current_time, current_profile, timestamp, gaps, beam_offsets, energy_eV, del_sim=True, n_particles=int(20e3), linearize_twf=True, wf_files=None, charge=200e-12, n_emittances=(300e-9, 300e-9), optics0='default'):
         """
         gaps can be 'file', then wf_files must be specified. Else, wf_files is ignored.
         Returns: sim, mat_dict, wf_dicts, disp_dict
@@ -265,10 +271,28 @@ class simulator:
         #    interp = np.interp(randoms, arr_cum, xx[:-1]+np.diff(xx)[0])
         #    new_watcher_dict[key] = interp
 
-        beta_x = 5.067067
-        beta_y = 16.72606
-        alpha_x = -0.5774133
-        alpha_y = 1.781136
+        #from Sven's OpticsServer (new version), 06.04.2020
+        #location: SARUN18.START
+        #&twiss_output
+        #        filename	= %s.twi,
+        #        matched		= 0,
+        #        beta_x = 	4.968
+        #        alpha_x =  -0.563
+        #        beta_y =    16.807
+        #        alpha_y =   1.782
+        #&end
+
+        # Used before:
+        #beta_x = 5.067067
+        #beta_y = 16.72606
+        #alpha_x = -0.5774133
+        #alpha_y = 1.781136
+
+        if optics0 == 'default':
+            beta_x, alpha_x, beta_y, alpha_y = self.beta_x0, self.alpha_x0, self.beta_y0, self.alpha_y0
+        else:
+            beta_x, alpha_x, beta_y, alpha_y = optics0
+
 
         watcher0, sim0 = gen_beam(n_emittances[0], n_emittances[1], alpha_x, beta_x, alpha_y, beta_y, p_central, 20e-6/c, n_particles)
         #import pdb; pdb.set_trace()

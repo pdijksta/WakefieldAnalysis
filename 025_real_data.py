@@ -6,6 +6,7 @@ import numpy as np; np
 import matplotlib.pyplot as plt
 from scipy.constants import c
 
+
 import elegant_matrix
 import tracking
 
@@ -190,9 +191,9 @@ r12 = tracker.calcR12()[n_streaker]
 def get_screen_from_image(image, invert=False):
     projX = np.sum(image, axis=0)
     if invert:
-        screen = tracking.ScreenDistribution(-x_axis[::-1], projX[::-1])
+        screen = tracking.ScreenDistribution((-x_axis[::-1]).copy(), (projX[::-1]).copy())
     else:
-        screen = tracking.ScreenDistribution(x_axis, projX)
+        screen = tracking.ScreenDistribution(x_axis.copy(), projX.copy())
     screen.normalize()
     screen.cutoff(screen_cutoff)
     screen.reshape(len_profile)
@@ -280,3 +281,10 @@ sp_profile_rec.legend()
 
 plt.show()
 
+#import pickle
+#with open('./025.pkl', 'wb') as f:
+#    pickle.dump({
+#        'meas_screen': meas_screen,
+#        'best_profile': best_profile,
+#        'best_screen': best_screen},f)
+#

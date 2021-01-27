@@ -7,6 +7,7 @@ import mat73
 import elegant_matrix
 import tracking
 import gaussfit
+import misc
 
 import myplotstyle as ms
 
@@ -183,6 +184,22 @@ all_means = np.array(all_means)
 sp_all = subplot(sp_ctr, title='All means')
 sp_ctr += 1
 sp_all.hist(all_means*1e6)
+
+
+bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, energy_eV)
+
+screen_sim = tracker.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
+
+emittances_fit = []
+for n_image, image in enumerate(images0):
+    screen_meas = tracking.ScreenDistribution(x_axis, image.T.sum(axis=0))
+    emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0])
+    emittances_fit.append(emittance_fit)
+
+emittances_fit = np.array(emittances_fit)
+mean_emittance = emittances_fit.mean()
+
+
 
 
 

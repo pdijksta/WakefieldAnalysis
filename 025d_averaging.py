@@ -1,4 +1,3 @@
-import re
 import mat73
 import copy; copy
 import socket
@@ -9,6 +8,8 @@ from scipy.constants import c
 import elegant_matrix
 import tracking
 import gaussfit
+import misc
+from misc import re_file, get_timestamp
 
 import myplotstyle as ms
 
@@ -22,14 +23,15 @@ tt_halfrange = 200e-15
 charge = 200e-12
 screen_cutoff = 0.03
 profile_cutoff = 0.00
-len_profile = 5e3
+len_profile = int(5e3)
 struct_lengths = [1., 1.]
 screen_bins = 400
 smoothen = 0e-6
-n_emittances = (1500e-9, 500e-9)
+n_emittances = (2200e-9, 500e-9)
 n_particles = int(100e3)
 n_streaker = 1
 flip_measured = False
+optics0 = [10, 0, 10, 0]
 
 mean_struct2 = 472e-6 # see 026_script
 gap2_correcting_summand = -40e-6
@@ -86,15 +88,6 @@ good_files = [
         'Passive_data_20201004T223859.mat',
         ]
 
-re_file = re.compile('Passive_data_(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2}).mat')
-def get_timestamp(filename):
-    match = re_file.match(filename)
-    args = [int(x) for x in match.groups()]
-    if match is None:
-        print(filename)
-        raise ValueError
-    return elegant_matrix.get_timestamp(*args)
-
 
 def get_file(f):
     day = re_file.match(f).group(3)
@@ -132,6 +125,8 @@ def get_img(i, j):
     return img
 
 
+
+
 sp_ctr = np.inf
 
 offset_arr = dict_['value']*1e-3 - mean_struct2
@@ -166,8 +161,27 @@ for o_index, offset in enumerate(offset_arr):
 
 # Try for largest offset
 timestamp = get_timestamp(file_)
-tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile)
+tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, optics0=optics0)
 r12 = tracker.calcR12()[n_streaker]
+
+bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, energy_eV)
+screen_sim = tracker.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
+
+emittances_fit = []
+for n_image, image in enumerate(dict_['Image'][-1]):
+    screen_meas = tracking.ScreenDistribution(x_axis, image.T.sum(axis=0))
+    emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0])
+    emittances_fit.append(emittance_fit)
+
+emittances_fit = np.array(emittances_fit)
+mean_emittance = emittances_fit.mean()
+
+n_emittances = [mean_emittance, 500e-9]
+tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, optics0=optics0)
+
+
+
+
 
 def get_screen_from_image(image):
     projX = np.sum(image, axis=0)
@@ -208,10 +222,6 @@ sp_ctr = 1
 sp_profile_rec = subplot(sp_ctr, title='Beam profile', xlabel='t [fs]', ylabel='Current (arb. units)')
 sp_ctr += 1
 
-offset_index = 0
-#for offset_index in range(len(dict_['Image'])-1):
-
-
 image0 = dict_['Image'][-1][0].T
 meas_screen0 = get_screen_from_image(image0)
 x0_old = meas_screen0.x[np.argmax(meas_screen0.intensity)]
@@ -229,8 +239,9 @@ for offset_index in range(1):
     distance_um = (gaps[n_streaker]/2. - abs(beam_offsets[n_streaker]))*1e6
 
     meas_screen._xx = meas_screen._xx - x0
+    meas_screen.crop()
 
-    gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge)
+    gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True)
 
     best_screen = gauss_dict['reconstructed_screen']
     best_profile = bp000 = gauss_dict['reconstructed_profile']
@@ -282,21 +293,27 @@ for offset_index in range(1):
 
     profile_meas.plot_standard(sp_profile_rec, label='TDC', color='black', norm=True)
 
-    sp_profile_rec.legend()
 
 
     subplot = ms.subplot_factory(2,2)
     sp_ctr = np.inf
+
+    all_profiles = []
     for n_image in range(len(dict_['Image'][offset_index])):
         image = dict_['Image'][offset_index][n_image].T
         screen = get_screen_from_image(image)
+        screen.crop()
         screen._xx = screen._xx - x0
 
-        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge)
+        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True)
         best_screen = gauss_dict['reconstructed_screen']
+        best_screen.cutoff(1e-3)
+        best_screen.crop()
         best_profile = gauss_dict['reconstructed_profile']
         if n_image == 0:
+            screen00 = screen
             bp00 = best_profile
+            best_screen00 = best_screen
         best_gauss = gauss_dict['best_gauss']
 
         if sp_ctr > 4:
@@ -308,13 +325,35 @@ for offset_index in range(1):
             sp_ctr += 1
             sp_screen = subplot(sp_ctr, title='Screens')
             sp_ctr += 1
-            profile_meas.plot_standard(sp_profile, color='black', label='Measured')
-        color = meas_screen.plot_standard(sp_screen, label=n_image)[0].get_color()
+            profile_meas.plot_standard(sp_profile, color='black', label='Measured', norm=True, center_max=True)
+        color = screen.plot_standard(sp_screen, label=n_image)[0].get_color()
         best_screen.plot_standard(sp_screen, color=color, ls='--')
-        best_profile.plot_standard(sp_profile, label=n_image)
+        best_profile.plot_standard(sp_profile, label=n_image, norm=True, center_max=True)
         sp_profile.legend()
         sp_screen.legend()
 
+        all_profiles.append(best_profile)
+
+    # Averaging the reconstructed profiles
+    all_profiles_time, all_profiles_current = [], []
+    for profile in all_profiles:
+        all_profiles_time.append(profile.time - profile.time[np.argmax(profile.current)])
+    new_time = np.linspace(min(x.min() for x in all_profiles_time), max(x.max() for x in all_profiles_time), len_profile)
+    for profile in all_profiles:
+        all_profiles_current.append(np.interp(new_time, profile.time, profile.current, left=0, right=0))
+    all_profiles_current = np.array(all_profiles_current)
+    average_profile = tracking.BeamProfile(new_time, np.mean(all_profiles_current, axis=0), energy_eV, charge)
+    average_profile.plot_standard(sp_profile_rec, label='Average', norm=True)
+
+sp_profile_rec.legend()
+
+
+#import pickle
+#with open('./025d.pkl', 'wb') as f:
+#    pickle.dump({
+#        'meas_screen': screen00,
+#        'best_profile': bp00,
+#        'best_screen': best_screen00},f)
 
 
 

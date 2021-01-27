@@ -31,6 +31,11 @@ def get_average_profile(p_list):
 
 class Profile:
 
+    def __init__(self):
+        self._gf = None
+        self._gf_xx = None
+        self._gf_yy = None
+
     def compare(self, other):
         xx_min = min(self._xx.min(), other._xx.min())
         xx_max = max(self._xx.max(), other._xx.max())
@@ -59,12 +64,28 @@ class Profile:
         yy[yy<yy.max()*cutoff_factor] = 0
         self._yy = yy / np.sum(yy) * old_sum
 
+    def crop(self):
+        mask = self._yy != 0
+        xx_nonzero = self._xx[mask]
+        new_x = np.linspace(xx_nonzero.min(), xx_nonzero.max(), len(self._xx))
+        new_y = np.interp(new_x, self._xx, self._yy)
+        self._xx = new_x
+        self._yy = new_y
+
+
     def __len__(self):
         return len(self._xx)
 
     @property
     def gaussfit(self):
-        return GaussFit(self._xx, self._yy)
+        if self._gf is not None and (self._xx.min(), self._xx.max(), self._xx.sum()) == self._gf_xx and (self._yy.min(), self._yy.max(), self._yy.sum()) == self._gf_yy:
+            return self._gf
+
+        self._gf = GaussFit(self._xx, self._yy)
+        self._gf_xx = (self._xx.min(), self._xx.max(), self._xx.sum())
+        self._gf_yy = (self._yy.min(), self._yy.max(), self._yy.sum())
+        return self._gf
+
 
     @property
     def integral(self):
@@ -107,6 +128,7 @@ class Profile:
 
 class ScreenDistribution(Profile):
     def __init__(self, x, intensity, real_x=None):
+        super().__init__()
         self._xx = x
         self._yy = intensity
         self.real_x = real_x
@@ -135,6 +157,7 @@ def getScreenDistributionFromPoints(x_points, screen_bins):
 
 class BeamProfile(Profile):
     def __init__(self, time, current, energy_eV, charge):
+        super().__init__()
 
         if np.any(np.isnan(time)):
             raise ValueError('nans in time')
@@ -199,12 +222,16 @@ class BeamProfile(Profile):
                 }
         return output
 
-    def plot_standard(self, sp, norm=False, **kwargs):
+    def plot_standard(self, sp, norm=False, center_max=False, **kwargs):
         if norm:
             factor = 1/self.integral
         else:
             factor = 1
-        return sp.plot(self.time*1e15, self.current*factor, **kwargs)
+        if center_max:
+            xx = (self.time - self.time[np.argmax(self.current)])*1e15
+        else:
+            xx = self.time*1e15
+        return sp.plot(xx, self.current*factor, **kwargs)
 
 
 
@@ -232,6 +259,7 @@ def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=Fal
     return BeamProfile(tt, cc, energy_eV, charge)
 
 
+@functools.lru_cache(100)
 def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cutoff=1e-3):
     """
     cutoff can be None
@@ -253,7 +281,7 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
 
 
 class Tracker:
-    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file', forward_method='matrix', compensate_negative_screen=True):
+    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default'):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
@@ -269,6 +297,7 @@ class Tracker:
         self.profile_cutoff = profile_cutoff
         self.len_screen = len_screen
         self.compensate_negative_screen = compensate_negative_screen
+        self.optics0 = optics0
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
@@ -310,10 +339,13 @@ class Tracker:
 
         s1 = streaker_matrices['start_to_s1']
 
-        beta_x = 5.067067
-        beta_y = 16.72606
-        alpha_x = -0.5774133
-        alpha_y = 1.781136
+        if self.optics0 == 'default':
+            beta_x = elegant_matrix.simulator.beta_x0
+            beta_y = elegant_matrix.simulator.beta_y0
+            alpha_x = elegant_matrix.simulator.alpha_x0
+            alpha_y = elegant_matrix.simulator.alpha_y0
+        else:
+            beta_x, beta_y, alpha_x, alpha_y = self.optics0
 
         watch, sim = elegant_matrix.gen_beam(*self.n_emittances, alpha_x, beta_x, alpha_y, beta_y, self.energy_eV/511e3, 40e-15, self.n_particles)
 
@@ -344,6 +376,7 @@ class Tracker:
                 delta_xp_list.append(delta_xp)
 
 
+        #print('Starting beamsize %.1e' % beam_before_s1[0,:].std())
         beam_after_s1 = np.copy(beam_before_s1)
         beam_after_s1[1,:] += delta_xp_list[0]
 
@@ -356,12 +389,34 @@ class Tracker:
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
         beam_at_screen[0] -= beam0_at_screen[0].mean()
 
+        if False and not any(beam_offsets):
+            print()
+            for label, beam in [
+                    ('beam_start', beam_start),
+                    ('before_s1', beam_before_s1),
+                    ('after_s1', beam_after_s1),
+                    ('before_s2', beam_before_s2),
+                    ('after_s2', beam_after_s2),
+                    ]:
+                m11 = np.var(beam[0,:])
+                m22 = np.var(beam[1,:])
+                m12 = np.mean((beam[0,:]-beam[0,:].mean()) * (beam[1,:] - beam[1,:].mean()))
+                emitx = np.sqrt(m11*m22-m12**2)
+                betax = m11/emitx
+                alfax = -m12/emitx
+                print(label, emitx, betax, alfax)
+                if np.isnan(emitx):
+                    import pdb; pdb.set_trace()
+            print()
+
+
         screen = getScreenDistributionFromPoints(beam_at_screen[0,:], screen_bins=self.screen_bins)
 
         screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
         screen.reshape(self.len_screen)
         screen.normalize()
+
 
         r12_dict = {}
         for n_streaker in (0, 1):
@@ -371,7 +426,7 @@ class Tracker:
             rr = np.matmul(r1, np.linalg.inv(r0))
             r12_dict[n_streaker] = rr[0,1]
 
-        return {
+        output = {
                 'beam_at_screen': beam_at_screen,
                 'beam0_at_screen': beam0_at_screen,
                 'screen': screen,
@@ -380,6 +435,8 @@ class Tracker:
                 'initial_beam': watch,
                 'wake_dict': wake_dict,
                 }
+
+        return output
 
     def elegant_forward(self, beamProfile, gaps, beam_offsets):
         # Generate wakefield
@@ -396,11 +453,12 @@ class Tracker:
         mask = cc != 0
 
         try:
-            sim, mat_dict, wf_dicts, disp_dict = self.simulator.simulate_streaker(tt[mask], cc[mask], self.timestamp, 'file', None, self.energy_eV, linearize_twf=False, wf_files=filenames, n_particles=self.n_particles, n_emittances=self.n_emittances)
+            sim, mat_dict, wf_dicts, disp_dict = self.simulator.simulate_streaker(tt[mask], cc[mask], self.timestamp, 'file', None, self.energy_eV, linearize_twf=False, wf_files=filenames, n_particles=self.n_particles, n_emittances=self.n_emittances, optics0=self.optics0)
         except Exception as e:
-            print(e)
+            e
             raise
-            import pdb; pdb.set_trace()
+            #print(e)
+            #import pdb; pdb.set_trace()
 
         r12_dict = {}
         for n_streaker in (0, 1):
@@ -534,7 +592,7 @@ class Tracker:
                 'best_profile': profiles[best_index],
                 }
 
-    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True):
+    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=False):
 
         opt_func_values = []
         opt_func_screens = []
@@ -572,13 +630,24 @@ class Tracker:
         best_sig_t = sig_t_range[index_min]
         best_gauss = gauss_profiles[index_min]
 
-        return {
+        # Final step
+        if not self_consistent:
+            baf = self.back_and_forward(meas_screen, best_profile, gaps, beam_offsets, n_streaker)
+            final_screen = baf['screen']
+            final_profile = baf['beam_profile']
+        else:
+            final_screen, final_profile = None, None
+
+        output = {
                'gauss_sigma': best_sig_t,
                'reconstructed_screen': best_screen,
                'reconstructed_profile': best_profile,
                'best_gauss': best_gauss,
-               'best_gauss_wake': gauss_wakes[index_min]
+               'best_gauss_wake': gauss_wakes[index_min],
+               'final_screen': final_screen,
+               'final_profile': final_profile,
                }
+        return output
 
     def scale_existing_profile(self, scale_range, profile, meas_screen, gaps, beam_offsets, n_streaker):
 

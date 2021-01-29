@@ -72,14 +72,15 @@ tt_halfrange = 200e-15
 charge = 200e-12
 screen_cutoff = 0.03
 profile_cutoff = 0.00
-len_profile = int(5e3)
+len_profile = int(2e3)
 struct_lengths = [1., 1.]
 screen_bins = 400
 smoothen = 0e-6
 n_emittances = [500e-9, 500e-9]
 n_particles = int(100e3)
 n_streaker = 1
-flip_measured = False
+flip_measured = True
+self_consistent = True
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 mean_struct2 = 472e-6 # see 026_script
@@ -186,8 +187,8 @@ process_dict = {
         }
 
 for main_label, p_dict in process_dict.items():
-    if main_label != 'Medium':
-        continue
+    #if main_label != 'Medium':
+    #    continue
 
 
 
@@ -256,6 +257,10 @@ for main_label, p_dict in process_dict.items():
     else:
         profile_meas2.flipx()
 
+    profile_meas.cutoff(1e-2)
+    profile_meas2.cutoff(1e-2)
+
+
 
 
 
@@ -265,10 +270,13 @@ for main_label, p_dict in process_dict.items():
         distance_um = distance_um[n_offset]
         beam_offsets = [beam_offsets[0], beam_offsets[1][n_offset]]
 
+    tdc_screen1 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen']
+    tdc_screen2 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen']
+
     plt.figure(fig_paper.number)
     sp_profile_comp = subplot(sp_ctr_paper, title=main_label, xlabel='t [fs]', ylabel='Intensity (arb. units)')
     sp_ctr_paper += 1
-    profile_meas.plot_standard(sp_profile_comp, norm=True, color='black', label='TDC', center_max=True)
+    profile_meas.plot_standard(sp_profile_comp, norm=True, color='black', label='TDC', center='Right')
 
     ny, nx = 2, 4
     subplot = ms.subplot_factory(ny, nx)
@@ -286,7 +294,7 @@ for main_label, p_dict in process_dict.items():
         screen.crop()
         screen._xx = screen._xx - mean0
 
-        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True)
+        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge, self_consistent=self_consistent)
         best_screen = gauss_dict['reconstructed_screen']
         best_screen.cutoff(1e-3)
         best_screen.crop()
@@ -306,11 +314,12 @@ for main_label, p_dict in process_dict.items():
             sp_ctr += 1
             sp_screen = subplot(sp_ctr, title='Screens')
             sp_ctr += 1
-            profile_meas.plot_standard(sp_profile, color='black', label='Measured', norm=True, center_max=True)
+            profile_meas.plot_standard(sp_profile, color='black', label='Measured', norm=True, center='Right')
+            tdc_screen1.plot_standard(sp_screen, color='black')
 
         color = screen.plot_standard(sp_screen, label=n_image)[0].get_color()
         best_screen.plot_standard(sp_screen, color=color, ls='--')
-        best_profile.plot_standard(sp_profile, label=n_image, norm=True, center_max=True)
+        best_profile.plot_standard(sp_profile, label=n_image, norm=True, center='Right')
         sp_profile.legend()
         sp_screen.legend()
 
@@ -319,21 +328,25 @@ for main_label, p_dict in process_dict.items():
     # Averaging the reconstructed profiles
     all_profiles_time, all_profiles_current = [], []
     for profile in all_profiles:
-        all_profiles_time.append(profile.time - profile.time[np.argmax(profile.current)])
+        profile.shift('Right')
+        #all_profiles_time.append(profile.time - profile.time[np.argmax(profile.current)])
+        all_profiles_time.append(profile.time)
     new_time = np.linspace(min(x.min() for x in all_profiles_time), max(x.max() for x in all_profiles_time), len_profile)
     for tt, profile in zip(all_profiles_time, all_profiles):
-        all_profiles_current.append(np.interp(new_time, tt, profile.current, left=0, right=0))
+        new_current = np.interp(new_time, tt, profile.current, left=0, right=0)
+        new_current *= charge/new_current.sum()
+        all_profiles_current.append(new_current)
     all_profiles_current = np.array(all_profiles_current)
     mean_profile = np.mean(all_profiles_current, axis=0)
     std_profile = np.std(all_profiles_current, axis=0)
     average_profile = tracking.BeamProfile(new_time, mean_profile, tracker.energy_eV, charge)
-    average_profile.plot_standard(sp_profile_comp, label='Reconstructed', norm=True, center_max=True)
+    average_profile.plot_standard(sp_profile_comp, label='Reconstructed', norm=True, center='Right')
 
 
     ms.figure('Test averaging %s' % main_label)
     sp = plt.subplot(1,1,1)
     for yy in all_profiles_current:
-        sp.plot(new_time, yy, lw=0.5)
+        sp.plot(new_time, yy/np.trapz(yy, new_time), lw=0.5)
 
     to_plot = [
             ('Average', new_time, mean_profile, 'black', 3),
@@ -343,11 +356,13 @@ for main_label, p_dict in process_dict.items():
 
     integral = np.trapz(mean_profile, new_time)
     for pm, ctr, color in [(profile_meas, 1, 'red'), (profile_meas2, 2, 'green')]:
-        factor = integral/np.trapz(pm.current, pm.time)
-        t_meas = pm.time-pm.time[np.argmax(pm.current)]
-        i_meas = pm.current*factor
+        #factor = integral/np.trapz(pm.current, pm.time)
+        #t_meas = pm.time-pm.time[np.argmax(pm.current)]
+        i_meas = np.interp(new_time, pm.time, pm.current)
+        bp = tracking.BeamProfile(new_time, i_meas, energy_eV=tracker.energy_eV, charge=charge)
+        bp.shift('Right')
 
-        to_plot.append(('TDC %i' % ctr, t_meas, i_meas, color, 3))
+        to_plot.append(('TDC %i' % ctr, bp.time, bp.current, color, 3))
 
 
     for label, tt, profile, color, lw in to_plot:
@@ -356,7 +371,8 @@ for main_label, p_dict in process_dict.items():
         if label is None:
             label = ''
         label = (label + ' %i fs' % width_fs).strip()
-        sp.plot(tt, profile, color=color, lw=lw, label=label)
+        factor = np.trapz(profile, tt)
+        sp.plot(tt, profile/factor, color=color, lw=lw, label=label)
 
     sp.legend(title='Gaussian fit $\sigma$')
 

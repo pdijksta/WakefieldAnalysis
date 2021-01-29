@@ -4,9 +4,14 @@ import numpy as np
 import tracking
 import elegant_matrix
 
-def find_rising_flank(arr):
+def find_rising_flank(arr, method='Size'):
+    """
+    Method can be 'Length' or 'Size'
+    """
+    arr = arr.copy()
+    #arr[arr<arr.max()*0.01] = 0
     prev_val = -np.inf
-    start_index = 0
+    start_index = None
     len_ctr = 0
     pairs = []
     for index, val in enumerate(arr):
@@ -14,25 +19,36 @@ def find_rising_flank(arr):
             if start_index is None:
                 start_index = index - 1
                 len_ctr = 1
+                start_val = val
             else:
                 len_ctr += 1
         else:
             if start_index is not None:
-                pairs.append((len_ctr, start_index, index))
+                if method == 'Length':
+                    pairs.append((len_ctr, start_index, index))
+                elif method == 'Size':
+                    pairs.append((prev_val-start_val, start_index, index))
                 start_index = None
+                start_val = None
             len_ctr = 0
         prev_val = val
-    else:
-        import pdb
-        pdb.set_trace()
-        end_longest_streak = sorted(pairs)[0][(-1)]
-        return end_longest_streak
+    #import pdb
+    #pdb.set_trace()
+    end_longest_streak = sorted(pairs)[-1][-1]
+    return end_longest_streak
 
 
-def avergage_BeamProfiles(bp_list):
+def avergage_BeamProfiles(bp_list, align='Max'):
     all_profiles_time, all_profiles_current = [], []
     for profile in bp_list:
-        all_profiles_time.append(profile.time - profile.time[np.argmax(profile.current)])
+        if align == 'Max':
+            center_index = np.argmax(profile.current)
+        elif align == 'Left':
+            center_index = find_rising_flank(profile.current)
+        elif align == 'Right':
+            center_index = len(profile.current) - find_rising_flank(profile.current[::-1])
+
+        all_profiles_time.append(profile.time - profile.time[center_index])
     else:
         new_time = np.linspace(min((x.min() for x in all_profiles_time)), max((x.max() for x in all_profiles_time)), len(bp_list[0]._xx))
         for profile in bp_list:
@@ -62,4 +78,5 @@ def get_timestamp(filename):
         raise ValueError
     args = [int(x) for x in match.groups()]
     return (elegant_matrix.get_timestamp)(*args)
-# okay decompiling misc.cpython-38.pyc
+
+

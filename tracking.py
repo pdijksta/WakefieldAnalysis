@@ -8,6 +8,7 @@ import elegant_matrix
 import data_loader
 from gaussfit import GaussFit
 import wf_model
+import misc
 
 tmp_folder = './'
 
@@ -43,7 +44,8 @@ class Profile:
         yy1 = np.interp(xx, self._xx, self._yy, left=0, right=0)
         yy2 = np.interp(xx, other._xx, other._yy, left=0, right=0)
         diff = (yy1-yy2)**2
-        norm = ((yy1+yy2)/2)**2
+        ## WARNING
+        norm = ((yy1+yy2)/2)**1.5
         norm[norm == 0] = np.inf
         return np.sqrt(np.nanmean(diff/norm))
 
@@ -98,9 +100,9 @@ class Profile:
         new_yy = gaussian_filter1d(self._yy, real_sigma)
         self._yy = new_yy
 
-    def shift(self, where_max=0):
-        max_x = self._xx[np.argmax(self._yy)]
-        self._xx = self._xx - max_x + where_max
+    #def shift(self, where_max=0):
+    #    max_x = self._xx[np.argmax(self._yy)]
+    #    self._xx = self._xx - max_x + where_max
 
     def center(self):
         self._xx = self._xx - self.gaussfit.mean
@@ -222,15 +224,42 @@ class BeamProfile(Profile):
                 }
         return output
 
-    def plot_standard(self, sp, norm=False, center_max=False, **kwargs):
+    def shift(self, center):
+        if center == 'Max':
+            center_index = np.argmax(self.current)
+        elif center == 'Left':
+            center_index = misc.find_rising_flank(self.current)
+        elif center == 'Right':
+            center_index = len(self.current) - misc.find_rising_flank(self.current[::-1])
+
+        self._xx = self._xx - self._xx[center_index]
+
+    def plot_standard(self, sp, norm=False, center=None, center_max=False, **kwargs):
+        """
+        center can be one of 'Max', 'Left', 'Right'
+        """
+
+        # Backward compatibility
+        if center_max:
+            center='Max'
         if norm:
             factor = 1/self.integral
         else:
             factor = 1
-        if center_max:
-            xx = (self.time - self.time[np.argmax(self.current)])*1e15
-        else:
+
+        center_index = None
+        if center == 'Max':
+            center_index = np.argmax(self.current)
+        elif center == 'Left':
+            center_index = misc.find_rising_flank(self.current)
+        elif center == 'Right':
+            center_index = len(self.current) - misc.find_rising_flank(self.current[::-1])
+
+        if center_index is None:
             xx = self.time*1e15
+        else:
+            xx = (self.time - self.time[center_index])*1e15
+
         return sp.plot(xx, self.current*factor, **kwargs)
 
 
@@ -389,7 +418,7 @@ class Tracker:
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
         beam_at_screen[0] -= beam0_at_screen[0].mean()
 
-        if False and not any(beam_offsets):
+        if True and not any(beam_offsets):
             print()
             for label, beam in [
                     ('beam_start', beam_start),

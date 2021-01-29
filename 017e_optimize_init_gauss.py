@@ -1,4 +1,4 @@
-import itertools
+#import itertools
 import copy
 import socket
 import numpy as np; np
@@ -26,20 +26,23 @@ charge = 200e-12
 timestamp = elegant_matrix.get_timestamp(2020, 7, 26, 17, 49, 0)
 screen_cutoff = 0.00
 profile_cutoff = 0.00
-len_profile = 1e3
+len_profile = 6e3
 struct_lengths = [1., 1.]
 screen_bins = 400
 smoothen = 0e-6
-n_emittances = (600e-9, 600e-9)
+n_emittances = (2000e-9, 2000e-9)
 n_particles = int(100e3)
 forward_method = 'matrix'
-show_module = True
+show_module = False
 self_consistent = False
 
 
 if hostname == 'desktop':
     magnet_file = '/storage/Philipp_data_folder/archiver_api_data/2020-07-26.h5'
     bl_meas_file = '/storage/data_2020-02-03/Bunch_length_meas_2020-02-03_15-59-13.h5'
+elif hostname == 'pubuntu':
+    magnet_file = '/home/work/archiver_api_data/2020-07-26.h5'
+    bl_meas_file = '/home/work/data_2020-02-03/Bunch_length_meas_2020-02-03_15-59-13.h5'
 else:
     magnet_file = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/2020-07-26.h5'
     bl_meas_file = '/sf/data/measurements/2020/02/03/Bunch_length_meas_2020-02-03_15-59-13.h5'
@@ -156,10 +159,14 @@ if show_module:
 else:
     sp_screen4 = None
 
+#sp_screen3 = sp_screen4 = None
 
 
 
-for n_loop, (compensate_negative_screen) in enumerate(itertools.product([True, False],)):
+compensate_negative_screen = True
+for n_loop, (n_emittances) in enumerate(([10e-9, 10e-9], [500e-9, 500-9], [2000e-9, 2000e-9])):
+
+    label = '%i' % (n_emittances[0]*1e9)
 
     tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, screen_bins=screen_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff, len_screen=len_profile, forward_method=forward_method, compensate_negative_screen=compensate_negative_screen)
     energy_eV = tracker.energy_eV
@@ -170,6 +177,7 @@ for n_loop, (compensate_negative_screen) in enumerate(itertools.product([True, F
         forward_fun = tracker.elegant_forward
 
     profile_meas = tracking.profile_from_blmeas(bl_meas_file, tt_halfrange, charge, energy_eV, subtract_min=False)
+    profile_meas_sigma = profile_meas.gaussfit.sigma
     print(profile_meas.charge, profile_meas.current.sum())
     profile_meas.cutoff(profile_cutoff)
     profile_meas.reshape(len_profile)
@@ -182,7 +190,7 @@ for n_loop, (compensate_negative_screen) in enumerate(itertools.product([True, F
         for sp_ in sp_profile, sp_profile2, sp_profile3, sp_profile4:
             if sp_ is None:
                 continue
-            sp_.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real', lw=real_lw)
+            sp_.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real %i' % (profile_meas_sigma*1e15), lw=real_lw)
 
         for sp_ in sp_screen, sp_screen2, sp_screen3, sp_screen4:
             if sp_ is None:
@@ -196,7 +204,6 @@ for n_loop, (compensate_negative_screen) in enumerate(itertools.product([True, F
     opt_func_screens = []
     opt_func_profiles = []
 
-    label = '%s' % compensate_negative_screen
 
     sig_t_fs_arr = np.arange(25, 55.01, 5)
     diff_arr = np.array([opt_func(t, False, profile_cutoff, screen_cutoff, smoothen) for t in sig_t_fs_arr])
@@ -290,7 +297,7 @@ for sp_ in sp_profile, sp_opt, sp_profile2, sp_profile3, sp_profile4, sp_screen,
     if sp_ is None:
         continue
 
-    sp_.legend(title='Back / screen / smoothen')
+    sp_.legend(title='Emittance')
 
 #ms.saveall('./group_metting_2020-11-17/opt_gauss', hspace=0.4, vspace=0.3)
 

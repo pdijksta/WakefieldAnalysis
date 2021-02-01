@@ -196,7 +196,7 @@ class BeamProfile(Profile):
             return self.wake_dict[(gap, beam_offset, struct_length)]
 
         wf_calc = wf_model.WakeFieldCalculator((self.time - self.time.min())*c, self.current, self.energy_eV, struct_length)
-        wf_dict = wf_calc.calc_all(gap/2., R12=0., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=True)
+        wf_dict = wf_calc.calc_all(gap/2., R12=0., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=True)
 
         self.wake_dict[(gap, beam_offset, struct_length)] = wf_dict
 
@@ -328,6 +328,8 @@ class Tracker:
         self.compensate_negative_screen = compensate_negative_screen
         self.optics0 = optics0
 
+        self.use_quad = True
+
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
         elif forward_method == 'elegant':
@@ -357,10 +359,11 @@ class Tracker:
         wf_xx = wake_tt*c
         #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
         wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_current, self.energy_eV, Ls=self.struct_lengths[0])
-        wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=False, calc_long_dipole=False)
+        wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=False)
         wake = wf_dict['dipole']['wake_potential']
+        quad = wf_dict['quadrupole']['wake_potential']
 
-        return wake_tt, wake
+        return wake_tt, wake, quad
 
     def matrix_forward(self, beamProfile, gaps, beam_offsets):
         streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
@@ -392,27 +395,35 @@ class Tracker:
         beam_before_s1 = np.matmul(s1, beam_start)
 
         delta_xp_list = []
+        quad_list = []
 
         wake_dict = {}
         for n_streaker, (gap, beam_offset) in enumerate(zip(gaps, beam_offsets)):
             if beam_offset == 0:
                 delta_xp_list.append(0)
+                quad_list.append(0)
             else:
-                wake_tt, wake = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset)
-                wake_dict[n_streaker] = {'wake_t': wake_tt, 'wake': wake}
+                wake_tt, wake, quad = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset)
+                wake_dict[n_streaker] = {'wake_t': wake_tt, 'wake': wake, 'quad': quad}
                 wake_energy = np.interp(beam_before_s1[4,:], wake_tt, wake)
+                quad_energy = np.interp(beam_before_s1[4,:], wake_tt, quad)
                 delta_xp = wake_energy/self.energy_eV
                 delta_xp_list.append(delta_xp)
+                quad_list.append(quad_energy/self.energy_eV)
 
 
         #print('Starting beamsize %.1e' % beam_before_s1[0,:].std())
         beam_after_s1 = np.copy(beam_before_s1)
         beam_after_s1[1,:] += delta_xp_list[0]
+        if self.use_quad:
+            beam_after_s1[1,:] += quad_list[0]*beam_before_s1[0,:]
 
         beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
 
         beam_after_s2 = np.copy(beam_before_s2)
         beam_after_s2[1,:] += delta_xp_list[1]
+        if self.use_quad:
+            beam_after_s2[1,:] += quad_list[1]*beam_before_s2[0,:]
 
         beam_at_screen = np.matmul(streaker_matrices['s2_to_screen'], beam_after_s2)
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
@@ -547,8 +558,10 @@ class Tracker:
             import myplotstyle as ms
             ms.figure()
             sp = plt.subplot(2, 2, 1)
-            sp.plot(wake_time, wake_x, label='Wake')
+            sp.set_title('Wake')
+            sp.plot(wake_time, wake_x)
             sp = plt.subplot(2, 2, 2)
+            sp.set_title('Screen')
             sp.plot(screen.x, screen.intensity)
             plt.show()
             import pdb; pdb.set_trace()

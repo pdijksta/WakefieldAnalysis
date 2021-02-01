@@ -79,4 +79,3 @@ def get_timestamp(filename):
     args = [int(x) for x in match.groups()]
     return (elegant_matrix.get_timestamp)(*args)
 
-

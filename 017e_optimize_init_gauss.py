@@ -49,6 +49,11 @@ else:
 
 opt_ctr = 0
 
+
+ms.figure('Final forward')
+subplot = ms.subplot_factory(2,2)
+sp_ff = subplot(1, title='Final screen forward')
+
 plot_ctr = 5
 ny, nx = 3, 3
 subplot = ms.subplot_factory(ny,nx)
@@ -58,6 +63,9 @@ nfev_ctr = 0
 max_nfev = 15
 
 opt_plot = True
+
+
+
 
 
 def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
@@ -164,11 +172,12 @@ else:
 
 
 compensate_negative_screen = True
-for n_loop, (n_emittances) in enumerate(([10e-9, 10e-9], [500e-9, 500-9], [2000e-9, 2000e-9])):
+n_emittances = [2500e-9, 2500-9]
+for n_loop, (quad_wake) in enumerate([True, False]):
 
-    label = '%i' % (n_emittances[0]*1e9)
+    label = 'quad_wake %s' % quad_wake
 
-    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, screen_bins=screen_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff, len_screen=len_profile, forward_method=forward_method, compensate_negative_screen=compensate_negative_screen)
+    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, screen_bins=screen_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff, len_screen=len_profile, forward_method=forward_method, compensate_negative_screen=compensate_negative_screen, quad_wake=quad_wake)
     energy_eV = tracker.energy_eV
 
     if forward_method == 'matrix':
@@ -184,13 +193,18 @@ for n_loop, (n_emittances) in enumerate(([10e-9, 10e-9], [500e-9, 500-9], [2000e
     print(profile_meas.charge, profile_meas.current.sum())
     fab_dict_real = tracker.forward_and_back(profile_meas, profile_meas, gaps, beam_offsets_true, n_streaker)
     meas_screen = fab_dict_real['track_dict_forward']['screen']
+
+    tracker.quad_wake = quad_wake
+    #print('quad_wake', tracker.quad_wake)
+
     #meas_screen0 = fab_dict_real['track_dict_forward0']['screen']
 
-    if n_loop == 0:
+    #if n_loop == 0:
+    if True:
         for sp_ in sp_profile, sp_profile2, sp_profile3, sp_profile4:
             if sp_ is None:
                 continue
-            sp_.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real %i' % (profile_meas_sigma*1e15), lw=real_lw)
+            sp_.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Real %i %s' % (profile_meas_sigma*1e15, label), lw=real_lw)
 
         for sp_ in sp_screen, sp_screen2, sp_screen3, sp_screen4:
             if sp_ is None:
@@ -269,7 +283,7 @@ for n_loop, (n_emittances) in enumerate(([10e-9, 10e-9], [500e-9, 500-9], [2000e
     ms.figure('Investigation emittance %i' % (n_emittances[0]*1e9))
     sp_ctr = 1
     screen = copy.deepcopy(meas_screen)
-    screen.smoothen(30e-6)
+    #screen.smoothen(30e-6)
     sp_p = subplot(sp_ctr, title='Profiles')
     sp_ctr += 1
     sp_s = subplot(sp_ctr, title='Screens')
@@ -290,8 +304,18 @@ for n_loop, (n_emittances) in enumerate(([10e-9, 10e-9], [500e-9, 500-9], [2000e
         color = sp_p.plot((profile.time-profile.gaussfit.mean)*1e15, profile.current/profile.integral, label=label+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
         sp_p.plot((bp_back.time-bp_back.gaussfit.mean)*1e15, bp_back.current/bp_back.integral, ls='--', label=label+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))
         sp_s.plot(screen_forward.x*1e3, screen_forward.intensity/screen_forward.integral, label=label, color=color)
+
+
+    ff = tracker.matrix_forward(profile_final, gaps, beam_offsets)
+    screen_ff = ff['screen']
+    screen_ff.plot_standard(sp_ff, label='%s' % quad_wake)
+    if n_loop == 0:
+        meas_screen.plot_standard(sp_ff, label='Reference')
+
     sp_p.legend()
     sp_s.legend()
+
+sp_ff.legend()
 
 for sp_ in sp_profile, sp_opt, sp_profile2, sp_profile3, sp_profile4, sp_screen, sp_screen2, sp_screen3, sp_screen4:
     if sp_ is None:

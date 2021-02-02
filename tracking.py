@@ -83,7 +83,7 @@ class Profile:
         if self._gf is not None and (self._xx.min(), self._xx.max(), self._xx.sum()) == self._gf_xx and (self._yy.min(), self._yy.max(), self._yy.sum()) == self._gf_yy:
             return self._gf
 
-        self._gf = GaussFit(self._xx, self._yy)
+        self._gf = GaussFit(self._xx, self._yy, fit_const=False)
         self._gf_xx = (self._xx.min(), self._xx.max(), self._xx.sum())
         self._gf_yy = (self._yy.min(), self._yy.max(), self._yy.sum())
         return self._gf
@@ -216,10 +216,13 @@ class BeamProfile(Profile):
 
     def wake_effect_on_screen(self, wf_dict, r12):
         wake = wf_dict['dipole']['wake_potential']
+        quad = wf_dict['quadrupole']['wake_potential']
         wake_effect = wake/self.energy_eV*r12
+        quad_effect = quad/self.energy_eV*r12
         output = {
                 't': self.time,
                 'x': wake_effect,
+                'quad': quad_effect,
                 'charge': self.charge,
                 }
         return output
@@ -310,7 +313,7 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
 
 
 class Tracker:
-    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default'):
+    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
@@ -327,8 +330,7 @@ class Tracker:
         self.len_screen = len_screen
         self.compensate_negative_screen = compensate_negative_screen
         self.optics0 = optics0
-
-        self.use_quad = True
+        self.quad_wake = quad_wake
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
@@ -415,15 +417,15 @@ class Tracker:
         #print('Starting beamsize %.1e' % beam_before_s1[0,:].std())
         beam_after_s1 = np.copy(beam_before_s1)
         beam_after_s1[1,:] += delta_xp_list[0]
-        if self.use_quad:
-            beam_after_s1[1,:] += quad_list[0]*beam_before_s1[0,:]
+        if self.quad_wake:
+            beam_after_s1[1,:] += quad_list[0]*(beam_before_s1[0,:]-beam_before_s1[0,:].mean())
 
         beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
 
         beam_after_s2 = np.copy(beam_before_s2)
         beam_after_s2[1,:] += delta_xp_list[1]
-        if self.use_quad:
-            beam_after_s2[1,:] += quad_list[1]*beam_before_s2[0,:]
+        if self.quad_wake:
+            beam_after_s2[1,:] += quad_list[1]*(beam_before_s2[0,:]-beam_before_s2[0,:].mean())
 
         beam_at_screen = np.matmul(streaker_matrices['s2_to_screen'], beam_after_s2)
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
@@ -437,17 +439,22 @@ class Tracker:
                     ('after_s1', beam_after_s1),
                     ('before_s2', beam_before_s2),
                     ('after_s2', beam_after_s2),
+                    ('at_screen', beam_at_screen),
                     ]:
-                m11 = np.var(beam[0,:])
-                m22 = np.var(beam[1,:])
-                m12 = np.mean((beam[0,:]-beam[0,:].mean()) * (beam[1,:] - beam[1,:].mean()))
-                emitx = np.sqrt(m11*m22-m12**2)
-                betax = m11/emitx
-                alfax = -m12/emitx
-                print(label, emitx, betax, alfax)
-                if np.isnan(emitx):
-                    import pdb; pdb.set_trace()
-            print()
+
+                for indices, dim in [((0,1), 'X'), ((2,3), 'Y')]:
+                    pos, angle = indices
+                    m11 = np.var(beam[pos,:])
+                    m22 = np.var(beam[angle,:])
+                    m12 = np.mean((beam[pos,:]-beam[pos,:].mean()) * (beam[angle,:] - beam[angle,:].mean()))
+                    emitx = np.sqrt(m11*m22-m12**2)
+                    betax = m11/emitx
+                    alfax = -m12/emitx
+                    beamsize = np.sqrt(emitx*betax)
+                    print(label, beamsize, emitx, betax, alfax, dim)
+                    if np.isnan(emitx):
+                        import pdb; pdb.set_trace()
+                print()
 
 
         screen = getScreenDistributionFromPoints(beam_at_screen[0,:], screen_bins=self.screen_bins)
@@ -526,7 +533,7 @@ class Tracker:
 
         return forward_dict
 
-    def track_backward(self, screen, wake_effect):
+    def track_backward(self, screen, wake_effect, bs_at_streakers=None):
         wake_time = wake_effect['t']
         wake_x = wake_effect['x']
 

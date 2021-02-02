@@ -187,8 +187,8 @@ process_dict = {
         }
 
 for main_label, p_dict in process_dict.items():
-    #if main_label != 'Medium':
-    #    continue
+    if main_label != 'Long':
+        continue
 
 
 
@@ -213,14 +213,31 @@ for main_label, p_dict in process_dict.items():
     bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
     screen_sim = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
     all_emittances = []
+    all_beamsizes = []
     for proj in projx0:
         screen_meas = get_screen_from_proj(proj, x_axis0, invert_x0)
-        emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0])
+        all_beamsizes.append(screen_meas.gaussfit.sigma)
+        emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0], print_=True)
+        print(screen_meas.gaussfit.sigma)
         all_emittances.append(emittance_fit)
 
     new_emittance = np.mean(all_emittances)
     print(main_label, 'Emittance [nm]', new_emittance*1e9)
     n_emittances[0] = new_emittance
+
+    tracker0.n_emittances[0] = new_emittance
+
+    new_screen0 = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
+    ms.figure('Test nat bs')
+    sp = plt.subplot(1,1,1)
+    screen_meas.center()
+    for screen, label in [(new_screen0, 'New'), (screen_meas, 'Meas'), (screen_sim, 'Initial')]:
+        color = screen.plot_standard(sp, label='label')[0].get_color()
+        xx, yy = screen.gaussfit.xx, screen.gaussfit.reconstruction
+        sp.plot(xx*1e3, yy/np.trapz(yy, xx), color=color, ls='--', label='%i' % (screen.gaussfit.sigma*1e6))
+    sp.legend()
+
+    break
 
 
     dict_ = p_dict['main_dict']

@@ -4,11 +4,15 @@ from scipy.optimize import curve_fit
 factor_fwhm = 2*np.sqrt(2*np.log(2))
 
 class GaussFit:
-    def __init__(self, xx, yy, print_=False, raise_=False):
+    def __init__(self, xx, yy, print_=False, raise_=False, fit_const=True):
         #p0 = (1e10, 3.5e-14, 1e-14)
         self.xx = xx
         self.yy = yy
-        self.jacobi_arr = np.ones([len(xx), 4])
+        if fit_const:
+            self.jacobi_arr = np.ones([len(xx), 4])
+        else:
+            self.jacobi_arr = np.ones([len(xx), 3])
+
         const_0 = self.const_0 = min(yy[0], yy[-1])
         scale_0 = self.scale_0 = np.max(yy)-const_0
         mean_0 = self.mean_0 = np.squeeze(xx[np.argmax(yy)])
@@ -23,7 +27,11 @@ class GaussFit:
 
         self.sigma_0 = sigma_0
 
-        p0 = self.p0 = (scale_0, mean_0, sigma_0, const_0)
+
+        if fit_const:
+            p0 = self.p0 = (scale_0, mean_0, sigma_0, const_0)
+        else:
+            p0 = self.p0 = (scale_0, mean_0, sigma_0)
         try:
             self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi)
         except RuntimeError as e:
@@ -33,21 +41,25 @@ class GaussFit:
             print(e)
             print('Fit did not converge. Using p0 instead!')
 
-        self.scale, self.mean, self.sigma, self.const = self.popt
+        if fit_const:
+            self.scale, self.mean, self.sigma, self.const = self.popt
+        else:
+            self.scale, self.mean, self.sigma = self.popt
+            self.const = 0
         self.reconstruction = self.fit_func(xx, *self.popt)
 
         if print_:
             print(p0, '\t\t', self.popt)
 
     @staticmethod
-    def fit_func(xx, scale, mean, sig, const):
+    def fit_func(xx, scale, mean, sig, const=0):
         #return scale*stats.norm.pdf(xx, mean, sig)
         if sig != 0:
             return scale*np.exp(-(xx-mean)**2/(2*sig**2))+const
         else:
             return 0
 
-    def jacobi(self, xx, scale, mean, sig, const):
+    def jacobi(self, xx, scale, mean, sig, const=0):
         g_minus_const = self.fit_func(xx, scale, mean, sig, 0)
         self.jacobi_arr[:,0] = g_minus_const/scale
         if sig != 0:

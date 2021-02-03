@@ -81,6 +81,7 @@ n_particles = int(100e3)
 n_streaker = 1
 flip_measured = True
 self_consistent = True
+quad_wake = True
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 mean_struct2 = 472e-6 # see 026_script
@@ -208,7 +209,7 @@ for main_label, p_dict in process_dict.items():
     mean0 = np.mean(all_mean)
 
     timestamp0 = misc.get_timestamp(os.path.basename(p_dict['filename0']))
-    tracker0 = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp0, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile)
+    tracker0 = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp0, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
 
     bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
     screen_sim = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
@@ -217,7 +218,7 @@ for main_label, p_dict in process_dict.items():
     for proj in projx0:
         screen_meas = get_screen_from_proj(proj, x_axis0, invert_x0)
         all_beamsizes.append(screen_meas.gaussfit.sigma)
-        emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0], print_=True)
+        emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0], print_=False)
         print(screen_meas.gaussfit.sigma)
         all_emittances.append(emittance_fit)
 
@@ -237,7 +238,7 @@ for main_label, p_dict in process_dict.items():
         sp.plot(xx*1e3, yy/np.trapz(yy, xx), color=color, ls='--', label='%i' % (screen.gaussfit.sigma*1e6))
     sp.legend()
 
-    break
+    #break
 
 
     dict_ = p_dict['main_dict']
@@ -261,7 +262,7 @@ for main_label, p_dict in process_dict.items():
 
 
     timestamp  = misc.get_timestamp(os.path.basename(file_))
-    tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile)
+    tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
 
     blmeas = p_dict['blmeas']
     flip_measured = p_dict['flipx']

@@ -172,8 +172,8 @@ else:
 
 
 compensate_negative_screen = True
-n_emittances = [2500e-9, 2500-9]
-for n_loop, (quad_wake) in enumerate([True, False]):
+n_emittances = [2500e-9, 2500e-9]
+for n_loop, (quad_wake) in enumerate([False, True]):
 
     label = 'quad_wake %s' % quad_wake
 
@@ -299,7 +299,7 @@ for n_loop, (quad_wake) in enumerate([True, False]):
 
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, r12)
-        bp_back = tracker.track_backward(screen, wake_effect)
+        bp_back = tracker.track_backward(screen, wake_effect, n_streaker)
 
         color = sp_p.plot((profile.time-profile.gaussfit.mean)*1e15, profile.current/profile.integral, label=label+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
         sp_p.plot((bp_back.time-bp_back.gaussfit.mean)*1e15, bp_back.current/bp_back.integral, ls='--', label=label+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))

@@ -3,7 +3,7 @@ import os
 import numpy as np; np
 import glob; glob
 import matplotlib.pyplot as plt
-from EmittanceTool.h5_storage import loadH5Recursive
+from h5_storage import loadH5Recursive
 
 import myplotstyle as ms
 

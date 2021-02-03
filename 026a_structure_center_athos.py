@@ -1,6 +1,5 @@
 import os
 import glob; glob
-import socket
 import matplotlib.pyplot as plt
 import numpy as np
 #from h5_storage import loadH5Recursive
@@ -10,6 +9,31 @@ from scipy.optimize import curve_fit
 import myplotstyle as ms
 
 
+#################
+#
+#
+#  INPUT
+#
+#
+#################
+
+
+files = ['/sf/data/measurements/2020/10/03/Passive_alignment_20201003T221023.mat',
+ '/sf/data/measurements/2020/10/03/Passive_alignment_20201003T214629.mat',
+ '/sf/data/measurements/2020/10/03/Passive_alignment_20201003T222227.mat']
+
+
+bpms_plot = ['SARUN20-DBPM070:X1-RT',] # 'SARBD02-DBPM010:X1-RT']
+
+
+##################
+#
+#
+# END INPUT
+#
+#
+##################
+
 mean_offset = 0.472
 all_files = False
 fs_title = 17
@@ -17,29 +41,28 @@ fs_label = 15
 
 plt.close('all')
 
-hostname = socket.gethostname()
-
-if hostname == 'desktop':
-    dirname = '/storage/data_2020-10-03/'
-elif hostname == 'pc11292.psi.ch':
-    dirname = '/sf/data/measurements/2020/10/03/'
-elif hostname == 'pubuntu':
-    dirname = '/home/work/data_2020-10-03/'
-
-
-if all_files:
-    files = sorted(glob.glob(dirname+'Passive_alignment*.mat')[2:])
-else:
-    files = [dirname + f for f in [
-            'Passive_alignment_20201003T221023.mat',
-            'Passive_alignment_20201003T214629.mat',
-            'Passive_alignment_20201003T222227.mat',
-            ]]
+#hostname = socket.gethostname()
+#
+#if hostname == 'desktop':
+#    dirname = '/storage/data_2020-10-03/'
+#elif hostname == 'pc11292.psi.ch':
+#    dirname = '/sf/data/measurements/2020/10/03/'
+#elif hostname == 'pubuntu':
+#    dirname = '/home/work/data_2020-10-03/'
+#
+#
+#if all_files:
+#    files = sorted(glob.glob(dirname+'Passive_alignment*.mat')[2:])
+#else:
+#    files = [dirname + f for f in [
+#            'Passive_alignment_20201003T221023.mat',
+#            'Passive_alignment_20201003T214629.mat',
+#            'Passive_alignment_20201003T222227.mat',
+#            ]]
 
 fig0 = ms.figure(title='a', figsize=(12, 12))
 #fig0.subplots_adjust(wspace=0.4)
 subplot = ms.subplot_factory(2,2)
-bpms_plot = ['SARUN20-DBPM070:X1-RT',] # 'SARBD02-DBPM010:X1-RT']
 bpm_sp_dict = {}
 bpm_sp_dict2 = {}
 sp_ctr = 1

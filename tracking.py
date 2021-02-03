@@ -331,6 +331,7 @@ class Tracker:
         self.compensate_negative_screen = compensate_negative_screen
         self.optics0 = optics0
         self.quad_wake = quad_wake
+        self.bs_at_streaker = None
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
@@ -481,6 +482,7 @@ class Tracker:
                 'r12_dict': r12_dict,
                 'initial_beam': watch,
                 'wake_dict': wake_dict,
+                'bs_at_streaker': [beam_before_s1[0,:].std(), beam_before_s2[0,:].std()],
                 }
 
         return output
@@ -533,9 +535,16 @@ class Tracker:
 
         return forward_dict
 
-    def track_backward(self, screen, wake_effect, bs_at_streakers=None):
+    def set_bs_at_streaker(self):
+        test_profile = get_gaussian_profile(40e-15, 200e-15, self.len_screen, 200e-12, self.energy_eV)
+        forward_dict = self.matrix_forward(test_profile, [10e-3, 10e-3], [0, 0])
+        self.bs_at_streaker = forward_dict['bs_at_streaker']
+
+
+    def track_backward(self, screen, wake_effect, n_streaker):
         wake_time = wake_effect['t']
         wake_x = wake_effect['x']
+        q_wake_x = wake_effect['quad']
 
 
         if self.compensate_negative_screen:
@@ -549,24 +558,75 @@ class Tracker:
         else:
             screen_intensity = screen.intensity
 
-        t_interp = np.interp(screen.x, wake_x, wake_time)
-        norm = np.concatenate([np.diff(t_interp), [0]])
-        norm[norm == 0] = np.inf
+        if self.quad_wake:
+            if self.bs_at_streaker is None:
+                self.set_bs_at_streaker()
+            t_interp0 = np.zeros_like(screen.x)
+            randx = np.random.randn(len(screen.x))*self.bs_at_streaker[n_streaker]
+            for n_x, (x, rx) in enumerate(zip(screen.x, randx)):
+                t_interp0[n_x] = np.interp(x, wake_x+rx*q_wake_x, wake_time)
 
-        charge_interp = screen_intensity / norm
-        charge_interp[charge_interp == np.inf] = 0
-        charge_interp[charge_interp == -np.inf] = 0
-        charge_interp[np.isnan(charge_interp)] = 0
+            ti0 = np.array([t_interp0, screen_intensity])
+            ti = ti0[:, ti0[0,:].argsort()]
+            t_interp = ti[0,:]
+            #screen_intensity0 = screen_intensity
+            screen_intensity = ti[1,:]
+            #import pdb; pdb.set_trace()
+
+            charge_interp, hist_edges2 = np.histogram(t_interp, bins=200, weights=screen_intensity, density=True)
+
+            import matplotlib.pyplot as plt
+            plt.figure()
+            #plt.plot(t_interp, charge_interp/np.trapz(charge_interp, t_interp), label='1')
+            plt.plot(hist_edges2[1:], charge_interp, label='2')
+            plt.legend()
+
+            import myplotstyle as ms
+            ms.figure('')
+            sp = plt.subplot(2, 2, 1)
+            sp.set_title('Wake')
+            sp.plot(wake_time, wake_x, label='Dipole')
+            sp.plot(wake_time, q_wake_x*self.bs_at_streaker[n_streaker], label='Quad')
+            sp.legend()
+            sp = plt.subplot(2, 2, 2)
+            sp.set_title('Screen')
+            sp.plot(screen.x, screen.intensity)
+            plt.show()
+
+            plt.show()
+            import pdb; pdb.set_trace()
+
+        else:
+            t_interp = np.interp(screen.x, wake_x, wake_time)
+            norm = np.concatenate([np.diff(t_interp), [np.inf]])
+            norm[norm == 0] = np.inf
+
+            charge_interp = screen_intensity / norm
+            charge_interp[charge_interp == np.inf] = 0
+            charge_interp[charge_interp == -np.inf] = 0
+            charge_interp[np.isnan(charge_interp)] = 0
+            charge_interp2, hist_edges2 = np.histogram(t_interp, bins=200, weights=screen_intensity, density=True)
+
+
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.plot(t_interp, charge_interp/np.trapz(charge_interp, t_interp), label='1')
+            plt.plot(hist_edges2[1:], charge_interp2, label='2')
+            plt.legend()
+            plt.show()
+            import pdb; pdb.set_trace()
 
         try:
-            bp = BeamProfile(t_interp, charge_interp, self.energy_eV, wake_effect['charge'])
+            bp = BeamProfile(t_interp, charge_interp, self.energy_eV, self.charge)
         except ValueError:
             import matplotlib.pyplot as plt
             import myplotstyle as ms
-            ms.figure()
+            ms.figure('')
             sp = plt.subplot(2, 2, 1)
             sp.set_title('Wake')
-            sp.plot(wake_time, wake_x)
+            sp.plot(wake_time, wake_x, label='Dipole')
+            sp.plot(wake_time, q_wake_x*self.bs_at_streaker[n_streaker], label='Quad')
+            sp.legend()
             sp = plt.subplot(2, 2, 2)
             sp.set_title('Screen')
             sp.plot(screen.x, screen.intensity)
@@ -582,7 +642,7 @@ class Tracker:
     def track_backward2(self, screen, profile, gaps, beam_offsets, n_streaker):
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, self.calcR12()[n_streaker])
-        return self.track_backward(screen, wake_effect)
+        return self.track_backward(screen, wake_effect, n_streaker)
 
     def forward_and_back(self, bp_forward, bp_wake, gaps, beam_offsets, n_streaker):
 
@@ -595,7 +655,7 @@ class Tracker:
 
         wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, track_dict_forward0['r12_dict'][n_streaker])
-        bp_back = self.track_backward(track_dict_forward['screen'], wake_effect)
+        bp_back = self.track_backward(track_dict_forward['screen'], wake_effect, n_streaker)
 
         return {
                 'track_dict_forward': track_dict_forward,

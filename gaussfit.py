@@ -13,14 +13,17 @@ class GaussFit:
         else:
             self.jacobi_arr = np.ones([len(xx), 3])
 
-        const_0 = self.const_0 = min(yy[0], yy[-1])
+        if fit_const:
+            const_0 = self.const_0 = min(yy[0], yy[-1])
+        else:
+            const_0 = 0.
         scale_0 = self.scale_0 = np.max(yy)-const_0
         mean_0 = self.mean_0 = np.squeeze(xx[np.argmax(yy)])
 
         # Third instead of half for better stability
         mask_above_half = yy-const_0 > scale_0/2
 
-        if np.sum(mask_above_half) != 0:
+        if np.sum(mask_above_half) > 1:
             sigma_0 = abs(xx[mask_above_half][-1] - xx[mask_above_half][0])/factor_fwhm
         else:
             sigma_0 = 1

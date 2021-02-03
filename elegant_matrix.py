@@ -226,6 +226,7 @@ class simulator:
         return mat_dict, disp_dict
 
     def get_streaker_matrices(self, timestamp, del_sim=True):
+
         mat_dict = self.get_elegant_matrix('NULL', timestamp, del_sim=del_sim)[0]
         s1 = mat_dict['MIDDLE_STREAKER_1']
         s2 = mat_dict['MIDDLE_STREAKER_2']

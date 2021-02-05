@@ -210,10 +210,6 @@ for main_label, use_quad in [('Use quad', True), ('No quad', False)]:
     profile_meas.cutoff(1e-2)
     profile_meas2.cutoff(1e-2)
 
-
-
-
-
     beam_offsets = [0., -(dict_['value']*1e-3 - mean_struct2)]
     distance_um = (gaps[n_streaker]/2. - beam_offsets[n_streaker])*1e6
     if n_offset is not None:
@@ -274,6 +270,7 @@ for main_label, use_quad in [('Use quad', True), ('No quad', False)]:
         sp_screen.legend()
 
         all_profiles.append(best_profile)
+        break
 
     # Averaging the reconstructed profiles
     all_profiles_time, all_profiles_current = [], []

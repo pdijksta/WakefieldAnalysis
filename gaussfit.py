@@ -5,18 +5,16 @@ factor_fwhm = 2*np.sqrt(2*np.log(2))
 
 class GaussFit:
     def __init__(self, xx, yy, print_=False, raise_=False, fit_const=True):
-        #p0 = (1e10, 3.5e-14, 1e-14)
         self.xx = xx
         self.yy = yy
-        if fit_const:
-            self.jacobi_arr = np.ones([len(xx), 4])
-        else:
-            self.jacobi_arr = np.ones([len(xx), 3])
 
         if fit_const:
             const_0 = self.const_0 = min(yy[0], yy[-1])
+            self.jacobi_arr = np.ones([len(xx), 4])
         else:
             const_0 = 0.
+            self.jacobi_arr = np.ones([len(xx), 3])
+
         scale_0 = self.scale_0 = np.max(yy)-const_0
         mean_0 = self.mean_0 = np.squeeze(xx[np.argmax(yy)])
 
@@ -29,7 +27,6 @@ class GaussFit:
             sigma_0 = 1
 
         self.sigma_0 = sigma_0
-
 
         if fit_const:
             p0 = self.p0 = (scale_0, mean_0, sigma_0, const_0)

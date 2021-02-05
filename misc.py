@@ -60,10 +60,11 @@ def avergage_BeamProfiles(bp_list, align='Max'):
             return (average_profile, error_bar)
 
 
-def fit_nat_beamsize(screen_meas, screen_sim, emittance, print_=False):
-    sig_meas = screen_meas.gaussfit.sigma
-    sig_sim = screen_sim.gaussfit.sigma
+def fit_nat_beamsize(screen_meas, screen_sim, emittance, screen_res=0., print_=False):
+    sig_meas = np.sqrt(screen_meas.gaussfit.sigma**2 - screen_res**2)
+    sig_sim = np.sqrt(screen_sim.gaussfit.sigma**2 - screen_res**2)
     emittance_fit = emittance * (sig_meas / sig_sim)**2
+    #import pdb; pdb.set_trace()
     if print_:
         print('Old emittance: %.2e, New emittance: %.2e Old beamsize %.2e New beamsize %.2e' % (emittance, emittance_fit, sig_sim, sig_meas))
     return emittance_fit

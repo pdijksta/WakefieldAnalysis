@@ -50,13 +50,19 @@ class Profile:
         return np.sqrt(np.nanmean(diff/norm))
 
     def reshape(self, new_shape):
-        if new_shape is None:
-            return
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
-        _yy = np.interp(_xx, self._xx, self._yy)
         old_sum = np.sum(self._yy)
+
+        if new_shape >= len(self._xx):
+            _yy = np.interp(_xx, self._xx, self._yy)
+        else:
+            _yy = np.histogram(self._xx, bins=int(new_shape), weights=self._yy)[0]
+            #import pdb; pdb.set_trace()
+
         _yy *= old_sum / _yy.sum()
         self._xx, self._yy = _xx, _yy
+
+
 
     def cutoff(self, cutoff_factor):
         if cutoff_factor == 0 or cutoff_factor is None:
@@ -151,10 +157,17 @@ class ScreenDistribution(Profile):
 
 
 
-def getScreenDistributionFromPoints(x_points, screen_bins):
-    screen_hist, bin_edges0 = np.histogram(x_points, bins=screen_bins, density=True)
+def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
+    if smoothen:
+        rand = np.random.randn(len(x_points))
+        rand[rand>3] = 3
+        rand[rand<-3] = -3
+        x_points2 = x_points + rand*smoothen
+    else:
+        x_points2 = x_points
+    screen_hist, bin_edges0 = np.histogram(x_points2, bins=screen_bins, density=True)
     screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
-    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
+    return ScreenDistribution(screen_xx, screen_hist)
 
 
 class BeamProfile(Profile):
@@ -237,7 +250,7 @@ class BeamProfile(Profile):
 
         self._xx = self._xx - self._xx[center_index]
 
-    def plot_standard(self, sp, norm=False, center=None, center_max=False, **kwargs):
+    def plot_standard(self, sp, norm=True, center=None, center_max=False, **kwargs):
         """
         center can be one of 'Max', 'Left', 'Right'
         """
@@ -368,7 +381,7 @@ class Tracker:
 
         return wake_tt, wake, quad
 
-    def matrix_forward(self, beamProfile, gaps, beam_offsets):
+    def matrix_forward(self, beamProfile, gaps, beam_offsets, debug=False):
         streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
         mat_dict = streaker_matrices['mat_dict']
 
@@ -421,18 +434,21 @@ class Tracker:
         if self.quad_wake:
             beam_after_s1[1,:] += quad_list[0]*(beam_before_s1[0,:]-beam_before_s1[0,:].mean())
 
+
         beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
 
         beam_after_s2 = np.copy(beam_before_s2)
         beam_after_s2[1,:] += delta_xp_list[1]
         if self.quad_wake:
-            beam_after_s2[1,:] += quad_list[1]*(beam_before_s2[0,:]-beam_before_s2[0,:].mean())
+            quad_effect = quad_list[1]*(beam_before_s2[0,:]-beam_before_s2[0,:].mean())
+            beam_after_s2[1,:] += quad_effect
+            #import pdb; pdb.set_trace()
 
         beam_at_screen = np.matmul(streaker_matrices['s2_to_screen'], beam_after_s2)
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
         beam_at_screen[0] -= beam0_at_screen[0].mean()
 
-        if True and not any(beam_offsets):
+        if False and not any(beam_offsets):
             print()
             for label, beam in [
                     ('beam_start', beam_start),
@@ -458,9 +474,9 @@ class Tracker:
                 print()
 
 
-        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], screen_bins=self.screen_bins)
+        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, self.smoothen)
 
-        screen.smoothen(self.smoothen)
+        #screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
         screen.reshape(self.len_screen)
         screen.normalize()
@@ -541,84 +557,55 @@ class Tracker:
         self.bs_at_streaker = forward_dict['bs_at_streaker']
 
 
-    def track_backward(self, screen, wake_effect, n_streaker):
+    def track_backward(self, screen, wake_effect, n_streaker, bs_at_streaker=None):
+        screen = copy.deepcopy(screen)
         wake_time = wake_effect['t']
         wake_x = wake_effect['x']
         q_wake_x = wake_effect['quad']
+        charge = wake_effect['charge']
 
-
-        if self.compensate_negative_screen:
-            mask_negative = screen.x < 0
+        mask_negative = screen.x < 0
+        if self.compensate_negative_screen and np.any(mask_negative):
             x_positive = -screen.x[mask_negative][::-1]
             y_positive = screen.intensity[mask_negative][::-1]
             positive_interp = np.interp(screen.x, x_positive, y_positive, left=0, right=0)
             screen_intensity = screen.intensity + positive_interp
             screen_intensity[mask_negative] = 0
-            #print(screen.intensity.sum(), screen_intensity.sum())
-        else:
-            screen_intensity = screen.intensity
+            screen._yy = screen_intensity
 
         if self.quad_wake:
-            if self.bs_at_streaker is None:
-                self.set_bs_at_streaker()
+            if bs_at_streaker is None:
+                if self.bs_at_streaker is None:
+                    self.set_bs_at_streaker()
+                bs_at_streaker = self.bs_at_streaker[n_streaker]
+
+            screen.reshape(self.n_particles)
+            rand0 = np.random.randn(len(screen.x))
+            rand0[rand0>3] = 3
+            rand0[rand0<-3] = -3
+            randx = rand0*bs_at_streaker
             t_interp0 = np.zeros_like(screen.x)
-            randx = np.random.randn(len(screen.x))*self.bs_at_streaker[n_streaker]
+
             for n_x, (x, rx) in enumerate(zip(screen.x, randx)):
                 t_interp0[n_x] = np.interp(x, wake_x+rx*q_wake_x, wake_time)
 
-            ti0 = np.array([t_interp0, screen_intensity])
-            ti = ti0[:, ti0[0,:].argsort()]
-            t_interp = ti[0,:]
-            #screen_intensity0 = screen_intensity
-            screen_intensity = ti[1,:]
-            #import pdb; pdb.set_trace()
-
-            charge_interp, hist_edges2 = np.histogram(t_interp, bins=200, weights=screen_intensity, density=True)
-
-            import matplotlib.pyplot as plt
-            plt.figure()
-            #plt.plot(t_interp, charge_interp/np.trapz(charge_interp, t_interp), label='1')
-            plt.plot(hist_edges2[1:], charge_interp, label='2')
-            plt.legend()
-
-            import myplotstyle as ms
-            ms.figure('')
-            sp = plt.subplot(2, 2, 1)
-            sp.set_title('Wake')
-            sp.plot(wake_time, wake_x, label='Dipole')
-            sp.plot(wake_time, q_wake_x*self.bs_at_streaker[n_streaker], label='Quad')
-            sp.legend()
-            sp = plt.subplot(2, 2, 2)
-            sp.set_title('Screen')
-            sp.plot(screen.x, screen.intensity)
-            plt.show()
-
-            plt.show()
-            import pdb; pdb.set_trace()
+            charge_interp, hist_edges2 = np.histogram(t_interp0, bins=self.n_particles//100, weights=screen.intensity, density=True)
+            charge_interp[0] = 0
+            charge_interp[-1] = 0
+            t_interp = hist_edges2[1:]
 
         else:
-            t_interp = np.interp(screen.x, wake_x, wake_time)
-            norm = np.concatenate([np.diff(t_interp), [np.inf]])
-            norm[norm == 0] = np.inf
-
-            charge_interp = screen_intensity / norm
-            charge_interp[charge_interp == np.inf] = 0
-            charge_interp[charge_interp == -np.inf] = 0
-            charge_interp[np.isnan(charge_interp)] = 0
-            charge_interp2, hist_edges2 = np.histogram(t_interp, bins=200, weights=screen_intensity, density=True)
-
-
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.plot(t_interp, charge_interp/np.trapz(charge_interp, t_interp), label='1')
-            plt.plot(hist_edges2[1:], charge_interp2, label='2')
-            plt.legend()
-            plt.show()
-            import pdb; pdb.set_trace()
+            screen.reshape(self.n_particles)
+            t_interp0 = np.interp(screen.x, wake_x, wake_time)
+            charge_interp, hist_edges = np.histogram(t_interp0, bins=self.n_particles//100, weights=screen.intensity, density=True)
+            charge_interp[0] = 0
+            charge_interp[-1] = 0
+            t_interp = np.linspace(t_interp0[0], t_interp0[-1], len(charge_interp))
 
         try:
-            bp = BeamProfile(t_interp, charge_interp, self.energy_eV, self.charge)
-        except ValueError:
+            bp = BeamProfile(t_interp, charge_interp, self.energy_eV, charge)
+        except ValueError as e:
+            print(e)
             import matplotlib.pyplot as plt
             import myplotstyle as ms
             ms.figure('')

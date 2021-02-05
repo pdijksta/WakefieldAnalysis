@@ -70,12 +70,12 @@ elegant_matrix.set_tmp_dir('/home/philipp/tmp_elegant/')
 
 tt_halfrange = 200e-15
 charge = 200e-12
-screen_cutoff = 0.03
+screen_cutoff = 0.00
 profile_cutoff = 0.00
 len_profile = int(2e3)
 struct_lengths = [1., 1.]
 screen_bins = 400
-smoothen = 0e-6
+smoothen = 30e-6
 n_emittances = [500e-9, 500e-9]
 n_particles = int(100e3)
 n_streaker = 1
@@ -191,8 +191,6 @@ for main_label, p_dict in process_dict.items():
     if main_label != 'Long':
         continue
 
-
-
     projx0 = p_dict['proj0']
     x_axis0 = p_dict['x_axis0']
     if np.diff(x_axis0)[0] < 0:
@@ -213,12 +211,13 @@ for main_label, p_dict in process_dict.items():
 
     bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
     screen_sim = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
+    #screen_sim.smoothen(25e-6)
     all_emittances = []
     all_beamsizes = []
     for proj in projx0:
         screen_meas = get_screen_from_proj(proj, x_axis0, invert_x0)
         all_beamsizes.append(screen_meas.gaussfit.sigma)
-        emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0], print_=False)
+        emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0], smoothen, print_=True)
         print(screen_meas.gaussfit.sigma)
         all_emittances.append(emittance_fit)
 
@@ -233,12 +232,12 @@ for main_label, p_dict in process_dict.items():
     sp = plt.subplot(1,1,1)
     screen_meas.center()
     for screen, label in [(new_screen0, 'New'), (screen_meas, 'Meas'), (screen_sim, 'Initial')]:
-        color = screen.plot_standard(sp, label='label')[0].get_color()
+        color = screen.plot_standard(sp, label=label)[0].get_color()
         xx, yy = screen.gaussfit.xx, screen.gaussfit.reconstruction
         sp.plot(xx*1e3, yy/np.trapz(yy, xx), color=color, ls='--', label='%i' % (screen.gaussfit.sigma*1e6))
     sp.legend()
 
-    #break
+    break
 
 
     dict_ = p_dict['main_dict']
@@ -289,7 +288,7 @@ for main_label, p_dict in process_dict.items():
         beam_offsets = [beam_offsets[0], beam_offsets[1][n_offset]]
 
     tdc_screen1 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen']
-    tdc_screen2 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen']
+    tdc_screen2 = tracker.matrix_forward(profile_meas2, gaps, beam_offsets)['screen']
 
     plt.figure(fig_paper.number)
     sp_profile_comp = subplot(sp_ctr_paper, title=main_label, xlabel='t [fs]', ylabel='Intensity (arb. units)')

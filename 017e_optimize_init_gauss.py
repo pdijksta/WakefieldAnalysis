@@ -30,8 +30,8 @@ len_profile = 6e3
 struct_lengths = [1., 1.]
 screen_bins = 400
 smoothen = 0e-6
-n_emittances = (2000e-9, 2000e-9)
-n_particles = int(100e3)
+n_emittances = (800e-9, 800e-9)
+n_particles = int(10e3)
 forward_method = 'matrix'
 show_module = False
 self_consistent = False
@@ -63,9 +63,6 @@ nfev_ctr = 0
 max_nfev = 15
 
 opt_plot = True
-
-
-
 
 
 def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
@@ -172,8 +169,7 @@ else:
 
 
 compensate_negative_screen = True
-n_emittances = [2500e-9, 2500e-9]
-for n_loop, (quad_wake) in enumerate([False, True]):
+for n_loop, (quad_wake) in enumerate([True,]):
 
     label = 'quad_wake %s' % quad_wake
 
@@ -219,7 +215,7 @@ for n_loop, (quad_wake) in enumerate([False, True]):
     opt_func_profiles = []
 
 
-    sig_t_fs_arr = np.arange(25, 55.01, 5)
+    sig_t_fs_arr = np.arange(15, 50.01, 5)
     diff_arr = np.array([opt_func(t, False, profile_cutoff, screen_cutoff, smoothen) for t in sig_t_fs_arr])
     index = np.argmin(diff_arr)
     sig_t_fs_min = sig_t_fs_arr[index]
@@ -280,7 +276,7 @@ for n_loop, (quad_wake) in enumerate([False, True]):
     sp_screen2.plot(screen_shift.x*1e3, screen_shift.intensity/screen_shift.integral, label=label)
     sp_screen.plot(best_screen.x*1e3, best_screen.intensity/best_screen.integral, label=label)
 
-    ms.figure('Investigation emittance %i' % (n_emittances[0]*1e9))
+    ms.figure('Investigation %s' % label)
     sp_ctr = 1
     screen = copy.deepcopy(meas_screen)
     #screen.smoothen(30e-6)
@@ -289,7 +285,7 @@ for n_loop, (quad_wake) in enumerate([False, True]):
     sp_s = subplot(sp_ctr, title='Screens')
     sp_s.plot(screen.x*1e3, screen.intensity/screen.integral, color='black', label='Real')
     sp_ctr += 1
-    #sp_b = subplot(3, title='Back agaun')
+    #sp_b = subplot(3, title='Back again')
     r12 = tracker.calcR12()[0]
     for profile, label in [(best_profile, 'Gaussian'), (profile_final, 'Final self-consistent'), (profile_meas, 'Measured')]:
         #profile.shift()

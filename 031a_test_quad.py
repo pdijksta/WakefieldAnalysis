@@ -17,10 +17,10 @@ charge = 200e-12
 energy_eV = 4.5e9
 struct_lengths = [1., 1.]
 n_particles = int(1e5)
-n_emittances = [850e-9, 850e-9]
+n_emittances = [0.01e-9, 850e-9]
 screen_bins = 500
 screen_cutoff = 1e-3
-smoothen = 25e-6
+smoothen = 0e-6
 profile_cutoff = 0
 timestamp = 1601761132
 gaps = [10e-3, 10e-3]
@@ -75,13 +75,14 @@ for bp, bp_label in [(bp_gauss, 'Gauss'), (bp_flat, 'Flat')]:
 
     for main_label, quad_wake in [('Dipole', False), ('+Quad', True)]:
 
-        tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
+        tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=True)
         label = main_label + ' ' + bp_label
         forward_dict = tracker.matrix_forward(bp, gaps, beam_offsets)
         screen = forward_dict['screen']
         #screen.smoothen(15e-6)
         #screen.cutoff(1e-3)
 
+        tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
         if not plot_wake:
             plot_wake = True
             wake_dict = forward_dict['wake_dict'][n_streaker]

@@ -77,16 +77,17 @@ struct_lengths = [1., 1.]
 screen_bins = 400
 smoothen = 30e-6
 n_emittances = [500e-9, 500e-9]
-n_particles = int(100e3)
+n_particles = int(40e3)
 n_streaker = 1
 flip_measured = True
 self_consistent = True
 quad_wake = True
+bp_smoothen = 1e-15
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 mean_struct2 = 472e-6 # see 026_script
 gap2_correcting_summand = -40e-6
-sig_t_range = np.arange(20, 40.01, 2)*1e-15
+sig_t_range = np.arange(20, 40.01, 5)*1e-15
 gaps = [10e-3, 10e-3+gap2_correcting_summand]
 subtract_min = True
 
@@ -237,8 +238,6 @@ for main_label, p_dict in process_dict.items():
         sp.plot(xx*1e3, yy/np.trapz(yy, xx), color=color, ls='--', label='%i' % (screen.gaussfit.sigma*1e6))
     sp.legend()
 
-    break
-
 
     dict_ = p_dict['main_dict']
     file_ = p_dict['filename']
@@ -261,7 +260,7 @@ for main_label, p_dict in process_dict.items():
 
 
     timestamp  = misc.get_timestamp(os.path.basename(file_))
-    tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
+    tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake, bp_smoothen=bp_smoothen)
 
     blmeas = p_dict['blmeas']
     flip_measured = p_dict['flipx']
@@ -306,12 +305,14 @@ for main_label, p_dict in process_dict.items():
     else:
         projections = dict_['projx'][n_offset]
 
-    for n_image in range(len(projections)):
+    #for n_image in range(len(projections)):
+    for n_image in range(10):
         screen = get_screen_from_proj(projections[n_image], x_axis, invert_x)
         screen.crop()
         screen._xx = screen._xx - mean0
 
         gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge, self_consistent=self_consistent)
+        print('Image %i done; best sigma %i fs' % (n_image, gauss_dict['gauss_sigma']*1e15))
         best_screen = gauss_dict['reconstructed_screen']
         best_screen.cutoff(1e-3)
         best_screen.crop()

@@ -1,4 +1,4 @@
-#import itertools
+import itertools
 import copy
 import socket
 import numpy as np; np
@@ -29,12 +29,13 @@ profile_cutoff = 0.00
 len_profile = 6e3
 struct_lengths = [1., 1.]
 screen_bins = 400
-smoothen = 0e-6
+smoothen = 30e-6
 n_emittances = (800e-9, 800e-9)
 n_particles = int(10e3)
 forward_method = 'matrix'
 show_module = False
 self_consistent = False
+bp_smoothen = 2e-15
 
 
 if hostname == 'desktop':
@@ -96,7 +97,7 @@ def opt_func(sig_t_fs, count_nfev, profile_cutoff, screen_cutoff, smoothen):
         if plot_ctr == 5:
             plot_ctr = 0
             if sp_ctr == ny*nx+1:
-                ms.figure('Optimization')
+                ms.figure('Optimization %s' % label)
                 sp_ctr = 1
             sp = subplot(sp_ctr, title='Screen')
             sp_ctr += 1
@@ -169,11 +170,16 @@ else:
 
 
 compensate_negative_screen = True
-for n_loop, (quad_wake) in enumerate([True,]):
+for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product(
+        [True],
+        [20e3],
+        [.5e-15, 1e-15, 2e-15],
+        )):
 
-    label = 'quad_wake %s' % quad_wake
+    label = 'bp_smoothen %.1f' % (bp_smoothen*1e15)
+    n_particles = int(n_particles)
 
-    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, screen_bins=screen_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff, len_screen=len_profile, forward_method=forward_method, compensate_negative_screen=compensate_negative_screen, quad_wake=quad_wake)
+    tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, energy_eV='file', n_emittances=n_emittances, screen_bins=screen_bins, n_particles=n_particles, smoothen=smoothen, profile_cutoff=profile_cutoff, screen_cutoff=screen_cutoff, len_screen=len_profile, forward_method=forward_method, compensate_negative_screen=compensate_negative_screen, quad_wake=quad_wake, bp_smoothen=bp_smoothen)
     energy_eV = tracker.energy_eV
 
     if forward_method == 'matrix':
@@ -215,7 +221,7 @@ for n_loop, (quad_wake) in enumerate([True,]):
     opt_func_profiles = []
 
 
-    sig_t_fs_arr = np.arange(15, 50.01, 5)
+    sig_t_fs_arr = np.arange(40, 60.01, 5)
     diff_arr = np.array([opt_func(t, False, profile_cutoff, screen_cutoff, smoothen) for t in sig_t_fs_arr])
     index = np.argmin(diff_arr)
     sig_t_fs_min = sig_t_fs_arr[index]
@@ -287,7 +293,7 @@ for n_loop, (quad_wake) in enumerate([True,]):
     sp_ctr += 1
     #sp_b = subplot(3, title='Back again')
     r12 = tracker.calcR12()[0]
-    for profile, label in [(best_profile, 'Gaussian'), (profile_final, 'Final self-consistent'), (profile_meas, 'Measured')]:
+    for profile, label2 in [(best_profile, 'Gaussian'), (profile_final, 'Final self-consistent'), (profile_meas, 'Measured')]:
         #profile.shift()
         track_dict = forward_fun(profile, gaps, beam_offsets)
         screen_forward = track_dict['screen']
@@ -297,16 +303,15 @@ for n_loop, (quad_wake) in enumerate([True,]):
         wake_effect = profile.wake_effect_on_screen(wf_dict, r12)
         bp_back = tracker.track_backward(screen, wake_effect, n_streaker)
 
-        color = sp_p.plot((profile.time-profile.gaussfit.mean)*1e15, profile.current/profile.integral, label=label+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
-        sp_p.plot((bp_back.time-bp_back.gaussfit.mean)*1e15, bp_back.current/bp_back.integral, ls='--', label=label+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))
-        sp_s.plot(screen_forward.x*1e3, screen_forward.intensity/screen_forward.integral, label=label, color=color)
+        color = sp_p.plot((profile.time-profile.gaussfit.mean)*1e15, profile.current/profile.integral, label=label2+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
+        sp_p.plot((bp_back.time-bp_back.gaussfit.mean)*1e15, bp_back.current/bp_back.integral, ls='--', label=label2+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))
+        sp_s.plot(screen_forward.x*1e3, screen_forward.intensity/screen_forward.integral, label=label2, color=color)
 
 
     ff = tracker.matrix_forward(profile_final, gaps, beam_offsets)
     screen_ff = ff['screen']
-    screen_ff.plot_standard(sp_ff, label='%s' % quad_wake)
-    if n_loop == 0:
-        meas_screen.plot_standard(sp_ff, label='Reference')
+    meas_screen.plot_standard(sp_ff, label=label+' Ref')
+    screen_ff.plot_standard(sp_ff, label=label)
 
     sp_p.legend()
     sp_s.legend()

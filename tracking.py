@@ -326,7 +326,7 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
 
 
 class Tracker:
-    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True):
+    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
@@ -345,6 +345,7 @@ class Tracker:
         self.optics0 = optics0
         self.quad_wake = quad_wake
         self.bs_at_streaker = None
+        self.bp_smoothen = bp_smoothen
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
@@ -624,6 +625,8 @@ class Tracker:
         bp.reshape(self.len_screen)
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
             raise ValueError('NaNs in beam profile')
+        if self.bp_smoothen:
+            bp.smoothen(self.bp_smoothen)
         return bp
 
     def track_backward2(self, screen, profile, gaps, beam_offsets, n_streaker):

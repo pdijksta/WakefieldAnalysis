@@ -4,16 +4,18 @@ from h5_storage import saveH5Recursive
 
 files1 = [
         #'Passive_data_20201003T231812.mat',
-        'Passive_data_20201003T231958.mat',
-        'Passive_data_20201003T233852.mat',]
+        #'Passive_data_20201003T231958.mat',
+        #'Passive_data_20201003T233852.mat',
+        ]
 
 files2 = [
-        'Passive_data_20201004T161118.mat',
-        'Passive_data_20201004T172425.mat',
-        'Passive_data_20201004T223859.mat',
+        #'Passive_data_20201004T161118.mat',
+        #'Passive_data_20201004T172425.mat',
+        #'Passive_data_20201004T223859.mat',
         #'Passive_data_20201004T163828.mat',
         #'Passive_data_20201004T221502.mat',
         #'Passive_money_20201004T012247.mat',
+        'Passive_data_20201004T163828.mat',
         ]
 
 dirname1 = '/home/work/data_2020-10-03/'
@@ -26,7 +28,11 @@ for dir_, files, in [(dirname1, files1), (dirname2, files2)]:
         inp_dict = mat73.loadmat(dir_+file_)
         print('Image' in inp_dict)
         for key in ['Image', 'knob', 'value', 'x_axis', 'y_axis']:
-            value = inp_dict[key]
+            try:
+                value = inp_dict[key]
+            except KeyError:
+                print('Continue for key %s' % key)
+                continue
             if key == 'Image':
                 outp = []
                 if type(value[0]) is list:
@@ -44,9 +50,9 @@ for dir_, files, in [(dirname1, files1), (dirname2, files2)]:
                 outp_dict[key] = np.array(value)
 
 
-            new_file = dir_+file_+'.h5'
-            saveH5Recursive(new_file, outp_dict)
-            print(new_file)
+        new_file = dir_+file_+'.h5'
+        saveH5Recursive(new_file, outp_dict)
+        print(new_file)
 
 
 

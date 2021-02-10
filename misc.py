@@ -18,10 +18,8 @@ def find_rising_flank(arr, method='Size'):
         if val > prev_val:
             if start_index is None:
                 start_index = index - 1
-                len_ctr = 1
                 start_val = val
-            else:
-                len_ctr += 1
+            len_ctr += 1
         else:
             if start_index is not None:
                 if method == 'Length':

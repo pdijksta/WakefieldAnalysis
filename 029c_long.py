@@ -1,52 +1,3 @@
-#here are the filenames for the figures for the passive, which I hope could/would be used for the paper:
-#
-#
-#1) 38 fs:
-#
-#Passive_data_20201003T233852.mat (October 3, 2020)
-#
-#
-##fileN='Passive_data_20201003T233852.mat' #lasing off/on
-#
-###fileLoff='Passive_data_20201003T231958.mat' - (scan of the offsets)
-#
-#
-#
-#
-#2) 25 fs:
-#
-#Passive_data_20201004T172425.mat (October 4th, 2020)
-#
-#
-#fileN='Passive_data_20201004T172425.mat' #scan different offsets oct04
-#
-##fileN='Passive_data_20201004T163828.mat'
-#
-#
-#
-#3)The tilted beam for shorter pulses (March 1st):
-#
-#https://elog-gfa.psi.ch/SwissFEL+commissioning/13854
-#
-#
-#Look for the datafiles between:
-#
-#21:48 and 22:30
-#
-#
-#Here is the description from the shift summary:
-#
-#    We are imposing tilt in Y with skew quad in BC2 (S10BCO2-MQSK350) {one in BC1 gives similar results} to generate shorter pulses:
-#        we get visible effect: only few slices are lasing   22611
-#        we save data for different tilt strenghts (post-undulator LPS images and spectra)
-#        for best tilt (tilt4) we saved data for different lasing slices by changing correctors: SARUN02-MCRY080, SARUN03-MCRY080 (more effective)
-#
-#
-#
-#Best,
-#
-#Alex.
-
 import os
 #import mat73
 import copy; copy
@@ -81,7 +32,7 @@ n_particles = int(40e3)
 n_streaker = 1
 flip_measured = True
 self_consistent = True
-quad_wake = True
+quad_wake = False
 bp_smoothen = 1e-15
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
@@ -111,8 +62,8 @@ elif hostname == 'pubuntu':
 magnet_file = archiver_dir + 'archiver_api_data/2020-10-03.h5'
 
 blmeas38 = dirname1+'129833611_bunch_length_meas.h5'
-blmeas25 = dirname2 + '129918532_bunch_length_meas.h5'
-blmeas25 = dirname2 + 'Bunch_length_meas_2020-10-04_14-43-30.h5'
+#blmeas25 = dirname2 + '129918532_bunch_length_meas.h5'
+#blmeas25 = dirname2 + 'Bunch_length_meas_2020-10-04_14-43-30.h5'
 
 
 file0 = dirname1 + 'Passive_data_20201003T231958.mat'
@@ -123,20 +74,6 @@ file25 = dirname2 + 'Passive_data_20201004T172425.mat'
 dict38 = loadH5Recursive(file38+'.h5')
 dict25 = loadH5Recursive(file25+'.h5')
 dict0 = loadH5Recursive(file0+'.h5')
-
-#dict0 = mat73.loadmat(file0)
-#dict25 = mat73.loadmat(file25)
-
-#def get_screen_from_image(image):
-#    projX = np.sum(image, axis=0)
-#    if invert_x:
-#        screen = tracking.ScreenDistribution((-x_axis[::-1]).copy(), (projX[::-1]).copy())
-#    else:
-#        screen = tracking.ScreenDistribution(x_axis.copy(), projX.copy())
-#    screen.normalize()
-#    screen.cutoff(screen_cutoff)
-#    screen.reshape(len_profile)
-#    return screen
 
 def get_screen_from_proj(projX, x_axis, invert_x):
     if invert_x:
@@ -152,19 +89,9 @@ def get_screen_from_proj(projX, x_axis, invert_x):
     return screen
 
 
-fig_paper = ms.figure('Comparison plots')
+fig_paper = ms.figure('For paper')
 subplot = ms.subplot_factory(2, 2)
 sp_ctr_paper = 1
-
-#images0 = dict0['projx'][-1]
-#x_axis = dict0['x_axis']*1e-6
-
-#if np.diff(x_axis)[0] < 0:
-#    x_axis = x_axis[::-1]
-#    invert_x = True
-#else:
-#    invert_x = False
-
 
 process_dict = {
         'Long': {
@@ -177,20 +104,20 @@ process_dict = {
             'blmeas': blmeas38,
             'flipx': False,
         },
-        'Medium': {
-            'filename': file25,
-            'main_dict': dict25,
-            'proj0': dict25['projx'][7],
-            'x_axis0': dict25['x_axis']*1e-6,
-            'n_offset': 0,
-            'filename0': file25,
-            'blmeas': blmeas25,
-            'flipx': False,
-            },
+        #'Medium': {
+        #    'filename': file25,
+        #    'main_dict': dict25,
+        #    'proj0': dict25['projx'][7],
+        #    'x_axis0': dict25['x_axis']*1e-6,
+        #    'n_offset': 0,
+        #    'filename0': file25,
+        #    'blmeas': blmeas25,
+        #    'flipx': False,
+        #    },
         }
 
 for main_label, p_dict in process_dict.items():
-    if main_label != 'Medium':
+    if main_label != 'Long':
         continue
 
     projx0 = p_dict['proj0']
@@ -208,7 +135,7 @@ for main_label, p_dict in process_dict.items():
 
     mean0 = np.mean(all_mean)
 
-    if False:
+    if True:
 
         timestamp0 = misc.get_timestamp(os.path.basename(p_dict['filename0']))
         tracker0 = tracking.Tracker(magnet_file, timestamp0, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)

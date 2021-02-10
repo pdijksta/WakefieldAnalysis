@@ -9,6 +9,7 @@ import data_loader
 from gaussfit import GaussFit
 import wf_model
 import misc
+import doublehornfit
 
 tmp_folder = './'
 
@@ -73,12 +74,13 @@ class Profile:
         self._yy = yy / np.sum(yy) * old_sum
 
     def crop(self):
+        old_sum = np.sum(self._yy)
         mask = self._yy != 0
         xx_nonzero = self._xx[mask]
         new_x = np.linspace(xx_nonzero.min(), xx_nonzero.max(), len(self._xx))
         new_y = np.interp(new_x, self._xx, self._yy)
         self._xx = new_x
-        self._yy = new_y
+        self._yy = new_y / new_y.sum() * old_sum
 
 
     def __len__(self):
@@ -247,6 +249,12 @@ class BeamProfile(Profile):
             center_index = misc.find_rising_flank(self.current)
         elif center == 'Right':
             center_index = len(self.current) - misc.find_rising_flank(self.current[::-1])
+        elif center == 'Right_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_right)**2)
+        elif center == 'Left_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_left)**2)
 
         self._xx = self._xx - self._xx[center_index]
 
@@ -302,6 +310,10 @@ def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=Fal
 
         tt, cc = time_meas, current_meas
     return BeamProfile(tt, cc, energy_eV, charge)
+
+def dhf_profile(profile):
+    dhf = doublehornfit.DoublehornFit(profile.time, profile.current)
+    return BeamProfile(dhf.xx, dhf.reconstruction, profile.energy_eV, profile.charge)
 
 
 @functools.lru_cache(100)
@@ -476,6 +488,7 @@ class Tracker:
 
 
         screen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, self.smoothen)
+        screen_no_smoothen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0)
 
         #screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
@@ -495,6 +508,7 @@ class Tracker:
                 'beam_at_screen': beam_at_screen,
                 'beam0_at_screen': beam0_at_screen,
                 'screen': screen,
+                'screen_no_smoothen': screen_no_smoothen,
                 'beam_profile': beamProfile,
                 'r12_dict': r12_dict,
                 'initial_beam': watch,
@@ -714,7 +728,7 @@ class Tracker:
             diff = screen.compare(meas_screen)
             bp_out = baf['beam_profile']
 
-            opt_func_values.append(diff)
+            opt_func_values.append((float(sig_t), diff))
             opt_func_screens.append(screen)
             opt_func_profiles.append(bp_out)
             gauss_profiles.append(bp_gauss)
@@ -723,7 +737,9 @@ class Tracker:
         for sig_t in sig_t_range:
             gaussian_baf(sig_t)
 
-        index_min = np.argmin(opt_func_values)
+        opt_func_values = np.array(opt_func_values)
+
+        index_min = np.argmin(opt_func_values[:, 1])
         best_screen = opt_func_screens[index_min]
         best_profile = opt_func_profiles[index_min]
         best_sig_t = sig_t_range[index_min]
@@ -746,6 +762,13 @@ class Tracker:
                'final_screen': final_screen,
                'final_profile': final_profile,
                }
+        if details:
+            output.update({
+                   'opt_func_values': opt_func_values,
+                   'opt_func_screens': opt_func_screens,
+                   'opt_func_profiles': opt_func_profiles,
+                   })
+
         return output
 
     def scale_existing_profile(self, scale_range, profile, meas_screen, gaps, beam_offsets, n_streaker):

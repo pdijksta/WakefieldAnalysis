@@ -32,11 +32,12 @@ n_particles = int(40e3)
 n_streaker = 1
 flip_measured = True
 self_consistent = True
-quad_wake = False
+quad_wake = True
 bp_smoothen = 1e-15
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 mean_struct2 = 472e-6 # see 026_script
+mean_struct2 = 472e-6 - 15e-6
 gap2_correcting_summand = -40e-6
 sig_t_range = np.arange(20, 40.01, 5)*1e-15
 gaps = [10e-3, 10e-3+gap2_correcting_summand]
@@ -90,6 +91,17 @@ def get_screen_from_proj(projX, x_axis, invert_x):
 
 
 fig_paper = ms.figure('For paper')
+subplot = ms.subplot_factory(2, 2)
+sp_ctr_p = 1
+
+sp_tdc_meas = subplot(sp_ctr_p, title='TDC measurements', xlabel='time [fs]', ylabel='Current (A)')
+sp_ctr_p += 1
+
+sp_backtrack_tdc_screen = subplot(sp_ctr_p, title='Backtracking', xlabel='x [mm]', ylabel='Screen projection')
+sp_ctr_p += 1
+
+
+fig_paper = ms.figure('Old')
 subplot = ms.subplot_factory(2, 2)
 sp_ctr_paper = 1
 
@@ -205,6 +217,9 @@ for main_label, p_dict in process_dict.items():
 
     profile_meas.cutoff(1e-2)
     profile_meas2.cutoff(1e-2)
+    profile_meas.crop()
+    profile_meas2.crop()
+
 
 
 
@@ -236,7 +251,7 @@ for main_label, p_dict in process_dict.items():
         projections = dict_['projx'][n_offset]
 
     #for n_image in range(len(projections)):
-    for n_image in range(10):
+    for n_image in range(48, 48+1):
         screen = get_screen_from_proj(projections[n_image], x_axis, invert_x)
         screen.crop()
         screen._xx = screen._xx - mean0
@@ -324,6 +339,53 @@ for main_label, p_dict in process_dict.items():
         sp.plot(tt, profile/factor, color=color, lw=lw, label=label)
 
     sp.legend(title='Gaussian fit $\sigma$')
+
+
+    ## FINAL PLOTS
+
+    profile_meas.plot_standard(sp_tdc_meas, center='Left_fit', label='TDC 1')
+    #profile_meas2.plot_standard(sp_tdc_meas, center='Left_fit', label='TDC 2')
+    sig_list = []
+    for n_image, projx in enumerate(projections):
+        screen = get_screen_from_proj(projx, x_axis, invert_x)
+        sig_list.append(screen.gaussfit.sigma)
+
+    index_avg = np.argsort(sig_list)[len(sig_list)//2]
+    median_screen = get_screen_from_proj(projections[index_avg], x_axis, invert_x)
+    median_screen._xx = median_screen._xx - mean0
+    median_screen.cutoff(1e-2)
+    mask_median = np.logical_and(median_screen.x > 1.5e-3, median_screen.x < -0.5e-3)
+    median_screen._yy[mask_median] = 0
+    median_screen.crop()
+    median_screen.plot_standard(sp_backtrack_tdc_screen, label='Median')
+
+    median_screen_sigma = median_screen.gaussfit.sigma
+
+    tracker.quad_wake = True
+    #tracker.n_emittances = [1e-9, 1e-9]
+    profile_tdc_back_quad = tracker.track_backward2(median_screen, profile_meas, gaps, beam_offsets, n_streaker)
+    profile_tdc_back_quad.plot_standard(sp_tdc_meas, center='Left_fit', label='Back')
+
+    screen_forward1 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen_no_smoothen']
+    screen_forward1.smoothen(smoothen)
+    screen_forward1.plot_standard(sp_backtrack_tdc_screen, label='TDC forward')
+
+    #screen_forward2 = tracker.matrix_forward(profile_meas2, gaps, beam_offsets)['screen']
+    #screen_forward2.plot_standard(sp_backtrack_tdc_screen, label='TDC 2 forward')
+
+    tracker.quad_wake = False
+    profile_tdc_back_dip = tracker.track_backward2(median_screen, profile_meas, gaps, beam_offsets, n_streaker)
+    profile_tdc_back_dip.plot_standard(sp_tdc_meas, center='Left_fit', label='Back (quad)')
+    screen_forward1_dip = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen_no_smoothen']
+    screen_forward1_dip.smoothen(smoothen)
+    screen_forward1_dip.plot_standard(sp_backtrack_tdc_screen, label='TDC forward (quad)')
+
+    tracker.quad_wake = quad_wake
+
+
+sp_backtrack_tdc_screen.legend()
+sp_tdc_meas.legend()
+
 
 plt.show()
 

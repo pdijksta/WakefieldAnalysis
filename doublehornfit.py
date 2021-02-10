@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import numpy as np
 
@@ -35,7 +36,12 @@ class DoublehornFit:
             self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0)
         except RuntimeError as e:
             if raise_:
-                raise
+                plt.figure()
+                plt.plot(xx, yy)
+                plt.plot(xx, self.fit_func(xx, *p0))
+                plt.plot(gf.xx, gf.reconstruction)
+                plt.show()
+                import pdb; pdb.set_trace()
             self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
             print(e)
             print('Fit did not converge. Using p0 instead!')
@@ -49,13 +55,13 @@ class DoublehornFit:
         outp = np.zeros_like(xx)
         pos_middle = (pos_right + pos_left)/2.
 
-        mask1a = xx < pos_left
+        mask1a = xx <= pos_left
         outp[mask1a] = gauss(xx[mask1a], max_left, pos_left, s1a, 0)
 
-        mask1b = np.logical_and(xx > pos_left, xx < pos_middle)
+        mask1b = np.logical_and(xx > pos_left, xx <= pos_middle)
         outp[mask1b] = gauss(xx[mask1b], max_left-const_middle, pos_left, s1b, const_middle)
 
-        mask2a = np.logical_and(xx > pos_middle, xx < pos_right)
+        mask2a = np.logical_and(xx > pos_middle, xx <= pos_right)
         outp[mask2a] = gauss(xx[mask2a], max_right-const_middle, pos_right, s2a, const_middle)
 
         mask2b = xx > pos_right

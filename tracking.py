@@ -96,6 +96,10 @@ class Profile:
         self._gf_yy = (self._yy.min(), self._yy.max(), self._yy.sum())
         return self._gf
 
+    @property
+    def doublehornfit(self):
+        return doublehornfit.DoublehornFit(self._xx, self._yy)
+
 
     @property
     def integral(self):
@@ -155,7 +159,19 @@ class ScreenDistribution(Profile):
         self._yy = self._yy / self.integral * norm
 
     def plot_standard(self, sp, **kwargs):
-        return sp.plot(self.x*1e3, self.intensity/self.integral, **kwargs)
+        if self.intensity[0] != 0:
+            diff = self.x[1] - self.x[0]
+            x = np.concatenate([[self.x[0] - diff], self.x])
+            y = np.concatenate([[0.], self.intensity])
+        else:
+            x, y = self.x, self.intensity
+
+        if x[-1] != 0:
+            diff = self.x[1] - self.x[0]
+            x = np.concatenate([x, [x[-1] + diff]])
+            y = np.concatenate([y, [0.]])
+
+        return sp.plot(x*1e3, y/self.integral, **kwargs)
 
 
 
@@ -169,6 +185,7 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
         x_points2 = x_points
     screen_hist, bin_edges0 = np.histogram(x_points2, bins=screen_bins, density=True)
     screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
+
     return ScreenDistribution(screen_xx, screen_hist)
 
 
@@ -255,6 +272,8 @@ class BeamProfile(Profile):
         elif center == 'Left_fit':
             dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
             center_index = np.argmin((self._xx - dhf.pos_left)**2)
+        else:
+            raise ValueError(center)
 
         self._xx = self._xx - self._xx[center_index]
 
@@ -266,8 +285,9 @@ class BeamProfile(Profile):
         # Backward compatibility
         if center_max:
             center='Max'
+
         if norm:
-            factor = 1/self.integral
+            factor = self.charge/self.integral
         else:
             factor = 1
 
@@ -278,6 +298,14 @@ class BeamProfile(Profile):
             center_index = misc.find_rising_flank(self.current)
         elif center == 'Right':
             center_index = len(self.current) - misc.find_rising_flank(self.current[::-1])
+        elif center == 'Left_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_left)**2)
+        elif center == 'Right_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_right)**2)
+        else:
+            raise ValueError
 
         if center_index is None:
             xx = self.time*1e15

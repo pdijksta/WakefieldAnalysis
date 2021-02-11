@@ -21,14 +21,14 @@ elegant_matrix.set_tmp_dir('/home/philipp/tmp_elegant/')
 
 tt_halfrange = 200e-15
 charge = 200e-12
-screen_cutoff = 0.00
-profile_cutoff = 0.00
+screen_cutoff = 2e-3
+profile_cutoff = 2e-3
 len_profile = int(2e3)
 struct_lengths = [1., 1.]
 screen_bins = 400
 smoothen = 30e-6
-n_emittances = [500e-9, 500e-9]
-n_particles = int(40e3)
+n_emittances = [900e-9, 500e-9]
+n_particles = int(100e3)
 n_streaker = 1
 flip_measured = True
 self_consistent = True
@@ -37,11 +37,13 @@ bp_smoothen = 1e-15
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 mean_struct2 = 472e-6 # see 026_script
-mean_struct2 = 472e-6 - 15e-6
+fudge_factor = 0
+mean_struct2 = 472e-6 + fudge_factor
 gap2_correcting_summand = -40e-6
 sig_t_range = np.arange(20, 40.01, 5)*1e-15
 gaps = [10e-3, 10e-3+gap2_correcting_summand]
 subtract_min = True
+fit_emittance = True
 
 # According to Alex, use data from these days:
 # https://elog-gfa.psi.ch/SwissFEL+commissioning/16450 (4th October 2020)
@@ -63,18 +65,27 @@ elif hostname == 'pubuntu':
 magnet_file = archiver_dir + 'archiver_api_data/2020-10-03.h5'
 
 blmeas38 = dirname1+'129833611_bunch_length_meas.h5'
-#blmeas25 = dirname2 + '129918532_bunch_length_meas.h5'
-#blmeas25 = dirname2 + 'Bunch_length_meas_2020-10-04_14-43-30.h5'
+blmeas25 = dirname2 + '129918532_bunch_length_meas.h5'
+blmeas25 = dirname2 + 'Bunch_length_meas_2020-10-04_14-43-30.h5'
+blmeas13 = dirname2 + '129920069_bunch_length_meas.h5'
 
 
 file0 = dirname1 + 'Passive_data_20201003T231958.mat'
 
 file38 = dirname1 + 'Passive_data_20201003T233852.mat'
 file25 = dirname2 + 'Passive_data_20201004T172425.mat'
+file13 = dirname2 + 'Passive_data_20201004T221502.mat'
 
 dict38 = loadH5Recursive(file38+'.h5')
 dict25 = loadH5Recursive(file25+'.h5')
 dict0 = loadH5Recursive(file0+'.h5')
+dict13_h5 = loadH5Recursive(file13+'.h5')
+dict13_h5['value'] = np.array(-4.25) # from archiver
+#dict13_h5['x_axis'] = dict25['x_axis']
+
+proj13 = dict13_h5['projx']
+proj13_new = np.reshape(proj13, (proj13.shape[0]*proj13.shape[1], proj13.shape[2]))
+dict13_h5['projx'] = proj13_new
 
 def get_screen_from_proj(projX, x_axis, invert_x):
     if invert_x:
@@ -90,21 +101,6 @@ def get_screen_from_proj(projX, x_axis, invert_x):
     return screen
 
 
-fig_paper = ms.figure('For paper')
-subplot = ms.subplot_factory(2, 2)
-sp_ctr_p = 1
-
-sp_tdc_meas = subplot(sp_ctr_p, title='TDC measurements', xlabel='time [fs]', ylabel='Current (A)')
-sp_ctr_p += 1
-
-sp_backtrack_tdc_screen = subplot(sp_ctr_p, title='Backtracking', xlabel='x [mm]', ylabel='Screen projection')
-sp_ctr_p += 1
-
-
-fig_paper = ms.figure('Old')
-subplot = ms.subplot_factory(2, 2)
-sp_ctr_paper = 1
-
 process_dict = {
         'Long': {
             'filename': file38,
@@ -115,57 +111,79 @@ process_dict = {
             'filename0': file0,
             'blmeas': blmeas38,
             'flipx': False,
+            'limits_screen': [-0.5e-3, 1.5e-3],
         },
-        #'Medium': {
-        #    'filename': file25,
-        #    'main_dict': dict25,
-        #    'proj0': dict25['projx'][7],
-        #    'x_axis0': dict25['x_axis']*1e-6,
-        #    'n_offset': 0,
-        #    'filename0': file25,
-        #    'blmeas': blmeas25,
-        #    'flipx': False,
-        #    },
+        'Medium': {
+            'filename': file25,
+            'main_dict': dict25,
+            'proj0': dict25['projx'][7],
+            'x_axis0': dict25['x_axis']*1e-6,
+            'n_offset': 0,
+            'filename0': file25,
+            'blmeas': blmeas25,
+            'flipx': False,
+            'limits_screen': [-0.5e-3, 2.5e-3],
+            },
+        'Short': {
+            'filename': file13,
+            'main_dict': dict13_h5,
+            'proj0': '0',
+            'x_axis0': 0,
+            'n_offset': None,
+            'filename0': None,
+            'blmeas': blmeas13,
+            'flipx': False,
+            'limits_screen': [-0.5e-3, 2.5e-3],
+            },
+
         }
 
 for main_label, p_dict in process_dict.items():
-    if main_label != 'Long':
+    if main_label == 'Short':
         continue
 
-    projx0 = p_dict['proj0']
-    x_axis0 = p_dict['x_axis0']
-    if np.diff(x_axis0)[0] < 0:
-        x_axis0 = x_axis0[::-1]
-        invert_x0 = True
+    #fig_paper = ms.figure('Old %s' % main_label)
+    #subplot = ms.subplot_factory(2, 2)
+    #sp_ctr_paper = 1
 
-    all_mean = []
-    for proj in projx0:
-        screen = get_screen_from_proj(proj, x_axis0, invert_x0)
-        xx, yy = screen._xx, screen._yy
-        gf = gaussfit.GaussFit(xx, yy)
-        all_mean.append(gf.mean)
+    if type(p_dict['proj0']) is str:
+        mean0 = 0
+    else:
+        projx0 = p_dict['proj0']
+        x_axis0 = p_dict['x_axis0']
+        if np.diff(x_axis0)[0] < 0:
+            x_axis0 = x_axis0[::-1]
+            invert_x0 = True
 
-    mean0 = np.mean(all_mean)
+        all_mean = []
+        for proj in projx0:
+            screen = get_screen_from_proj(proj, x_axis0, invert_x0)
+            xx, yy = screen._xx, screen._yy
+            gf = gaussfit.GaussFit(xx, yy)
+            all_mean.append(gf.mean)
 
-    if True:
+        mean0 = np.mean(all_mean)
+        print('%s: Mean0: %.3e mm' % (main_label, mean0*1e3))
+
+    if fit_emittance and main_label != 'Short':
 
         timestamp0 = misc.get_timestamp(os.path.basename(p_dict['filename0']))
         tracker0 = tracking.Tracker(magnet_file, timestamp0, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
 
         bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
         screen_sim = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
-        #screen_sim.smoothen(25e-6)
         all_emittances = []
         all_beamsizes = []
         for proj in projx0:
             screen_meas = get_screen_from_proj(proj, x_axis0, invert_x0)
             all_beamsizes.append(screen_meas.gaussfit.sigma)
-            emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0], smoothen, print_=True)
-            print(screen_meas.gaussfit.sigma)
+            emittance_fit = misc.fit_nat_beamsize(screen_meas, screen_sim, n_emittances[0], smoothen, print_=False)
+            #print(screen_meas.gaussfit.sigma)
             all_emittances.append(emittance_fit)
 
         new_emittance = np.mean(all_emittances)
         print(main_label, 'Emittance [nm]', new_emittance*1e9)
+
         n_emittances[0] = new_emittance
 
         tracker0.n_emittances[0] = new_emittance
@@ -173,18 +191,40 @@ for main_label, p_dict in process_dict.items():
         new_screen0 = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
         ms.figure('Test nat bs')
         sp = plt.subplot(1,1,1)
+        sp.set_title('New emittance %i nm' % (new_emittance*1e9))
         screen_meas.center()
         for screen, label in [(new_screen0, 'New'), (screen_meas, 'Meas'), (screen_sim, 'Initial')]:
             color = screen.plot_standard(sp, label=label)[0].get_color()
             xx, yy = screen.gaussfit.xx, screen.gaussfit.reconstruction
             sp.plot(xx*1e3, yy/np.trapz(yy, xx), color=color, ls='--', label='%i' % (screen.gaussfit.sigma*1e6))
         sp.legend()
+    else:
+        new_emittance = n_emittances[0]
+
+    fig_paper = ms.figure('For paper %s ($\epsilon$=%i nm)' % (main_label, new_emittance*1e9))
+    fig_paper.subplots_adjust(hspace=0.3)
+    subplot = ms.subplot_factory(2, 3)
+    sp_ctr_p = 1
+
+    sp_tdc_meas = subplot(sp_ctr_p, title='Current profiles', xlabel='time [fs]', ylabel='Current (A)')
+    sp_ctr_p += 1
+
+    sp_backtrack_tdc_screen = subplot(sp_ctr_p, title='TDC forward', xlabel='x [mm]', ylabel='Screen projection')
+    sp_ctr_p += 1
+
+    sp_back_forward = subplot(sp_ctr_p, title='Reconstruction forward', xlabel='x [mm]', ylabel='Screen projection')
+    sp_ctr_p += 1
+
+    sp_recon = subplot(sp_ctr_p, title='Optimized current profiles', xlabel='time [fs]', ylabel='Current (A)')
+    sp_ctr_p += 1
+
+    sp_recon_screen = subplot(sp_ctr_p, title='Optimized projections', xlabel='x [mm]', ylabel='Screen projection')
+    sp_ctr_p += 1
 
 
     dict_ = p_dict['main_dict']
     file_ = p_dict['filename']
     x_axis = dict_['x_axis']*1e-6
-    y_axis = dict_['y_axis']*1e-6
     n_offset = p_dict['n_offset']
 
     if np.diff(x_axis)[0] < 0:
@@ -192,14 +232,6 @@ for main_label, p_dict in process_dict.items():
         invert_x = True
     else:
         invert_x = False
-
-    if np.diff(y_axis)[0] < 0:
-        y_axis = y_axis[::-1]
-        invert_y = True
-    else:
-        invert_y = False
-
-
 
     timestamp  = misc.get_timestamp(os.path.basename(file_))
     tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake, bp_smoothen=bp_smoothen)
@@ -215,15 +247,10 @@ for main_label, p_dict in process_dict.items():
     else:
         profile_meas2.flipx()
 
-    profile_meas.cutoff(1e-2)
-    profile_meas2.cutoff(1e-2)
+    profile_meas.cutoff(2e-2)
+    profile_meas2.cutoff(2e-2)
     profile_meas.crop()
     profile_meas2.crop()
-
-
-
-
-
 
     beam_offsets = [0., -(dict_['value']*1e-3 - mean_struct2)]
     distance_um = (gaps[n_streaker]/2. - beam_offsets[n_streaker])*1e6
@@ -234,10 +261,11 @@ for main_label, p_dict in process_dict.items():
     tdc_screen1 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen']
     tdc_screen2 = tracker.matrix_forward(profile_meas2, gaps, beam_offsets)['screen']
 
-    plt.figure(fig_paper.number)
-    sp_profile_comp = subplot(sp_ctr_paper, title=main_label, xlabel='t [fs]', ylabel='Intensity (arb. units)')
-    sp_ctr_paper += 1
-    profile_meas.plot_standard(sp_profile_comp, norm=True, color='black', label='TDC', center='Right_fit')
+    #plt.figure(fig_paper.number)
+    #sp_profile_comp = subplot(sp_ctr_paper, title=main_label, xlabel='t [fs]', ylabel='Intensity (arb. units)')
+    #sp_ctr_paper += 1
+    #profile_meas.plot_standard(sp_profile_comp, norm=True, color='black', label='TDC', center='Right_fit')
+
 
     ny, nx = 2, 4
     subplot = ms.subplot_factory(ny, nx)
@@ -250,100 +278,10 @@ for main_label, p_dict in process_dict.items():
     else:
         projections = dict_['projx'][n_offset]
 
-    #for n_image in range(len(projections)):
-    for n_image in range(48, 48+1):
-        screen = get_screen_from_proj(projections[n_image], x_axis, invert_x)
-        screen.crop()
-        screen._xx = screen._xx - mean0
-
-        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge, self_consistent=self_consistent)
-        print('Image %i done; best sigma %i fs' % (n_image, gauss_dict['gauss_sigma']*1e15))
-        best_screen = gauss_dict['reconstructed_screen']
-        best_screen.cutoff(1e-3)
-        best_screen.crop()
-        best_profile = gauss_dict['reconstructed_profile']
-        if n_image == 0:
-            screen00 = screen
-            bp00 = best_profile
-            best_screen00 = best_screen
-        best_gauss = gauss_dict['best_gauss']
-
-        if sp_ctr > (ny*nx):
-            ms.figure('All reconstructions Distance %i %s' % (distance_um, main_label))
-            sp_ctr = 1
-
-        if n_image % 2 == 0:
-            sp_profile = subplot(sp_ctr, title='Reconstructions')
-            sp_ctr += 1
-            sp_screen = subplot(sp_ctr, title='Screens')
-            sp_ctr += 1
-            profile_meas.plot_standard(sp_profile, color='black', label='Measured', norm=True, center='Right_fit')
-            tdc_screen1.plot_standard(sp_screen, color='black')
-
-        color = screen.plot_standard(sp_screen, label=n_image)[0].get_color()
-        best_screen.plot_standard(sp_screen, color=color, ls='--')
-        label_ = '%i %i %i' % (n_image, best_profile.gaussfit.sigma*1e15, gauss_dict['gauss_sigma']*1e15)
-        best_profile.plot_standard(sp_profile, label=label_, norm=True, center='Right_fit')
-        sp_profile.legend()
-        sp_screen.legend()
-
-        all_profiles.append(best_profile)
-
-    # Averaging the reconstructed profiles
-    all_profiles_time, all_profiles_current = [], []
-    for profile in all_profiles:
-        profile.shift('Right_fit')
-        #all_profiles_time.append(profile.time - profile.time[np.argmax(profile.current)])
-        all_profiles_time.append(profile.time)
-    new_time = np.linspace(min(x.min() for x in all_profiles_time), max(x.max() for x in all_profiles_time), len_profile)
-    for tt, profile in zip(all_profiles_time, all_profiles):
-        new_current = np.interp(new_time, tt, profile.current, left=0, right=0)
-        new_current *= charge/new_current.sum()
-        all_profiles_current.append(new_current)
-    all_profiles_current = np.array(all_profiles_current)
-    mean_profile = np.mean(all_profiles_current, axis=0)
-    std_profile = np.std(all_profiles_current, axis=0)
-    average_profile = tracking.BeamProfile(new_time, mean_profile, tracker.energy_eV, charge)
-    average_profile.plot_standard(sp_profile_comp, label='Reconstructed', norm=True, center='Right_fit')
-
-
-    ms.figure('Test averaging %s' % main_label)
-    sp = plt.subplot(1,1,1)
-    for yy in all_profiles_current:
-        sp.plot(new_time, yy/np.trapz(yy, new_time), lw=0.5)
-
-    to_plot = [
-            ('Average', new_time, mean_profile, 'black', 3),
-            ('+1 STD', new_time, mean_profile+std_profile, 'black', 1),
-            ('-1 STD', new_time, mean_profile-std_profile, 'black', 1),
-            ]
-
-    integral = np.trapz(mean_profile, new_time)
-    for pm, ctr, color in [(profile_meas, 1, 'red'), (profile_meas2, 2, 'green')]:
-        #factor = integral/np.trapz(pm.current, pm.time)
-        #t_meas = pm.time-pm.time[np.argmax(pm.current)]
-        i_meas = np.interp(new_time, pm.time, pm.current)
-        bp = tracking.BeamProfile(new_time, i_meas, energy_eV=tracker.energy_eV, charge=charge)
-        bp.shift('Right')
-
-        to_plot.append(('TDC %i' % ctr, bp.time, bp.current, color, 3))
-
-
-    for label, tt, profile, color, lw in to_plot:
-        gf = gaussfit.GaussFit(tt, profile)
-        width_fs = gf.sigma*1e15
-        if label is None:
-            label = ''
-        label = (label + ' %i fs' % width_fs).strip()
-        factor = np.trapz(profile, tt)
-        sp.plot(tt, profile/factor, color=color, lw=lw, label=label)
-
-    sp.legend(title='Gaussian fit $\sigma$')
-
-
     ## FINAL PLOTS
 
-    profile_meas.plot_standard(sp_tdc_meas, center='Left_fit', label='TDC 1')
+    for sp_ in sp_tdc_meas, sp_recon:
+        profile_meas.plot_standard(sp_, center='Right_fit', label='TDC', color='black')
     #profile_meas2.plot_standard(sp_tdc_meas, center='Left_fit', label='TDC 2')
     sig_list = []
     for n_image, projx in enumerate(projections):
@@ -354,37 +292,55 @@ for main_label, p_dict in process_dict.items():
     median_screen = get_screen_from_proj(projections[index_avg], x_axis, invert_x)
     median_screen._xx = median_screen._xx - mean0
     median_screen.cutoff(1e-2)
-    mask_median = np.logical_and(median_screen.x > 1.5e-3, median_screen.x < -0.5e-3)
+    limits = p_dict['limits_screen']
+    mask_median = np.logical_or(median_screen.x > limits[1], median_screen.x < limits[0])
     median_screen._yy[mask_median] = 0
     median_screen.crop()
-    median_screen.plot_standard(sp_backtrack_tdc_screen, label='Median')
+    for sp_ in sp_backtrack_tdc_screen, sp_recon_screen, sp_back_forward:
+        median_screen.plot_standard(sp_, label='Median', color='black')
 
     median_screen_sigma = median_screen.gaussfit.sigma
 
-    tracker.quad_wake = True
-    #tracker.n_emittances = [1e-9, 1e-9]
-    profile_tdc_back_quad = tracker.track_backward2(median_screen, profile_meas, gaps, beam_offsets, n_streaker)
-    profile_tdc_back_quad.plot_standard(sp_tdc_meas, center='Left_fit', label='Back')
+    all_screens = {'median_screen': median_screen}
 
-    screen_forward1 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen_no_smoothen']
-    screen_forward1.smoothen(smoothen)
-    screen_forward1.plot_standard(sp_backtrack_tdc_screen, label='TDC forward')
+    for q_wake, label in [(False, 'Dipole'), (True, '+Quadrupole')]:
 
-    #screen_forward2 = tracker.matrix_forward(profile_meas2, gaps, beam_offsets)['screen']
-    #screen_forward2.plot_standard(sp_backtrack_tdc_screen, label='TDC 2 forward')
+        tracker.quad_wake = q_wake
+        profile_tdc_back = tracker.track_backward2(median_screen, profile_meas, gaps, beam_offsets, n_streaker)
+        profile_tdc_back.plot_standard(sp_tdc_meas, center='Right_fit', label=label)
+        screen_forward1 = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen_no_smoothen']
+        screen_forward1.smoothen(smoothen)
+        screen_forward1.cutoff(screen_cutoff)
+        color = screen_forward1.plot_standard(sp_backtrack_tdc_screen, label=label)[0].get_color()
+        print('Difference for %s TDC: %e' % (label, median_screen.compare(screen_forward1)))
+        all_screens['%s_TDC' % label] = screen_forward1
 
-    tracker.quad_wake = False
-    profile_tdc_back_dip = tracker.track_backward2(median_screen, profile_meas, gaps, beam_offsets, n_streaker)
-    profile_tdc_back_dip.plot_standard(sp_tdc_meas, center='Left_fit', label='Back (quad)')
-    screen_forward1_dip = tracker.matrix_forward(profile_meas, gaps, beam_offsets)['screen_no_smoothen']
-    screen_forward1_dip.smoothen(smoothen)
-    screen_forward1_dip.plot_standard(sp_backtrack_tdc_screen, label='TDC forward (quad)')
 
-    tracker.quad_wake = quad_wake
+        screen_forward2 = tracker.matrix_forward(profile_tdc_back, gaps, beam_offsets)['screen_no_smoothen']
+        screen_forward2.smoothen(smoothen)
+        screen_forward2.cutoff(screen_cutoff)
+        screen_forward2.plot_standard(sp_back_forward, color=color, label=label)
+
+        gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, median_screen, gaps, beam_offsets, n_streaker, charge)
+        bp_recon = gauss_dict['reconstructed_profile']
+
+        #scale_dict = tracker.scale_existing_profile(
+
+        screen_recon = gauss_dict['reconstructed_screen_no_smoothen']
+        screen_recon.smoothen(smoothen)
+        screen_recon.cutoff(screen_cutoff)
+
+        bp_recon.plot_standard(sp_recon, label=label, center='Right_fit')
+        #bp_recon.plot_standard(sp_tdc_meas, color=color, center='Right_fit', ls='--')
+        screen_recon.plot_standard(sp_recon_screen, label=label)
+        print('Difference for %s recon: %e' % (label, median_screen.compare(screen_recon)))
+        all_screens['%s_recon' % label] = screen_recon
 
 
 sp_backtrack_tdc_screen.legend()
 sp_tdc_meas.legend()
+sp_recon.legend()
+sp_recon_screen.legend()
 
 
 plt.show()

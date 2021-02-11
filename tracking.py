@@ -44,11 +44,16 @@ class Profile:
         xx = np.linspace(xx_min, xx_max, max(len(self._xx), len(other._xx)))
         yy1 = np.interp(xx, self._xx, self._yy, left=0, right=0)
         yy2 = np.interp(xx, other._xx, other._yy, left=0, right=0)
+        yy1 = yy1 / np.nanmean(yy1)
+        yy2 = yy2 / np.nanmean(yy2)
         diff = (yy1-yy2)**2
         ## WARNING
-        norm = ((yy1+yy2)/2)**1.5
-        norm[norm == 0] = np.inf
-        return np.sqrt(np.nanmean(diff/norm))
+        #norm = ((yy1+yy2)/2)
+        #norm[norm == 0] = np.inf
+        norm = 1
+        outp = np.nanmean(diff/norm)
+        #import pdb; pdb.set_trace()
+        return outp
 
     def reshape(self, new_shape):
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
@@ -159,14 +164,14 @@ class ScreenDistribution(Profile):
         self._yy = self._yy / self.integral * norm
 
     def plot_standard(self, sp, **kwargs):
-        if self.intensity[0] != 0:
-            diff = self.x[1] - self.x[0]
-            x = np.concatenate([[self.x[0] - diff], self.x])
-            y = np.concatenate([[0.], self.intensity])
+        if self._yy[0] != 0:
+            diff = self._xx[1] - self._xx[0]
+            x = np.concatenate([[self._xx[0] - diff], self._xx])
+            y = np.concatenate([[0.], self._yy])
         else:
             x, y = self.x, self.intensity
 
-        if x[-1] != 0:
+        if y[-1] != 0:
             diff = self.x[1] - self.x[0]
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
@@ -292,7 +297,9 @@ class BeamProfile(Profile):
             factor = 1
 
         center_index = None
-        if center == 'Max':
+        if center is None:
+            pass
+        elif center == 'Max':
             center_index = np.argmax(self.current)
         elif center == 'Left':
             center_index = misc.find_rising_flank(self.current)
@@ -312,7 +319,19 @@ class BeamProfile(Profile):
         else:
             xx = (self.time - self.time[center_index])*1e15
 
-        return sp.plot(xx, self.current*factor, **kwargs)
+        if self._yy[0] != 0:
+            diff = xx[1] - xx[0]
+            x = np.concatenate([[xx[0] - diff], xx])
+            y = np.concatenate([[0.], self._yy])
+        else:
+            x, y = xx, self._yy
+
+        if y[-1] != 0:
+            diff = xx[1] - xx[0]
+            x = np.concatenate([x, [x[-1] + diff]])
+            y = np.concatenate([y, [0.]])
+
+        return sp.plot(x, y*factor, **kwargs)
 
 
 
@@ -518,11 +537,10 @@ class Tracker:
         screen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, self.smoothen)
         screen_no_smoothen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0)
 
-        #screen.smoothen(self.smoothen)
-        screen.cutoff(self.screen_cutoff)
-        screen.reshape(self.len_screen)
-        screen.normalize()
-
+        for s_ in (screen_no_smoothen, screen):
+            s_.reshape(self.len_screen)
+            s_.cutoff(self.screen_cutoff)
+            s_.normalize()
 
         r12_dict = {}
         for n_streaker in (0, 1):
@@ -737,6 +755,7 @@ class Tracker:
 
         opt_func_values = []
         opt_func_screens = []
+        opt_func_screens_no_smoothen = []
         opt_func_profiles = []
         gauss_profiles = []
         gauss_wakes = []
@@ -752,13 +771,15 @@ class Tracker:
                 bp_back0 = bp_gauss
 
             baf = self.back_and_forward(meas_screen, bp_back0, gaps, beam_offsets, n_streaker)
-            screen = baf['screen']
+            screen = copy.deepcopy(baf['screen_no_smoothen'])
+            screen.smoothen(self.smoothen)
             diff = screen.compare(meas_screen)
             bp_out = baf['beam_profile']
 
             opt_func_values.append((float(sig_t), diff))
             opt_func_screens.append(screen)
             opt_func_profiles.append(bp_out)
+            opt_func_screens_no_smoothen.append(baf['screen_no_smoothen'])
             gauss_profiles.append(bp_gauss)
             gauss_wakes.append(baf['wake_dict'])
 
@@ -784,6 +805,7 @@ class Tracker:
         output = {
                'gauss_sigma': best_sig_t,
                'reconstructed_screen': best_screen,
+               'reconstructed_screen_no_smoothen': opt_func_screens_no_smoothen[index_min],
                'reconstructed_profile': best_profile,
                'best_gauss': best_gauss,
                'best_gauss_wake': gauss_wakes[index_min],

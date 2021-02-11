@@ -61,15 +61,14 @@ profile_meas = tracking.profile_from_blmeas(blmeas13, tt_halfrange, charge, ener
 profile_meas.plot_standard(sp_profile)
 
 x_axis = (dict13['x_axis']*1e-6)[::-1]
-img0 = dict13['Image'][0][0]
-proj0 = img0.T.sum(axis=0)
+
+for indices in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+    i, j = indices
+    img = dict13['Image'][i][j]
+    proj = img.T.sum(axis=0)
 
 
-img1 = dict13['Image'][1][0]
-proj1 = img1.T.sum(axis=0)
-
-sp_screen.plot(x_axis*1e3, proj0, label='0')
-sp_screen.plot(x_axis*1e3, proj1, label='1')
+    sp_screen.plot(x_axis*1e3, proj, label='%i %i' % (i, j))
 
 sp_screen.legend()
 

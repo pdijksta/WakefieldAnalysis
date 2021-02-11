@@ -29,9 +29,9 @@ profile_cutoff = 0.00
 len_profile = 6e3
 struct_lengths = [1., 1.]
 screen_bins = 400
-smoothen = 30e-6
+smoothen = 0
 n_emittances = (800e-9, 800e-9)
-n_particles = int(10e3)
+n_particles = int(40e3)
 forward_method = 'matrix'
 self_consistent = True
 bp_smoothen = 2e-15
@@ -95,7 +95,7 @@ sp_ctr2 += 1
 
 for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product(
         [True],
-        [20e3, 40e3, 80e3],
+        [80e3],
         [1e-15],
         )):
 
@@ -124,7 +124,7 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
         for sp_ in sp_profile, sp_profile2, sp_profile3:
             if sp_ is None:
                 continue
-            profile_meas.plot_standard(sp_, label='Real %i %s' % (profile_meas_sigma*1e15, label), lw=real_lw)
+            profile_meas.plot_standard(sp_, label='Real %i %s' % (profile_meas_sigma*1e15, label), lw=real_lw, center='Left_fit')
 
         for sp_ in sp_screen, sp_screen2, sp_screen3:
             if sp_ is None:
@@ -141,7 +141,7 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
     opt_func_screens = gauss_dict['opt_func_screens']
     opt_func_profiles = gauss_dict['opt_func_profiles']
 
-    best_profile.plot_standard(sp_profile, label=label+' %i' % (best_profile.gaussfit.sigma*1e15))
+    best_profile.plot_standard(sp_profile, label=label+' %i' % (best_profile.gaussfit.sigma*1e15), center='Left_fit')
     sp_opt.scatter(opt_func_values[:,0], opt_func_values[:,1], label=label)
 
     # Using best gaussian recon for final step
@@ -152,7 +152,7 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
     screen_final.normalize()
     profile_final = baf_dict_final['beam_profile']
     screen_final.plot_standard(sp_screen3, label=label)
-    profile_final.plot_standard(sp_profile3, label=label+' %i' % (profile_final.gaussfit.sigma*1e15))
+    profile_final.plot_standard(sp_profile3, label=label+' %i' % (profile_final.gaussfit.sigma*1e15), center='Left_fit')
 
 
     # Using real wake profile
@@ -166,7 +166,7 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
     screen_shift.cutoff(screen_cutoff)
     screen_shift.normalize()
 
-    profile_real.plot_standard(sp_profile2, label=label+' %i' % (profile_real.gaussfit.sigma*1e15))
+    profile_real.plot_standard(sp_profile2, label=label+' %i' % (profile_real.gaussfit.sigma*1e15), center='Left_fit')
 
     screen_shift.plot_standard(sp_screen2, label=label)
     best_screen.plot_standard(sp_screen, label=label)
@@ -192,8 +192,8 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
         wake_effect = profile.wake_effect_on_screen(wf_dict, r12)
         bp_back = tracker.track_backward(screen, wake_effect, n_streaker)
 
-        color = profile.plot_standard(sp_p, label=label2+' %i fs' % (profile.gaussfit.sigma*1e15))[0].get_color()
-        bp_back.plot_standard(sp_p, ls='--', label=label2+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15))
+        color = profile.plot_standard(sp_p, label=label2+' %i fs' % (profile.gaussfit.sigma*1e15), center='Left_fit')[0].get_color()
+        bp_back.plot_standard(sp_p, ls='--', label=label2+' back'+' %i fs' % (bp_back.gaussfit.sigma*1e15), center='Left_fit')
         screen_forward.plot_standard(sp_s, label=label2, color=color)
 
 

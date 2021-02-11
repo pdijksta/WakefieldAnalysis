@@ -10,7 +10,7 @@ class DoublehornFit:
         self.xx = xx
         self.yy = yy
 
-        gf = gaussfit.GaussFit(xx, yy)
+        gf = gaussfit.GaussFit(xx, yy, fit_const=False)
 
         arg_left = np.argmax(gf.yy[gf.xx < gf.mean])
         pos_left = gf.xx[arg_left]

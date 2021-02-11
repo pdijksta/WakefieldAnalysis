@@ -13,9 +13,9 @@ files2 = [
         #'Passive_data_20201004T172425.mat',
         #'Passive_data_20201004T223859.mat',
         #'Passive_data_20201004T163828.mat',
-        #'Passive_data_20201004T221502.mat',
+        'Passive_data_20201004T221502.mat',
         #'Passive_money_20201004T012247.mat',
-        'Passive_data_20201004T163828.mat',
+        #'Passive_data_20201004T163828.mat',
         ]
 
 dirname1 = '/home/work/data_2020-10-03/'

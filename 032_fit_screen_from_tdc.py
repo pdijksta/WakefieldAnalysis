@@ -7,7 +7,6 @@ import gaussfit
 import tracking
 import elegant_matrix
 
-
 import myplotstyle as ms
 
 plt.close('all')
@@ -26,12 +25,11 @@ smoothen = 30e-6
 profile_cutoff = 0
 timestamp = 1601761132
 gaps = [10e-3, 10e-3]
+mean_offset = 0.472
 beam_offsets = [0, 4.692e-3]
 n_streaker = 1
 tt_halfrange = 200e-15
 bp_smoothen = 1e-15
-
-
 
 emittance_arr = np.array([1., 200., 300., 400., 500.,])*1e-9
 

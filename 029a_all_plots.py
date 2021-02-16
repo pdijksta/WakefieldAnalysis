@@ -273,7 +273,6 @@ for main_label, p_dict in process_dict.items():
     profile_meas2.reshape(len_profile)
     if flip_measured:
         profile_meas.flipx()
-    else:
         profile_meas2.flipx()
 
     profile_meas.cutoff(1e-2)

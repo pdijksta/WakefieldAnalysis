@@ -4,6 +4,7 @@ from socket import gethostname
 
 import tracking
 import elegant_matrix
+import doublehornfit
 
 
 import myplotstyle as ms
@@ -17,10 +18,10 @@ charge = 200e-12
 energy_eV = 4.5e9
 struct_lengths = [1., 1.]
 n_particles = int(1e5)
-n_emittances = [0.01e-9, 850e-9]
+n_emittances = [500e-9, 850e-9]
 screen_bins = 500
 screen_cutoff = 1e-3
-smoothen = 0e-6
+smoothen = 30e-6
 profile_cutoff = 0
 timestamp = 1601761132
 gaps = [10e-3, 10e-3]
@@ -50,10 +51,17 @@ flat_current[np.logical_and(flat_time > -40e-15, flat_time < 40e-15)] = 1
 
 bp_flat = tracking.BeamProfile(flat_time, flat_current, energy_eV, charge)
 
+sig = 5e-15
+dhf_current = doublehornfit.DoublehornFit.fit_func(flat_time, -20e-15, 20e-15, sig, sig, sig, sig, 0.5, 1, 1)
+dhf_current *= charge / dhf_current.sum()
+
+bp_dhf = tracking.BeamProfile(flat_time, dhf_current, energy_eV, charge)
+bp_dhf.cutoff(1e-3)
 
 
 
-for bp, bp_label in [(bp_gauss, 'Gauss'), (bp_flat, 'Flat')]:
+
+for bp, bp_label in [(bp_gauss, 'Gauss'), (bp_flat, 'Flat'), (bp_dhf, 'Double horn')]:
 
     ms.figure('Test quadrupole wake %s emittance %i nm' % (bp_label, n_emittances[0]*1e9))
     subplot = ms.subplot_factory(2,2)
@@ -74,6 +82,8 @@ for bp, bp_label in [(bp_gauss, 'Gauss'), (bp_flat, 'Flat')]:
     plot_wake = False
 
     for main_label, quad_wake in [('Dipole', False), ('+Quad', True)]:
+        #if quad_wake:
+        #    continue
 
         tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=True)
         label = main_label + ' ' + bp_label

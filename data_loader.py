@@ -85,21 +85,41 @@ class DataLoader(dict):
 
 @functools.lru_cache(5)
 def load_blmeas(file_):
-    #bl_meas = loadH5Recursive(file_)
     with h5py.File(file_, 'r') as f:
-        time_profile1, current1 = np.array(f['Meta_data']['Time axes'])[::-1]*1e-15, np.array(f['Meta_data']['Current profile'])[::-1]
-        try:
-            time_profile2, current2 = np.array(f['Meta_data']['Time axes 2'])[::-1]*1e-15, np.array(f['Meta_data']['Current profile 2'])[::-1]
-        except KeyError:
-            time_profile2, current2 = None, None
-        energy_eV = np.array(f['Input']['Energy']).squeeze()*1e6
 
-    return {
-            'time_profile1': time_profile1,
-            'time_profile2': time_profile2,
-            'current1': current1,
-            'current2': current2,
-            'energy_eV': energy_eV,
-            #'all_data': bl_meas
-            }
+        energy_eV = np.array(f['Input']['Energy']).squeeze()*1e6
+        output = {'energy_eV': energy_eV}
+
+        # Not always are both zero crossings measured
+        suffixes = [('', '1')]
+        if 'Time axes 2' in f['Meta_data']:
+            suffixes.append((' 2', '2'))
+
+        for suffix, suffix_out in suffixes:
+            time_profile = np.array(f['Meta_data']['Time axes'+suffix])*1e-15
+            current = np.array(f['Meta_data']['Current profile'+suffix])
+
+            # Reorder if time array is descending
+            if time_profile[1] - time_profile[0] < 0:
+                time_profile = time_profile[::-1]
+                current = current[::-1]
+
+            # Find out where is the head and the tail.
+            # In our conventios, the head is at negative time
+            centroids = np.array(f['Raw_data']['Beam centroids'+suffix])
+            phases = np.arange(0, len(centroids)) # phases always ascending, and we only care about the sign of the fit
+
+            dy_dphase = np.polyfit(phases, centroids.mean(axis=1), 1)[0]
+
+            sign_dy_dt = np.sign(dy_dphase)
+
+            if sign_dy_dt == -1:
+                current = current[::-1]
+
+            output.update({
+                'time_profile'+suffix_out: time_profile,
+                'current'+suffix_out: current,
+            })
+
+    return output
 

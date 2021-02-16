@@ -4,6 +4,7 @@ import copy; copy
 import socket
 import numpy as np; np
 import matplotlib.pyplot as plt
+#from scipy.constants import c
 
 import elegant_matrix
 import tracking
@@ -39,7 +40,7 @@ fudge_factor = 0
 mean_struct2 = 466e-6 + fudge_factor
 gap2_correcting_summand = 0 #-3e-6
 sig_t_range = np.arange(20, 40.01, 5)*1e-15
-gaps = [10e-3, 10e-3+gap2_correcting_summand]
+gaps = [10e-3, 10e-3]
 subtract_min = True
 fit_emittance = True
 
@@ -101,11 +102,11 @@ def get_screen_from_proj(projX, x_axis, invert_x):
 
 process_dict = {
         'Long': {
-            'filename': file38,
-            'main_dict': dict38,
+            'filename': file0,
+            'main_dict': dict0,
             'proj0': dict0['projx'][-1],
             'x_axis0': dict0['x_axis']*1e-6,
-            'n_offset': None,
+            'n_offset': 0,
             'filename0': file0,
             'blmeas': blmeas38,
             'flipx': False,

@@ -33,7 +33,7 @@ files = [dirname + f for f in [
         'Passive_alignment_20201003T214629.mat',
         'Passive_alignment_20201003T222227.mat',
         ]] + [dirname2 + f for f in [
-            'Passive_data_20201004T172425.mat',
+            #'Passive_data_20201004T172425.mat',
             ]]
 
 fig0 = ms.figure(title='a', figsize=(12, 12))
@@ -84,8 +84,14 @@ fig1 = ms.figure('Alignment scan')
 subplot = ms.subplot_factory(2, 2)
 sp_ctr = 1
 
+order = order0 = 3
+
 def fit_func(xx, const, strength, wall0, wall1):
-    return const + ((xx-wall0)**(-2) - (xx-wall1)**(-2))*strength
+    if order == 2:
+        return const + ((xx-wall0)**(-2) - (xx-wall1)**(-2))*strength
+    elif order == 3:
+        return const + ((xx-wall0)**(-3) + (xx-wall1)**(-3))*strength
+
 
 offset_list = []
 bpm_plot_list = []
@@ -116,7 +122,7 @@ for f in files:
         dict_['BPMX'] = dict_['BPMX'].tolist()
         dict_['BPMY'] = dict_['BPMY'].tolist()
 
-    print(f, dict_['BPMX'])
+    #print(f, dict_['BPMX'])
     if 'center' in dict_:
         center_arr = dict_['center'].squeeze()
         bpms_x = [x[0] for x in dict_['BPMX'].squeeze()]
@@ -130,7 +136,7 @@ for f in files:
 
     for dim, bpm_list, arr, sp in [('X', bpms_x, x_arr, sp_x),]: # ('Y', bpms_y, y_arr, sp_y)]:
         for bpm_ctr, bpm in enumerate(bpm_list):
-            print(f, bpm)
+            #print(f, bpm)
             yy = arr[:,:,bpm_ctr]
             mean = yy.mean(axis=1)
             #n_vals = np.shape(yy)[1]
@@ -139,7 +145,20 @@ for f in files:
 
             p0 = (0, 1, np.min(center_arr)-0.5, np.max(center_arr)+0.5)
             try:
-                fit = curve_fit(fit_func, center_arr, mean, p0=p0)
+                order = 2
+                fit2 = curve_fit(fit_func, center_arr, mean, p0=p0)
+                chisq2 = np.sum((mean - fit_func(center_arr, *fit2[0]))**2)
+                order = 3
+                fit3 = curve_fit(fit_func, center_arr, mean, p0=p0)
+                chisq3 = np.sum((mean - fit_func(center_arr, *fit3[0]))**2)
+
+                if order0 == 2:
+                    fit = fit2
+                elif order0 == 3:
+                    fit = fit3
+
+                print(os.path.basename(f), bpm, chisq2, chisq3)
+
             except RuntimeError:
                 raise
                 #plt.figure()
@@ -167,7 +186,7 @@ for f in files:
             #print(gap, int(gap)+1-gap)
 
             offset = (wall0+wall1)/2
-            print('%s %s %.5e' % (f, bpm, offset))
+            #print('%s %s %.5e' % (f, bpm, offset))
             offset_list.append(offset)
             bpm_plot_list.append(bpm)
             bpm_plot_ctr_list.append(bpm_ctr)

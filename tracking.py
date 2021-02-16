@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import copy
 import functools
 import numpy as np
@@ -10,6 +11,8 @@ from gaussfit import GaussFit
 import wf_model
 import misc
 import doublehornfit
+
+import myplotstyle as ms
 
 tmp_folder = './'
 
@@ -47,12 +50,7 @@ class Profile:
         yy1 = yy1 / np.nanmean(yy1)
         yy2 = yy2 / np.nanmean(yy2)
         diff = (yy1-yy2)**2
-        ## WARNING
-        #norm = ((yy1+yy2)/2)
-        #norm[norm == 0] = np.inf
-        norm = 1
-        outp = np.nanmean(diff/norm)
-        #import pdb; pdb.set_trace()
+        outp = np.nanmean(diff)
         return outp
 
     def reshape(self, new_shape):
@@ -67,8 +65,6 @@ class Profile:
 
         _yy *= old_sum / _yy.sum()
         self._xx, self._yy = _xx, _yy
-
-
 
     def cutoff(self, cutoff_factor):
         if cutoff_factor == 0 or cutoff_factor is None:
@@ -311,6 +307,9 @@ class BeamProfile(Profile):
         elif center == 'Right_fit':
             dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
             center_index = np.argmin((self._xx - dhf.pos_right)**2)
+        elif center == 'Gauss':
+            center_index = np.argmin((self._xx - self.gaussfit.mean)**2)
+
         else:
             raise ValueError
 
@@ -374,12 +373,6 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
     if cutoff is not None:
         current_gauss[current_gauss<cutoff*current_gauss.max()] = 0
 
-    #if np.any(np.isnan(current_gauss)):
-    #    import pdb; pdb.set_trace()
-
-    #if np.sum(current_gauss) == 0:
-    #    import pdb; pdb.set_trace()
-
 
     return BeamProfile(time_arr, current_gauss, energy_eV, charge)
 
@@ -405,6 +398,9 @@ class Tracker:
         self.quad_wake = quad_wake
         self.bs_at_streaker = None
         self.bp_smoothen = bp_smoothen
+
+        self.override_quad_beamsize = False
+        self.quad_x_beamsize = [0., 0.]
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
@@ -442,6 +438,16 @@ class Tracker:
         return wake_tt, wake, quad
 
     def matrix_forward(self, beamProfile, gaps, beam_offsets, debug=False):
+
+        def calc_quad(beam_before, n_streaker):
+            quad_x = beam_before[0,:]-beam_before[0,:].mean()
+            if self.override_quad_beamsize:
+                quad_x_factor = self.quad_x_beamsize[n_streaker] / beam_before[0,:].std()
+            else:
+                quad_x_factor = 1.
+            quad_effect = quad_list[n_streaker] * quad_x * quad_x_factor
+            return quad_effect
+
         streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
         mat_dict = streaker_matrices['mat_dict']
 
@@ -492,7 +498,7 @@ class Tracker:
         beam_after_s1 = np.copy(beam_before_s1)
         beam_after_s1[1,:] += delta_xp_list[0]
         if self.quad_wake:
-            beam_after_s1[1,:] += quad_list[0]*(beam_before_s1[0,:]-beam_before_s1[0,:].mean())
+            beam_after_s1[1,:] += calc_quad(beam_before_s1, 0)
 
 
         beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
@@ -500,9 +506,7 @@ class Tracker:
         beam_after_s2 = np.copy(beam_before_s2)
         beam_after_s2[1,:] += delta_xp_list[1]
         if self.quad_wake:
-            quad_effect = quad_list[1]*(beam_before_s2[0,:]-beam_before_s2[0,:].mean())
-            beam_after_s2[1,:] += quad_effect
-            #import pdb; pdb.set_trace()
+            beam_after_s2[1,:] += calc_quad(beam_before_s2, 1)
 
         beam_at_screen = np.matmul(streaker_matrices['s2_to_screen'], beam_after_s2)
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
@@ -530,7 +534,8 @@ class Tracker:
                     beamsize = np.sqrt(emitx*betax)
                     print(label, beamsize, emitx, betax, alfax, dim)
                     if np.isnan(emitx):
-                        import pdb; pdb.set_trace()
+                        raise ValueError
+                        #import pdb; pdb.set_trace()
                 print()
 
 
@@ -618,7 +623,7 @@ class Tracker:
         self.bs_at_streaker = forward_dict['bs_at_streaker']
 
 
-    def track_backward(self, screen, wake_effect, n_streaker, bs_at_streaker=None):
+    def track_backward(self, screen, wake_effect, n_streaker, bs_at_streaker=None, plot_details=False):
         screen = copy.deepcopy(screen)
         wake_time = wake_effect['t']
         wake_x = wake_effect['x']
@@ -667,32 +672,47 @@ class Tracker:
             bp = BeamProfile(t_interp, charge_interp, self.energy_eV, charge)
         except ValueError as e:
             print(e)
-            import matplotlib.pyplot as plt
-            import myplotstyle as ms
             ms.figure('')
-            sp = plt.subplot(2, 2, 1)
-            sp.set_title('Wake')
+            self.set_bs_at_streaker()
+            subplot = ms.subplot_factory(2,2)
+            sp = subplot(1, title='Wake', xlabel='t', ylabel='$\Delta$ x')
             sp.plot(wake_time, wake_x, label='Dipole')
             sp.plot(wake_time, q_wake_x*self.bs_at_streaker[n_streaker], label='Quad')
             sp.legend()
-            sp = plt.subplot(2, 2, 2)
-            sp.set_title('Screen')
+            sp = subplot(2, title='Screen', xlabel='x')
             sp.plot(screen.x, screen.intensity)
+
+            sp = subplot(3, title='Current profile', xlabel='time', ylabel='Current')
+            sp.plot(t_interp, charge_interp)
             plt.show()
             import pdb; pdb.set_trace()
         bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
+        bp.crop()
         bp.reshape(self.len_screen)
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
             raise ValueError('NaNs in beam profile')
         if self.bp_smoothen:
             bp.smoothen(self.bp_smoothen)
+
+        if plot_details:
+            ms.figure('track_backward')
+            subplot = ms.subplot_factory(2,2)
+            sp_wake = subplot(1, title='Wake effect', xlabel='t [fs]', ylabel='$\Delta$ x [mm]')
+            sp_wake.plot(wake_time*1e15, wake_x*1e3)
+
+            sp_screen = subplot(2, title='Screen dist', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+            screen.plot_standard(sp_screen)
+
+            sp_profile = subplot(3, title='Interpolated profile', xlabel='t [fs]', ylabel='Current [kA]')
+            bp.plot_standard(sp_profile)
+
         return bp
 
-    def track_backward2(self, screen, profile, gaps, beam_offsets, n_streaker):
+    def track_backward2(self, screen, profile, gaps, beam_offsets, n_streaker, **kwargs):
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, self.calcR12()[n_streaker])
-        return self.track_backward(screen, wake_effect, n_streaker)
+        return self.track_backward(screen, wake_effect, n_streaker, **kwargs)
 
     def forward_and_back(self, bp_forward, bp_wake, gaps, beam_offsets, n_streaker):
 
@@ -862,5 +882,4 @@ class Tracker:
                'all_profiles': opt_func_profiles,
                'all_screens': opt_func_screens,
                }
-
 

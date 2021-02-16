@@ -66,9 +66,9 @@ def s0yq(a, x):
     t3 = 2*theta*tan(theta)
     return t0 * (t1 + t2 + t3)**(-2)
 
-def s0yq2(a, x):
-    s0yq=4*s0yr*((56-m.cos(2*Th))/30+(0.3+Th*m.sin(2*Th))/(2-m.cos(2*Th))+2*Th*m.tan(Th))**(-2)*10**(6)
-    return s0yq
+#def s0yq2(a, x):
+#    s0yq=4*s0yr*((56-m.cos(2*Th))/30+(0.3+Th*m.sin(2*Th))/(2-m.cos(2*Th))+2*Th*m.tan(Th))**(-2)*10**(6)
+#    return s0yq
 
 def wxq(s, a, x):
     arg = pi*x/a

@@ -12,13 +12,20 @@ class DoublehornFit:
 
         gf = gaussfit.GaussFit(xx, yy, fit_const=False)
 
-        arg_left = np.argmax(gf.yy[gf.xx < gf.mean])
+        mask_left = gf.xx < gf.mean
+        if np.sum(mask_left) == 0:
+            arg_left = 0
+        else:
+            arg_left = np.argmax(gf.yy[mask_left])
         pos_left = gf.xx[arg_left]
         max_left = gf.yy[arg_left]
 
 
         mask_right = gf.xx > gf.mean
-        arg_right = np.argmax(gf.yy[mask_right]) + np.sum(mask_right == 0)
+        if np.sum(mask_right) == 0:
+            arg_right = len(yy)-1
+        else:
+            arg_right = np.argmax(gf.yy[mask_right]) + np.sum(mask_right == 0)
         pos_right = gf.xx[arg_right]
         max_right = gf.yy[arg_right]
         s1a = s1b = s2a = s2b = gf.sigma / 5

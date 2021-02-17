@@ -19,7 +19,7 @@ hostname = socket.gethostname()
 elegant_matrix.set_tmp_dir('/home/philipp/tmp_elegant/')
 
 tt_halfrange = 200e-15
-charge = 200e-12
+charge = -200e-12
 screen_cutoff = 2e-3
 profile_cutoff = 2e-2
 len_profile = int(2e3)

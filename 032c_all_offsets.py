@@ -16,8 +16,8 @@ plt.close('all')
 elegant_matrix.set_tmp_dir('~/tmp_elegant/')
 
 len_profile = int(5e3)
-charge = 205e-12
-energy_eV = 4.5e9
+charge = -200e-12
+energy_eV = 4.4918e9
 struct_lengths = [1., 1.]
 n_particles = int(1e5)
 n_emittances = [500e-9, 500e-9]
@@ -33,6 +33,7 @@ mean_offset = 0.472*1e-3 + offset_correcting_summand
 n_streaker = 1
 tt_halfrange = 200e-15
 bp_smoothen = 1e-15
+invert_offset = False
 
 quad_wake = True
 override_quad_beamsize = True
@@ -66,7 +67,7 @@ subtract_min = True
 
 def get_screen_from_proj(projX, x_axis, invert_x):
     if invert_x:
-        xx, yy = (-x_axis[::-1]).copy(), (projX[::-1]).copy()
+        xx, yy = (x_axis[::-1]).copy(), (projX[::-1]).copy()
     else:
         xx, yy = x_axis.copy(), projX.copy()
     if subtract_min:
@@ -77,8 +78,8 @@ def get_screen_from_proj(projX, x_axis, invert_x):
     screen.reshape(len_profile)
     return screen
 
-invert_x0 = True
-x_axis = dict0['x_axis'][::-1]*1e-6
+x_axis = dict0['x_axis']*1e-6
+invert_x0 = (np.diff(x_axis)[0] < 0)
 projx = dict0['projx']
 projx0 = dict0['projx'][-1]
 all_mean = []
@@ -93,7 +94,11 @@ mean0 = np.mean(all_mean)
 
 profile_meas = tracking.profile_from_blmeas(blmeas38, tt_halfrange, charge, energy_eV)
 
-offset_arr = (-dict0['value']*1e-3) + mean_offset
+offset0 = dict0['value']*1e-3
+if invert_offset:
+    offset0 *= -1
+
+offset_arr = offset0 - mean_offset
 
 
 ms.figure('Summary')

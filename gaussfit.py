@@ -15,8 +15,13 @@ class GaussFit:
             const_0 = 0.
             self.jacobi_arr = np.ones([len(xx), 3])
 
-        scale_0 = self.scale_0 = np.max(yy)-const_0
-        mean_0 = self.mean_0 = np.squeeze(xx[np.argmax(yy)])
+        if abs(np.max(yy)) > abs(np.min(yy)):
+            scale_0 = self.scale_0 = np.max(yy)-const_0
+            mean_0 = self.mean_0 = np.squeeze(xx[np.argmax(yy)])
+        else:
+            scale_0 = self.scale_0 = np.min(yy)-const_0
+            mean_0 = self.mean_0 = np.squeeze(xx[np.argmin(yy)])
+
 
         # Third instead of half for better stability
         mask_above_half = yy-const_0 > scale_0/2

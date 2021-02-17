@@ -1,10 +1,8 @@
 import os
-#import mat73
 import copy; copy
 import socket
 import numpy as np; np
 import matplotlib.pyplot as plt
-#from scipy.constants import c
 
 import elegant_matrix
 import tracking
@@ -20,7 +18,7 @@ hostname = socket.gethostname()
 elegant_matrix.set_tmp_dir('/home/philipp/tmp_elegant/')
 
 tt_halfrange = 200e-15
-charge = 200e-12
+charge = -200e-12
 screen_cutoff = 2e-3
 profile_cutoff = 2e-2
 len_profile = int(2e3)
@@ -33,6 +31,7 @@ n_streaker = 1
 self_consistent = True
 quad_wake = True
 bp_smoothen = 1e-15
+invert_offset = False
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 #mean_struct2 = 472e-6 # see 026_script
@@ -88,7 +87,7 @@ dict13_h5['projx'] = proj13_new
 
 def get_screen_from_proj(projX, x_axis, invert_x):
     if invert_x:
-        xx, yy = (-x_axis[::-1]).copy(), (projX[::-1]).copy()
+        xx, yy = (x_axis[::-1]).copy(), (projX[::-1]).copy()
     else:
         xx, yy = x_axis.copy(), projX.copy()
     if subtract_min:
@@ -111,7 +110,7 @@ process_dict = {
             'blmeas': blmeas38,
             'flipx': False,
             'limits_screen': [-0.5e-3, 1.5e-3],
-            'center': 'Right_fit',
+            'center': 'Right',
         },
         'Medium': {
             'filename': file25,
@@ -140,9 +139,8 @@ process_dict = {
 
         }
 
-for main_label, p_dict in process_dict.items():
-    if main_label == 'Short':
-        continue
+for main_label in ['Medium']:
+    p_dict = process_dict[main_label]
 
     #fig_paper = ms.figure('Old %s' % main_label)
     #subplot = ms.subplot_factory(2, 2)
@@ -153,10 +151,7 @@ for main_label, p_dict in process_dict.items():
     else:
         projx0 = p_dict['proj0']
         x_axis0 = p_dict['x_axis0']
-        if np.diff(x_axis0)[0] < 0:
-            x_axis0 = x_axis0[::-1]
-            invert_x0 = True
-
+        invert_x0 = (x_axis0[1] < x_axis0[0])
         all_mean = []
         for proj in projx0:
             screen = get_screen_from_proj(proj, x_axis0, invert_x0)
@@ -231,7 +226,6 @@ for main_label, p_dict in process_dict.items():
     center = p_dict['center']
 
     if np.diff(x_axis)[0] < 0:
-        x_axis = x_axis[::-1]
         invert_x = True
     else:
         invert_x = False
@@ -255,7 +249,10 @@ for main_label, p_dict in process_dict.items():
     profile_meas.crop()
     profile_meas2.crop()
 
-    beam_offsets = [0., -(dict_['value']*1e-3 - mean_struct2)]
+    offset0 = dict_['value']*1e-3
+    if invert_offset:
+        offset0 *= -1
+    beam_offsets = [0., offset0 - mean_struct2]
     distance_um = (gaps[n_streaker]/2. - beam_offsets[n_streaker])*1e6
     if n_offset is not None:
         distance_um = distance_um[n_offset]
@@ -337,7 +334,6 @@ for main_label, p_dict in process_dict.items():
         screen_recon.plot_standard(sp_recon_screen, label=label)
         print('Difference for %s recon: %e' % (label, median_screen.compare(screen_recon)))
         all_screens['%s_recon' % label] = screen_recon
-
 
     sp_backtrack_tdc_screen.legend()
     sp_tdc_meas.legend()

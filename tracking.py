@@ -71,7 +71,8 @@ class Profile:
             return
         yy = self._yy.copy()
         old_sum = np.sum(yy)
-        yy[yy<yy.max()*cutoff_factor] = 0
+        abs_yy = np.abs(yy)
+        yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
         self._yy = yy / np.sum(yy) * old_sum
 
     def crop(self):
@@ -145,6 +146,7 @@ class ScreenDistribution(Profile):
     def __init__(self, x, intensity, real_x=None):
         super().__init__()
         self._xx = x
+        assert np.all(np.diff(self._xx)>=0)
         self._yy = intensity
         self.real_x = real_x
 
@@ -203,6 +205,7 @@ class BeamProfile(Profile):
             raise ValueError('Sum of current must be larger than 0')
 
         self._xx = time
+        assert np.all(np.diff(self._xx)>=0)
         self._yy = current / current.sum() * charge
         self.energy_eV = energy_eV
         self.charge = charge
@@ -262,11 +265,11 @@ class BeamProfile(Profile):
 
     def shift(self, center):
         if center == 'Max':
-            center_index = np.argmax(self.current)
+            center_index = np.argmax(np.abs(self.current))
         elif center == 'Left':
-            center_index = misc.find_rising_flank(self.current)
+            center_index = misc.find_rising_flank(np.abs(self.current))
         elif center == 'Right':
-            center_index = len(self.current) - misc.find_rising_flank(self.current[::-1])
+            center_index = len(self.current) - misc.find_rising_flank(np.abs(self.current[::-1]))
         elif center == 'Right_fit':
             dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
             center_index = np.argmin((self._xx - dhf.pos_right)**2)
@@ -287,16 +290,15 @@ class BeamProfile(Profile):
         if center_max:
             center='Max'
 
+        factor = np.sign(self.charge)
         if norm:
-            factor = self.charge/self.integral
-        else:
-            factor = 1
+            factor *= self.charge/self.integral
 
         center_index = None
         if center is None:
             pass
         elif center == 'Max':
-            center_index = np.argmax(self.current)
+            center_index = np.argmax(np.abs(self.current))
         elif center == 'Left':
             center_index = misc.find_rising_flank(self.current)
         elif center == 'Right':
@@ -340,7 +342,7 @@ def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=Fal
     current_meas0 = bl_meas['current%i' % zero_crossing]
 
     if subtract_min:
-        current_meas0 -= current_meas0.min()
+        current_meas0 = current_meas0 - current_meas0.min()
 
     if tt_halfrange is None:
         tt, cc = time_meas0, current_meas0
@@ -371,7 +373,8 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
     current_gauss = np.exp(-(time_arr-np.mean(time_arr))**2/(2*sig_t**2))
 
     if cutoff is not None:
-        current_gauss[current_gauss<cutoff*current_gauss.max()] = 0
+        abs_c = np.abs(current_gauss)
+        current_gauss[abs_c<cutoff*abs_c.max()] = 0
 
 
     return BeamProfile(time_arr, current_gauss, energy_eV, charge)
@@ -466,7 +469,7 @@ class Tracker:
         curr = beamProfile.current
         tt = beamProfile.time
         integrated_curr = np.cumsum(curr)
-        integrated_curr /= integrated_curr.max()
+        integrated_curr /= integrated_curr[-1]
 
         randoms = np.random.rand(self.n_particles)
         interp_tt = np.interp(randoms, integrated_curr, tt)
@@ -630,10 +633,25 @@ class Tracker:
         q_wake_x = wake_effect['quad']
         charge = wake_effect['charge']
 
+        if np.any(np.diff(wake_x) < 0):
+            assert np.all(np.diff(wake_x) <= 0)
+            wake_x = wake_x[::-1]
+            q_wake_x = q_wake_x[::-1]
+            wake_time = wake_time[::-1]
+        elif np.all(np.diff(wake_x) >= 0):
+            pass
+        else:
+            import pdb; pdb.set_trace()
+            raise ValueError
+
+
         mask_negative = screen.x < 0
         if self.compensate_negative_screen and np.any(mask_negative):
             x_positive = -screen.x[mask_negative][::-1]
             y_positive = screen.intensity[mask_negative][::-1]
+            if np.all(np.diff(x_positive) < 0):
+                x_positive = x_positive[::-1]
+                y_positive = y_positive[::-1]
             positive_interp = np.interp(screen.x, x_positive, y_positive, left=0, right=0)
             screen_intensity = screen.intensity + positive_interp
             screen_intensity[mask_negative] = 0
@@ -669,6 +687,7 @@ class Tracker:
             t_interp = np.linspace(t_interp0[0], t_interp0[-1], len(charge_interp))
 
         try:
+            assert np.all(np.diff(t_interp) >= 0)
             bp = BeamProfile(t_interp, charge_interp, self.energy_eV, charge)
         except ValueError as e:
             print(e)
@@ -691,6 +710,7 @@ class Tracker:
         bp.crop()
         bp.reshape(self.len_screen)
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
+            import pdb; pdb.set_trace()
             raise ValueError('NaNs in beam profile')
         if self.bp_smoothen:
             bp.smoothen(self.bp_smoothen)

@@ -177,9 +177,9 @@ def generate_elegant_wf(filename, xx, semigap, beam_offset, L=1.):
     if beam_offset == 0:
         w_wxd = np.zeros_like(xx)
     else:
-        w_wxd = -wxd(xx, semigap, beam_offset)*L
+        w_wxd = wxd(xx, semigap, beam_offset)*L
     delta_offset = 1e-6
-    w_wxd2 = -wxd(xx, semigap, beam_offset+delta_offset)*L
+    w_wxd2 = wxd(xx, semigap, beam_offset+delta_offset)*L
     w_wxd_deriv = (w_wxd2 - w_wxd)/delta_offset
     w_wld = wld(xx, semigap, beam_offset)*L
     tt = xx/c

@@ -17,12 +17,12 @@ hostname = socket.gethostname()
 elegant_matrix.set_tmp_dir('/home/philipp/tmp_elegant/')
 
 gaps = [10e-3, 10e-3]
-beam_offsets_true = [4.7e-3, 0]
+beam_offsets_true = [0., 4.7e-3]
 offset_error = 00e-6
 beam_offsets = [beam_offsets_true[0] + offset_error, beam_offsets_true[1]]
-n_streaker = 0
+n_streaker = 1
 tt_halfrange = 200e-15
-charge = 200e-12
+charge = -200e-12
 timestamp = elegant_matrix.get_timestamp(2020, 7, 26, 17, 49, 0)
 screen_cutoff = 0.00
 profile_cutoff = 0.00
@@ -36,8 +36,7 @@ forward_method = 'matrix'
 self_consistent = True
 bp_smoothen = 2e-15
 compensate_negative_screen = True
-sig_t_range = np.arange(30, 60, 5)
-
+sig_t_range = np.arange(40, 70, 5)*1e-15
 
 if hostname == 'desktop':
     magnet_file = '/storage/Philipp_data_folder/archiver_api_data/2020-07-26.h5'
@@ -48,9 +47,6 @@ elif hostname == 'pubuntu':
 else:
     magnet_file = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/2020-07-26.h5'
     bl_meas_file = '/sf/data/measurements/2020/02/03/Bunch_length_meas_2020-02-03_15-59-13.h5'
-
-opt_ctr = 0
-
 
 ms.figure('Final forward')
 subplot = ms.subplot_factory(2,2)
@@ -91,7 +87,6 @@ sp_ctr2 += 1
 
 sp_screen3 = subplot(sp_ctr2, title='Reconstructed screen using self-consistent', xlabel='x [mm]', ylabel='Intensity (arb. units)')
 sp_ctr2 += 1
-
 
 for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product(
         [True],
@@ -140,9 +135,37 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
     opt_func_values = gauss_dict['opt_func_values']
     opt_func_screens = gauss_dict['opt_func_screens']
     opt_func_profiles = gauss_dict['opt_func_profiles']
+    opt_func_sigmas = gauss_dict['opt_func_sigmas']
+
+
+    if opt_plot:
+        plot_ctr = 5
+        for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
+            if plot_ctr == 5:
+                plot_ctr = 0
+                if sp_ctr == ny*nx+1:
+                    ms.figure('Optimization %s' % label)
+                    sp_ctr = 1
+                sp = subplot(sp_ctr, title='Screen')
+                sp_ctr += 1
+                sp.plot(meas_screen.x*1e3, meas_screen.intensity/meas_screen.integral, label='Original')
+                sp2 = subplot(sp_ctr, title='Profile')
+                sp_ctr += 1
+                sp2.plot(profile_meas.time*1e15, profile_meas.current/profile_meas.integral, label='Original')
+
+            plot_ctr += 1
+            sp.plot(screen.x*1e3, screen.intensity/screen.integral, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
+            sp2.plot(profile.time*1e15, profile.current/profile.integral, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
+            sp.legend()
+            sp2.legend()
+            plt.show()
+            plt.pause(0.01)
+
+
+
 
     best_profile.plot_standard(sp_profile, label=label+' %i' % (best_profile.gaussfit.sigma*1e15), center='Left_fit')
-    sp_opt.scatter(opt_func_values[:,0], opt_func_values[:,1], label=label)
+    sp_opt.scatter(opt_func_values[:,0]*1e15, opt_func_values[:,1], label=label)
 
     # Using best gaussian recon for final step
     baf_dict_final = tracker.back_and_forward(meas_screen, best_profile, gaps, beam_offsets, n_streaker)

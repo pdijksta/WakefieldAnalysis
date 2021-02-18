@@ -31,7 +31,7 @@ n_streaker = 1
 self_consistent = True
 quad_wake = True
 bp_smoothen = 1e-15
-invert_offset = False
+invert_offset = True
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 #mean_struct2 = 472e-6 # see 026_script
@@ -110,7 +110,7 @@ process_dict = {
             'blmeas': blmeas38,
             'flipx': False,
             'limits_screen': [-0.5e-3, 1.5e-3],
-            'center': 'Right',
+            'center': 'Right_fit',
         },
         'Medium': {
             'filename': file25,
@@ -139,7 +139,7 @@ process_dict = {
 
         }
 
-for main_label in ['Medium']:
+for main_label in ['Long', 'Medium']:
     p_dict = process_dict[main_label]
 
     #fig_paper = ms.figure('Old %s' % main_label)
@@ -250,9 +250,9 @@ for main_label in ['Medium']:
     profile_meas2.crop()
 
     offset0 = dict_['value']*1e-3
+    beam_offsets = np.array([0., offset0 - mean_struct2])
     if invert_offset:
-        offset0 *= -1
-    beam_offsets = [0., offset0 - mean_struct2]
+        beam_offsets *= -1
     distance_um = (gaps[n_streaker]/2. - beam_offsets[n_streaker])*1e6
     if n_offset is not None:
         distance_um = distance_um[n_offset]

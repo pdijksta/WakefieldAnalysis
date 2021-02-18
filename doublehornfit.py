@@ -16,7 +16,7 @@ class DoublehornFit:
         if np.sum(mask_left) == 0:
             arg_left = 0
         else:
-            arg_left = np.argmax(gf.yy[mask_left])
+            arg_left = np.argmax(np.abs(gf.yy[mask_left]))
         pos_left = gf.xx[arg_left]
         max_left = gf.yy[arg_left]
 
@@ -25,7 +25,7 @@ class DoublehornFit:
         if np.sum(mask_right) == 0:
             arg_right = len(yy)-1
         else:
-            arg_right = np.argmax(gf.yy[mask_right]) + np.sum(mask_right == 0)
+            arg_right = np.argmax(np.abs(gf.yy[mask_right])) + np.sum(mask_right == 0)
         pos_right = gf.xx[arg_right]
         max_right = gf.yy[arg_right]
         s1a = s1b = s2a = s2b = gf.sigma / 5
@@ -44,9 +44,10 @@ class DoublehornFit:
         except RuntimeError as e:
             if raise_:
                 plt.figure()
-                plt.plot(xx, yy)
-                plt.plot(xx, self.fit_func(xx, *p0))
-                plt.plot(gf.xx, gf.reconstruction)
+                plt.plot(xx, yy, label='Input')
+                plt.plot(xx, self.fit_func(xx, *p0), label='Guess')
+                plt.plot(gf.xx, gf.reconstruction, label='gaussfit')
+                plt.legend()
                 plt.show()
                 import pdb; pdb.set_trace()
             self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)

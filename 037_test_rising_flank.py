@@ -7,7 +7,6 @@ plt.close('all')
 with open('./test_rising_flank.pkl', 'rb') as f:
     bp = pickle.load(f)
 
-
 plt.figure()
 sp = plt.subplot(1, 1, 1)
 

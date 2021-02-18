@@ -84,7 +84,6 @@ class Profile:
         self._xx = new_x
         self._yy = new_y / new_y.sum() * old_sum
 
-
     def __len__(self):
         return len(self._xx)
 
@@ -113,10 +112,6 @@ class Profile:
         real_sigma = gauss_sigma/np.diff(self._xx).mean()
         new_yy = gaussian_filter1d(self._yy, real_sigma)
         self._yy = new_yy
-
-    #def shift(self, where_max=0):
-    #    max_x = self._xx[np.argmax(self._yy)]
-    #    self._xx = self._xx - max_x + where_max
 
     def center(self):
         self._xx = self._xx - self.gaussfit.mean
@@ -175,8 +170,6 @@ class ScreenDistribution(Profile):
             y = np.concatenate([y, [0.]])
 
         return sp.plot(x*1e3, y/self.integral, **kwargs)
-
-
 
 def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
     if smoothen:
@@ -253,8 +246,8 @@ class BeamProfile(Profile):
     def wake_effect_on_screen(self, wf_dict, r12):
         wake = wf_dict['dipole']['wake_potential']
         quad = wf_dict['quadrupole']['wake_potential']
-        wake_effect = wake/self.energy_eV*r12
-        quad_effect = quad/self.energy_eV*r12
+        wake_effect = wake/self.energy_eV*r12*np.sign(self.charge)
+        quad_effect = quad/self.energy_eV*r12*np.sign(self.charge)
         output = {
                 't': self.time,
                 'x': wake_effect,
@@ -335,7 +328,6 @@ class BeamProfile(Profile):
         return sp.plot(x, y*factor, **kwargs)
 
 
-
 def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False, zero_crossing=1):
     bl_meas = data_loader.load_blmeas(file_)
     time_meas0 = bl_meas['time_profile%i' % zero_crossing]
@@ -347,7 +339,7 @@ def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=Fal
     if tt_halfrange is None:
         tt, cc = time_meas0, current_meas0
     else:
-        current_meas0 *= 200e-12/current_meas0.sum()
+        current_meas0 *= charge/current_meas0.sum()
         gf_blmeas = GaussFit(time_meas0, current_meas0)
         time_meas0 -= gf_blmeas.mean
 
@@ -492,9 +484,9 @@ class Tracker:
                 wake_dict[n_streaker] = {'wake_t': wake_tt, 'wake': wake, 'quad': quad}
                 wake_energy = np.interp(beam_before_s1[4,:], wake_tt, wake)
                 quad_energy = np.interp(beam_before_s1[4,:], wake_tt, quad)
-                delta_xp = wake_energy/self.energy_eV
+                delta_xp = wake_energy/self.energy_eV*np.sign(beamProfile.charge)
                 delta_xp_list.append(delta_xp)
-                quad_list.append(quad_energy/self.energy_eV)
+                quad_list.append(quad_energy/self.energy_eV*np.sign(beamProfile.charge))
 
 
         #print('Starting beamsize %.1e' % beam_before_s1[0,:].std())
@@ -641,11 +633,14 @@ class Tracker:
         elif np.all(np.diff(wake_x) >= 0):
             pass
         else:
-            import pdb; pdb.set_trace()
             raise ValueError
 
 
-        mask_negative = screen.x < 0
+        if abs(wake_x.max()) > abs(wake_x.min()):
+            mask_negative = screen.x < 0
+        else:
+            mask_negative = screen.x > 0
+
         if self.compensate_negative_screen and np.any(mask_negative):
             x_positive = -screen.x[mask_negative][::-1]
             y_positive = screen.intensity[mask_negative][::-1]
@@ -704,13 +699,13 @@ class Tracker:
             sp = subplot(3, title='Current profile', xlabel='time', ylabel='Current')
             sp.plot(t_interp, charge_interp)
             plt.show()
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
         bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
         bp.crop()
         bp.reshape(self.len_screen)
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             raise ValueError('NaNs in beam profile')
         if self.bp_smoothen:
             bp.smoothen(self.bp_smoothen)
@@ -739,13 +734,37 @@ class Tracker:
         track_dict_forward = self.forward(bp_forward, gaps, beam_offsets)
         track_dict_forward0 = self.forward(bp_forward, gaps, [0,0])
 
+        screen_f0 = copy.deepcopy(track_dict_forward['screen'])
         screen = track_dict_forward['screen']
         screen0 = track_dict_forward0['screen']
         screen._xx = screen._xx - screen0.gaussfit.mean # Correct for deflection of normal beam
 
         wf_dict = bp_wake.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, track_dict_forward0['r12_dict'][n_streaker])
-        bp_back = self.track_backward(track_dict_forward['screen'], wake_effect, n_streaker)
+        bp_back = self.track_backward(screen, wake_effect, n_streaker)
+
+        if False:
+            ms.figure('forward_and_back')
+            subplot = ms.subplot_factory(2,2)
+            sp_ctr = 1
+            sp = subplot(sp_ctr, title='Screens')
+            sp_ctr += 1
+            sp.plot(screen._xx, screen._yy, label='Input')
+            screen = screen_f0
+            sp.plot(screen._xx, screen._yy, label='Forward')
+            screen = screen0
+            sp.plot(screen._xx, screen._yy, label='Forward 0')
+            sp.legend()
+
+            sp = subplot(sp_ctr, title='Profiles')
+            p = bp_forward
+            sp.plot(p._xx, p._yy, label='Input')
+            p = bp_back
+            sp.plot(p._xx, p._yy, label='Back')
+
+            sp.legend()
+
+            plt.show()
 
         return {
                 'track_dict_forward': track_dict_forward,
@@ -797,11 +816,14 @@ class Tracker:
         opt_func_screens = []
         opt_func_screens_no_smoothen = []
         opt_func_profiles = []
+        opt_func_sigmas = []
         gauss_profiles = []
         gauss_wakes = []
 
         @functools.lru_cache(50)
         def gaussian_baf(sig_t):
+
+            assert 1e-15 < sig_t < 1e-12
 
             bp_gauss = get_gaussian_profile(sig_t, tt_halfrange, self.len_screen, charge, self.energy_eV)
 
@@ -819,6 +841,7 @@ class Tracker:
             opt_func_values.append((float(sig_t), diff))
             opt_func_screens.append(screen)
             opt_func_profiles.append(bp_out)
+            opt_func_sigmas.append(sig_t)
             opt_func_screens_no_smoothen.append(baf['screen_no_smoothen'])
             gauss_profiles.append(bp_gauss)
             gauss_wakes.append(baf['wake_dict'])
@@ -857,6 +880,7 @@ class Tracker:
                    'opt_func_values': opt_func_values,
                    'opt_func_screens': opt_func_screens,
                    'opt_func_profiles': opt_func_profiles,
+                   'opt_func_sigmas': opt_func_sigmas,
                    })
 
         return output

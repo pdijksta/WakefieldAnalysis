@@ -109,9 +109,14 @@ def load_blmeas(file_):
             centroids = np.array(f['Raw_data']['Beam centroids'+suffix])
             phases = np.arange(0, len(centroids)) # phases always ascending, and we only care about the sign of the fit
 
-            dy_dphase = np.polyfit(phases, centroids.mean(axis=1), 1)[0]
+            if len(phases) > 1:
+                dy_dphase = np.polyfit(phases, centroids.mean(axis=1), 1)[0]
 
-            sign_dy_dt = np.sign(dy_dphase)
+                sign_dy_dt = np.sign(dy_dphase)
+            else:
+                print('Warning! Time orientation of bunch length measurement cannot be determined!')
+                print(file_)
+                sign_dy_dt = 1
 
             if sign_dy_dt == -1:
                 current = current[::-1]

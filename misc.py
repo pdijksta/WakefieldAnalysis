@@ -59,8 +59,10 @@ def avergage_BeamProfiles(bp_list, align='Max'):
 
 
 def fit_nat_beamsize(screen_meas, screen_sim, emittance, screen_res=0., print_=False):
+    screen_sim2 = tracking.getScreenDistributionFromPointsScreenDistribution(screen_sim.real_x, len(screen_sim._xx), screen_res)
+
     sig_meas = np.sqrt(screen_meas.gaussfit.sigma**2 - screen_res**2)
-    sig_sim = np.sqrt(screen_sim.gaussfit.sigma**2 - screen_res**2)
+    sig_sim = np.sqrt(screen_sim2.gaussfit.sigma**2 - screen_res**2)
     emittance_fit = emittance * (sig_meas / sig_sim)**2
     #import pdb; pdb.set_trace()
     if print_:

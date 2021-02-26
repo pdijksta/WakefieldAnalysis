@@ -92,13 +92,13 @@ def wld(s, a, x):
     t4 = exp(-sqrt(s/s0l_))
     return t1 * t2 * t3 * t4
 
-def wf2d(s_coords, x_coords, beam_offset, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
+def wf2d(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
 
     beam_hist, s_edges, x_edges = np.histogram2d(s_coords, x_coords, hist_bins)
     beam_hist *= charge / beam_hist.sum()
 
     s_edges = s_edges[:-1] + (s_edges[1] - s_edges[0])*0.5
-    x_edges = x_edges[:-1] + (x_edges[1] - x_edges[0])*0.5 + beam_offset
+    x_edges = x_edges[:-1] + (x_edges[1] - x_edges[0])*0.5
 
     wake2d = wf_func(s_edges[:, np.newaxis], semigap, x_edges)
     wake = np.zeros_like(s_edges)
@@ -107,6 +107,8 @@ def wf2d(s_coords, x_coords, beam_offset, semigap, charge, wf_func, hist_bins=(i
         for n2 in range(0, n_output+1):
             wake[n_output] += (beam_hist[n2,:] * wake2d[n_output-n2,:]).sum()
 
+    wake_on_particles = np.interp(s_coords, s_edges, wake) * np.sign(charge)
+
     output = {
             'wake': wake,
             'wake_s': s_edges,
@@ -114,6 +116,7 @@ def wf2d(s_coords, x_coords, beam_offset, semigap, charge, wf_func, hist_bins=(i
             's_bins': s_edges,
             'x_bins': x_edges,
             'spw2d': wake2d,
+            'wake_on_particles': wake_on_particles,
             }
     return output
 
@@ -152,6 +155,8 @@ def wf2d_quad(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3),
     wake_on_particles = wake[indices[0], indices[1]]
     correction = delta_s[indices[0], indices[1]] * indices_delta[0] + delta_x[indices[0], indices[1]] * indices_delta[1]
     wake_on_particles += correction
+
+    wake_on_particles *= np.sign(charge)
 
     output = {
             'wake': wake,

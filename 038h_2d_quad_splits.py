@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 from scipy.constants import c
-import scipy.interpolate
 
 import myplotstyle as ms
 import wf_model
@@ -90,7 +89,7 @@ for n_split in range(n_splits):
     probe_s = beam[4,:] * c
     probe_x = beam[0,:]
 
-    wake2d_dict = wf_model.wf2d(probe_s, probe_x, beam_offset, semigap, bp.charge, wf_model.wxd)
+    wake2d_dict = wf_model.wf2d(probe_s, probe_x+beam_offset, semigap, bp.charge, wf_model.wxd)
     beam_hist = wake2d_dict['beam_hist']
     s_edges = wake2d_dict['s_bins']
     x_edges = wake2d_dict['x_bins']
@@ -128,25 +127,11 @@ for n_split in range(n_splits):
     out = sp.imshow(np.abs(wake2d_dict['spw2d']), aspect='auto', extent=[s_edges[0], s_edges[-1], x_edges[0], x_edges[-1]], origin='lower')
     fig.colorbar(out, ax=sp, extend='both')
 
-    wake_effect = np.interp(probe_s, wake_s, wake_from2d) / energy_eV / n_splits * np.sign(bp.charge)
+    wake_effect = wake2d_dict['wake_on_particles'] / energy_eV / n_splits
 
     if do_quad_wake:
-        wake2d_dict_quad = wf_model.wf2d_quad(probe_s, probe_x, beam_offset, semigap, bp.charge, wf_model.wxq)
-        quad_s = wake2d_dict_quad['s_bins']
-        quad_x = wake2d_dict_quad['x_bins']
-        quad_wake = wake2d_dict_quad['wake'] / energy_eV / n_splits * np.sign(bp.charge)
-        try:
-            quad_effect = np.zeros_like(beam[0,:])
-            interp_quad = scipy.interpolate.interp2d(quad_s, quad_x, quad_wake.T)
-            #import time
-            #time0 = time.time()
-            for n, (s_, x) in enumerate(zip(probe_s, beam[0,:]+beam_offset)):
-                quad_effect[n] = interp_quad(s_, x)
-            #print(time.time() - time0, 'seconds')
-            #import pdb; pdb.set_trace()
-        except Exception as e:
-            print(e)
-            import pdb; pdb.set_trace()
+        wake2d_dict_quad = wf_model.wf2d_quad(probe_s, probe_x+beam_offset, semigap, bp.charge, wf_model.wxq)
+        quad_effect = wake2d_dict_quad['wake_on_particles'] / energy_eV / n_splits
     else:
         quad_effect = 0
 

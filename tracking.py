@@ -174,6 +174,10 @@ class ScreenDistribution(Profile):
         return sp.plot(x*1e3, y/self.integral, **kwargs)
 
 def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
+    """
+    Smoothening by applying changes to coordinate.
+    Does not actually smoothen the output, just broadens it.
+    """
     if smoothen:
         rand = np.random.randn(len(x_points))
         rand[rand>3] = 3
@@ -184,7 +188,8 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
     screen_hist, bin_edges0 = np.histogram(x_points2, bins=screen_bins, density=True)
     screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
 
-    return ScreenDistribution(screen_xx, screen_hist)
+    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
+
 
 
 class BeamProfile(Profile):
@@ -395,6 +400,7 @@ class Tracker:
 
         self.override_quad_beamsize = False
         self.quad_x_beamsize = [0., 0.]
+        self.wake2d = True
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
@@ -425,28 +431,63 @@ class Tracker:
         wf_xx = wake_tt*c
         #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
         wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_current, self.energy_eV, Ls=self.struct_lengths[n_streaker])
-        wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=False)
+        wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=self.quad_wake, calc_long_dipole=False)
         wake = wf_dict['dipole']['wake_potential']
-        quad = wf_dict['quadrupole']['wake_potential']
+        if self.quad_wake:
+            quad = wf_dict['quadrupole']['wake_potential']
+        else:
+            quad = None
 
         return wake_tt, wake, quad
 
-    def matrix_forward(self, beamProfile, gaps, beam_offsets, debug=False):
+    def matrix_forward(self, beamProfile, gaps, beam_offsets):
 
-        def calc_quad(beam_before, n_streaker):
-            quad_x = beam_before[0,:]-beam_before[0,:].mean()
-            if self.override_quad_beamsize:
-                quad_x_factor = self.quad_x_beamsize[n_streaker] / beam_before[0,:].std()
+        # wake_dict is needed in output for diagnostics
+        wake_dict = {}
+
+        def calc_wake(n_streaker, beam_before):
+            """
+            Calculate changes in xp for every particle.
+            Optionally calculate quadrupole wake.
+            """
+            beam_offset = beam_offsets[n_streaker]
+            gap = gaps[n_streaker]
+
+            if beam_offset == 0:
+                dipole = 0
+                quad = 0
+                wake_tt = 0
+                dipole_wake = 0
+                quad_wake = 0
             else:
-                quad_x_factor = 1.
-            quad_effect = quad_list[n_streaker] * quad_x * quad_x_factor
-            return quad_effect
+                wake_tt, dipole_wake, quad_wake = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset, n_streaker)
+                wake_energy = np.interp(beam_before[4,:], wake_tt, dipole_wake)
+                dipole = wake_energy/self.energy_eV*np.sign(beamProfile.charge)
+                if self.quad_wake:
+                    quad_energy = np.interp(beam_before[4,:], wake_tt, quad_wake)
+                    quad0 = quad_energy/self.energy_eV*np.sign(beamProfile.charge)
+
+                    if self.override_quad_beamsize:
+                        quad_x_factor = self.quad_x_beamsize[n_streaker] / beam_before[0,:].std()
+                    else:
+                        quad_x_factor = 1.
+                    quad_x = beam_before[0,:]-beam_before[0,:].mean()
+                    quad = quad0 * quad_x * quad_x_factor
+                else:
+                    quad = 0
+
+            wake_dict[n_streaker] = {'wake_t': wake_tt, 'wake': dipole_wake, 'quad': quad_wake}
+
+            return dipole, quad
+
+        ## Obtain first order matrices from elegant
 
         streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
         mat_dict = streaker_matrices['mat_dict']
 
-        s1 = streaker_matrices['start_to_s1']
+        ## Generate beam
 
+        # Optics
         if self.optics0 == 'default':
             beta_x = elegant_matrix.simulator.beta_x0
             beta_y = elegant_matrix.simulator.beta_y0
@@ -457,11 +498,11 @@ class Tracker:
 
         watch, sim = elegant_matrix.gen_beam(*self.n_emittances, alpha_x, beta_x, alpha_y, beta_y, self.energy_eV/e0_eV, 40e-15, self.n_particles)
 
+        # Longitudinal positions according to input current profile
         curr = beamProfile.current
         tt = beamProfile.time
         integrated_curr = np.cumsum(curr)
         integrated_curr /= integrated_curr[-1]
-
 
         randoms = np.random.rand(self.n_particles)
         interp_tt = np.interp(randoms, integrated_curr, tt)
@@ -469,37 +510,22 @@ class Tracker:
 
         p_arr = np.ones_like(watch['x'])*self.energy_eV/e0_eV
         beam_start = np.array([watch['x'], watch['xp'], watch['y'], watch['yp'], interp_tt, p_arr])
+
+        ## Propagation of initial beam
+
+        s1 = streaker_matrices['start_to_s1']
         beam_before_s1 = np.matmul(s1, beam_start)
 
-        delta_xp_list = []
-        quad_list = []
-
-        wake_dict = {}
-        for n_streaker, (gap, beam_offset) in enumerate(zip(gaps, beam_offsets)):
-            if beam_offset == 0:
-                delta_xp_list.append(0)
-                quad_list.append(0)
-            else:
-                wake_tt, wake, quad = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset, n_streaker)
-                wake_dict[n_streaker] = {'wake_t': wake_tt, 'wake': wake, 'quad': quad}
-                wake_energy = np.interp(beam_before_s1[4,:], wake_tt, wake)
-                quad_energy = np.interp(beam_before_s1[4,:], wake_tt, quad)
-                delta_xp = wake_energy/self.energy_eV*np.sign(beamProfile.charge)
-                delta_xp_list.append(delta_xp)
-                quad_list.append(quad_energy/self.energy_eV*np.sign(beamProfile.charge))
-
         beam_after_s1 = np.copy(beam_before_s1)
-        beam_after_s1[1,:] += delta_xp_list[0]
-        if self.quad_wake:
-            beam_after_s1[1,:] += calc_quad(beam_before_s1, 0)
+        dipole_s1, quad_s1 = calc_wake(0, beam_before_s1)
+        beam_after_s1[1,:] += dipole_s1 + quad_s1
 
         beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
 
         beam_after_s2 = np.copy(beam_before_s2)
-        beam_after_s2[1,:] += delta_xp_list[1]
+        dipole_s2, quad_s2 = calc_wake(1, beam_before_s2)
+        beam_after_s2[1,:] += dipole_s2 + quad_s2
 
-        if self.quad_wake:
-            beam_after_s2[1,:] += calc_quad(beam_before_s2, 1)
 
         #if beam_offsets[1] != 0:
         #    import pickle
@@ -547,8 +573,9 @@ class Tracker:
         #        print()
 
 
-        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, self.smoothen)
-        screen_no_smoothen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0)
+        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0)
+        screen_no_smoothen = copy.deepcopy(screen)
+        screen.smoothen(self.smoothen)
 
         for s_ in (screen_no_smoothen, screen):
             s_.reshape(self.len_screen)

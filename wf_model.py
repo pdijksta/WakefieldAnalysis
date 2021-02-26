@@ -92,6 +92,78 @@ def wld(s, a, x):
     t4 = exp(-sqrt(s/s0l_))
     return t1 * t2 * t3 * t4
 
+def wf2d(s_coords, x_coords, beam_offset, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
+
+    beam_hist, s_edges, x_edges = np.histogram2d(s_coords, x_coords, hist_bins)
+    beam_hist *= charge / beam_hist.sum()
+
+    s_edges = s_edges[:-1] + (s_edges[1] - s_edges[0])*0.5
+    x_edges = x_edges[:-1] + (x_edges[1] - x_edges[0])*0.5 + beam_offset
+
+    wake2d = wf_func(s_edges[:, np.newaxis], semigap, x_edges)
+    wake = np.zeros_like(s_edges)
+
+    for n_output in range(len(wake)):
+        for n2 in range(0, n_output+1):
+            wake[n_output] += (beam_hist[n2,:] * wake2d[n_output-n2,:]).sum()
+
+    output = {
+            'wake': wake,
+            'wake_s': s_edges,
+            'beam_hist': beam_hist,
+            's_bins': s_edges,
+            'x_bins': x_edges,
+            'spw2d': wake2d,
+            }
+    return output
+
+def wf2d_quad(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
+
+    beam_hist, s_edges, x_edges = np.histogram2d(s_coords, x_coords, hist_bins)
+    beam_hist *= charge / beam_hist.sum()
+
+    s_edges = s_edges[:-1] + (s_edges[1] - s_edges[0])*0.5
+    x_edges = x_edges[:-1] + (x_edges[1] - x_edges[0])*0.5
+
+    wake2d = wf_func(s_edges[:, np.newaxis], semigap, x_edges)
+    wake = np.zeros([len(s_edges), len(x_edges)])
+
+    for n_output in range(wake.shape[0]):
+        for n2 in range(0, n_output+1):
+            wake0 = beam_hist[n2,:] * wake2d[n_output-n2,:]
+            c1 = wake0.sum() * x_edges
+            c2 = (wake0 * x_edges).sum()
+            wake[n_output,:] += c1 - c2
+
+    indices = []
+    indices_delta = []
+    delta_s = np.zeros_like(wake)
+    delta_x = delta_s.copy()
+    delta_s[:-1,:] = wake[1:,:] - wake[:-1,:]
+    delta_x[:,:-1] = wake[:,1:] - wake[:,:-1]
+
+    for grid_points, points in [(s_edges, s_coords), (x_edges, x_coords)]:
+        index_float = (points - grid_points[0]) / (grid_points[1] - grid_points[0])
+        index = index_float.astype(int)
+        indices_delta.append(index_float-index)
+        np.clip(index, 0, len(grid_points)-1, out=index)
+        indices.append(index)
+
+    wake_on_particles = wake[indices[0], indices[1]]
+    correction = delta_s[indices[0], indices[1]] * indices_delta[0] + delta_x[indices[0], indices[1]] * indices_delta[1]
+    wake_on_particles += correction
+
+    output = {
+            'wake': wake,
+            'wake_on_particles': wake_on_particles,
+            'beam_hist': beam_hist,
+            's_bins': s_edges,
+            'x_bins': x_edges,
+            'spw2d': wake2d,
+            }
+    return output
+
+
 class WakeFieldCalculator:
     def __init__(self, xx, charge_profile, beam_energy_eV, Ls=Ls):
         self.xx = xx

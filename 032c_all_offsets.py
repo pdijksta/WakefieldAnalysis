@@ -28,12 +28,12 @@ profile_cutoff = 0
 timestamp = 1601761132
 gap_correcting_summand = 0
 gaps = [10e-3, 10e-3 + gap_correcting_summand]
-offset_correcting_summand = 0
+offset_correcting_summand = 10e-6
 mean_offset = 0.472*1e-3 + offset_correcting_summand
 n_streaker = 1
 tt_halfrange = 200e-15
 bp_smoothen = 1e-15
-invert_offset = False
+invert_offset = True
 
 quad_wake = True
 override_quad_beamsize = True
@@ -94,11 +94,9 @@ mean0 = np.mean(all_mean)
 
 profile_meas = tracking.profile_from_blmeas(blmeas38, tt_halfrange, charge, energy_eV)
 
-offset0 = dict0['value']*1e-3
+offset_arr = dict0['value']*1e-3 - mean_offset
 if invert_offset:
-    offset0 *= -1
-
-offset_arr = offset0 - mean_offset
+    offset_arr *= -1
 
 
 ms.figure('Summary')
@@ -147,7 +145,7 @@ for n_offset, offset in enumerate(offset_arr[:-1]):
     sp_ctr += 1
 
     avg_screen.plot_standard(sp_forward, label='Measured', lw=3, color='black')
-    color = avg_screen.plot_standard(sp_summary, label='%.2f' % (offset*1e3))[0].get_color()
+    color = avg_screen.plot_standard(sp_summary, label='%.2f' % ((5e-3 - offset)*1e6))[0].get_color()
 
     tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, bp_smoothen=bp_smoothen, quad_wake=quad_wake)
 
@@ -185,10 +183,14 @@ offsets = offset_arr[:-1]
 for centroid_arr, err, label in [(centroids, centroids_sig*1e3, 'Measured'), (centroids_sim, None, 'Simulated')]:
 
     color = sp_centroid.errorbar(offsets*1e3, centroid_arr*1e3, label=label, yerr=err)[0].get_color()
-    fit, _ = curve_fit(fit_func, offsets, centroid_arr, (gaps[1]/2., centroid_arr.max()**order))
-    reconstruction = fit_func(offsets, *fit)
+    try:
+        fit, _ = curve_fit(fit_func, offsets, centroid_arr, (gaps[1]/2., 1e-14))
+        reconstruction = fit_func(offsets, *fit)
 
-    sp_centroid.plot(offsets*1e3, reconstruction*1e3, color=color, ls='--', label='%.4f' % (fit[0]*1e3))
+        sp_centroid.plot(offsets*1e3, reconstruction*1e3, color=color, ls='--', label='%.4f' % (fit[0]*1e3))
+    except RuntimeError:
+        print('runtimerror')
+        pass
 
 sp_centroid.legend()
 

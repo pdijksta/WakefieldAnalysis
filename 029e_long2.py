@@ -18,7 +18,7 @@ hostname = socket.gethostname()
 elegant_matrix.set_tmp_dir('/home/philipp/tmp_elegant/')
 
 tt_halfrange = 200e-15
-charge = -200e-12
+charge = 200e-12
 screen_cutoff = 2e-3
 profile_cutoff = 2e-2
 len_profile = int(2e3)
@@ -35,7 +35,7 @@ invert_offset = True
 #sig_t_range = np.arange(20, 40.01, 2)*1e-15
 
 #mean_struct2 = 472e-6 # see 026_script
-fudge_factor = 0
+fudge_factor = 30e-6
 mean_struct2 = 466e-6 + fudge_factor
 gap2_correcting_summand = 0 #-3e-6
 sig_t_range = np.arange(20, 40.01, 5)*1e-15
@@ -139,7 +139,7 @@ process_dict = {
 
         }
 
-for main_label in ['Long', 'Medium']:
+for main_label in ['Long',]:
     p_dict = process_dict[main_label]
 
     #fig_paper = ms.figure('Old %s' % main_label)
@@ -281,7 +281,7 @@ for main_label in ['Long', 'Medium']:
     ## FINAL PLOTS
 
     for sp_ in sp_tdc_meas, sp_recon:
-        profile_meas.plot_standard(sp_, center=center, label='TDC', color='black')
+        profile_meas.plot_standard(sp_, center=center, label='TDC %i' % (profile_meas.gaussfit.sigma*1e15), color='black')
     #profile_meas2.plot_standard(sp_tdc_meas, center='Left_fit', label='TDC 2')
     sig_list = []
     for n_image, projx in enumerate(projections):
@@ -329,7 +329,7 @@ for main_label in ['Long', 'Medium']:
         screen_recon.smoothen(smoothen)
         screen_recon.cutoff(screen_cutoff)
 
-        bp_recon.plot_standard(sp_recon, label=label, center=center)
+        bp_recon.plot_standard(sp_recon, label=label+' %i' % (bp_recon.gaussfit.sigma*1e15), center=center)
         #bp_recon.plot_standard(sp_tdc_meas, color=color, center=center, ls='--')
         screen_recon.plot_standard(sp_recon_screen, label=label)
         print('Difference for %s recon: %e' % (label, median_screen.compare(screen_recon)))

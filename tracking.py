@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import copy
 import functools
 import numpy as np
-from scipy.constants import c
+from scipy.constants import c, m_e, e
 from scipy.ndimage import gaussian_filter1d
 
 import elegant_matrix
@@ -15,6 +15,8 @@ import doublehornfit
 import myplotstyle as ms
 
 tmp_folder = './'
+
+e0_eV = m_e*c**2/e
 
 def get_average_profile(p_list):
     len_profile = max(len(p) for p in p_list)
@@ -193,9 +195,6 @@ class BeamProfile(Profile):
             raise ValueError('nans in time')
         if np.any(np.isnan(current)):
             raise ValueError('nans in current')
-
-        if np.sum(current) <= 0:
-            raise ValueError('Sum of current must be larger than 0')
 
         self._xx = time
         assert np.all(np.diff(self._xx)>=0)
@@ -410,7 +409,7 @@ class Tracker:
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
-    def get_wake_potential_from_profile(self, profile, gap, beam_offset):
+    def get_wake_potential_from_profile(self, profile, gap, beam_offset, n_streaker):
 
         mask_curr = profile.current != 0
         wake_tt0 = profile.time[mask_curr]
@@ -425,7 +424,7 @@ class Tracker:
         wake_tt = wake_tt - wake_tt.min()
         wf_xx = wake_tt*c
         #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
-        wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_current, self.energy_eV, Ls=self.struct_lengths[0])
+        wf_calc = wf_model.WakeFieldCalculator(wf_xx, wf_current, self.energy_eV, Ls=self.struct_lengths[n_streaker])
         wf_dict = wf_calc.calc_all(gap/2., 1., beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=False)
         wake = wf_dict['dipole']['wake_potential']
         quad = wf_dict['quadrupole']['wake_potential']
@@ -456,18 +455,19 @@ class Tracker:
         else:
             beta_x, beta_y, alpha_x, alpha_y = self.optics0
 
-        watch, sim = elegant_matrix.gen_beam(*self.n_emittances, alpha_x, beta_x, alpha_y, beta_y, self.energy_eV/511e3, 40e-15, self.n_particles)
+        watch, sim = elegant_matrix.gen_beam(*self.n_emittances, alpha_x, beta_x, alpha_y, beta_y, self.energy_eV/e0_eV, 40e-15, self.n_particles)
 
         curr = beamProfile.current
         tt = beamProfile.time
         integrated_curr = np.cumsum(curr)
         integrated_curr /= integrated_curr[-1]
 
+
         randoms = np.random.rand(self.n_particles)
         interp_tt = np.interp(randoms, integrated_curr, tt)
         interp_tt -= interp_tt.min()
 
-        p_arr = np.ones_like(watch['x'])*self.energy_eV/511e3
+        p_arr = np.ones_like(watch['x'])*self.energy_eV/e0_eV
         beam_start = np.array([watch['x'], watch['xp'], watch['y'], watch['yp'], interp_tt, p_arr])
         beam_before_s1 = np.matmul(s1, beam_start)
 
@@ -480,7 +480,7 @@ class Tracker:
                 delta_xp_list.append(0)
                 quad_list.append(0)
             else:
-                wake_tt, wake, quad = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset)
+                wake_tt, wake, quad = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset, n_streaker)
                 wake_dict[n_streaker] = {'wake_t': wake_tt, 'wake': wake, 'quad': quad}
                 wake_energy = np.interp(beam_before_s1[4,:], wake_tt, wake)
                 quad_energy = np.interp(beam_before_s1[4,:], wake_tt, quad)
@@ -488,50 +488,63 @@ class Tracker:
                 delta_xp_list.append(delta_xp)
                 quad_list.append(quad_energy/self.energy_eV*np.sign(beamProfile.charge))
 
-
-        #print('Starting beamsize %.1e' % beam_before_s1[0,:].std())
         beam_after_s1 = np.copy(beam_before_s1)
         beam_after_s1[1,:] += delta_xp_list[0]
         if self.quad_wake:
             beam_after_s1[1,:] += calc_quad(beam_before_s1, 0)
 
-
         beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
 
         beam_after_s2 = np.copy(beam_before_s2)
         beam_after_s2[1,:] += delta_xp_list[1]
+
         if self.quad_wake:
             beam_after_s2[1,:] += calc_quad(beam_before_s2, 1)
+
+        #if beam_offsets[1] != 0:
+        #    import pickle
+        #    filename = './investigate_streaking.pkl'
+        #    with open(filename, 'wb') as f:
+        #        pickle.dump({
+        #            'beam_before_s2': beam_before_s2,
+        #            'delta_xp': delta_xp_list[1],
+        #            'beam_offset': beam_offsets[1],
+        #            'gap': gaps[1],
+        #            'profile': beamProfile,
+        #            }, f)
+        #    print('Saved %s' % filename)
+        #    import sys; sys.exit()
+
 
         beam_at_screen = np.matmul(streaker_matrices['s2_to_screen'], beam_after_s2)
         beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
         beam_at_screen[0] -= beam0_at_screen[0].mean()
 
-        if False and not any(beam_offsets):
-            print()
-            for label, beam in [
-                    ('beam_start', beam_start),
-                    ('before_s1', beam_before_s1),
-                    ('after_s1', beam_after_s1),
-                    ('before_s2', beam_before_s2),
-                    ('after_s2', beam_after_s2),
-                    ('at_screen', beam_at_screen),
-                    ]:
+        #if not any(beam_offsets):
+        #    print()
+        #    for label, beam in [
+        #            ('beam_start', beam_start),
+        #            ('before_s1', beam_before_s1),
+        #            ('after_s1', beam_after_s1),
+        #            ('before_s2', beam_before_s2),
+        #            ('after_s2', beam_after_s2),
+        #            ('at_screen', beam_at_screen),
+        #            ]:
 
-                for indices, dim in [((0,1), 'X'), ((2,3), 'Y')]:
-                    pos, angle = indices
-                    m11 = np.var(beam[pos,:])
-                    m22 = np.var(beam[angle,:])
-                    m12 = np.mean((beam[pos,:]-beam[pos,:].mean()) * (beam[angle,:] - beam[angle,:].mean()))
-                    emitx = np.sqrt(m11*m22-m12**2)
-                    betax = m11/emitx
-                    alfax = -m12/emitx
-                    beamsize = np.sqrt(emitx*betax)
-                    print(label, beamsize, emitx, betax, alfax, dim)
-                    if np.isnan(emitx):
-                        raise ValueError
-                        #import pdb; pdb.set_trace()
-                print()
+        #        for indices, dim in [((0,1), 'X'), ((2,3), 'Y')]:
+        #            pos, angle = indices
+        #            m11 = np.var(beam[pos,:])
+        #            m22 = np.var(beam[angle,:])
+        #            m12 = np.mean((beam[pos,:]-beam[pos,:].mean()) * (beam[angle,:] - beam[angle,:].mean()))
+        #            emitx = np.sqrt(m11*m22-m12**2)
+        #            betax = m11/emitx
+        #            alfax = -m12/emitx
+        #            beamsize = np.sqrt(emitx*betax)
+        #            print(label, beamsize, emitx, betax, alfax, dim)
+        #            if np.isnan(emitx):
+        #                raise ValueError
+        #                #import pdb; pdb.set_trace()
+        #        print()
 
 
         screen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, self.smoothen)
@@ -635,7 +648,6 @@ class Tracker:
         else:
             raise ValueError
 
-
         if abs(wake_x.max()) > abs(wake_x.min()):
             mask_negative = screen.x < 0
         else:
@@ -734,7 +746,7 @@ class Tracker:
         track_dict_forward = self.forward(bp_forward, gaps, beam_offsets)
         track_dict_forward0 = self.forward(bp_forward, gaps, [0,0])
 
-        screen_f0 = copy.deepcopy(track_dict_forward['screen'])
+        #screen_f0 = copy.deepcopy(track_dict_forward['screen'])
         screen = track_dict_forward['screen']
         screen0 = track_dict_forward0['screen']
         screen._xx = screen._xx - screen0.gaussfit.mean # Correct for deflection of normal beam
@@ -743,28 +755,27 @@ class Tracker:
         wake_effect = bp_wake.wake_effect_on_screen(wf_dict, track_dict_forward0['r12_dict'][n_streaker])
         bp_back = self.track_backward(screen, wake_effect, n_streaker)
 
-        if False:
-            ms.figure('forward_and_back')
-            subplot = ms.subplot_factory(2,2)
-            sp_ctr = 1
-            sp = subplot(sp_ctr, title='Screens')
-            sp_ctr += 1
-            sp.plot(screen._xx, screen._yy, label='Input')
-            screen = screen_f0
-            sp.plot(screen._xx, screen._yy, label='Forward')
-            screen = screen0
-            sp.plot(screen._xx, screen._yy, label='Forward 0')
-            sp.legend()
+        #ms.figure('forward_and_back')
+        #subplot = ms.subplot_factory(2,2)
+        #sp_ctr = 1
+        #sp = subplot(sp_ctr, title='Screens')
+        #sp_ctr += 1
+        #sp.plot(screen._xx, screen._yy, label='Input')
+        #screen = screen_f0
+        #sp.plot(screen._xx, screen._yy, label='Forward')
+        #screen = screen0
+        #sp.plot(screen._xx, screen._yy, label='Forward 0')
+        #sp.legend()
 
-            sp = subplot(sp_ctr, title='Profiles')
-            p = bp_forward
-            sp.plot(p._xx, p._yy, label='Input')
-            p = bp_back
-            sp.plot(p._xx, p._yy, label='Back')
+        #sp = subplot(sp_ctr, title='Profiles')
+        #p = bp_forward
+        #sp.plot(p._xx, p._yy, label='Input')
+        #p = bp_back
+        #sp.plot(p._xx, p._yy, label='Back')
 
-            sp.legend()
+        #sp.legend()
 
-            plt.show()
+        #plt.show()
 
         return {
                 'track_dict_forward': track_dict_forward,

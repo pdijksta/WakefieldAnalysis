@@ -2,7 +2,10 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import numpy as np
 
-import gaussfit
+try:
+    import gaussfit
+except ImportError:
+    from . import gaussfit
 
 class DoublehornFit:
     def __init__(self, xx, yy, raise_=True):

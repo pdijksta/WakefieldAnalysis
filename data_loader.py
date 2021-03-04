@@ -3,7 +3,10 @@ import json
 import numpy as np
 import h5py
 
-from h5_storage import loadH5Recursive
+try:
+    from h5_storage import loadH5Recursive
+except ImportError:
+    from .h5_storage import loadH5Recursive
 
 @functools.lru_cache(5)
 def csv_to_dict(file_):

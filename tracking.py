@@ -5,12 +5,21 @@ import numpy as np
 from scipy.constants import c, m_e, e
 from scipy.ndimage import gaussian_filter1d
 
-import elegant_matrix
-import data_loader
-from gaussfit import GaussFit
-import wf_model
-import misc
-import doublehornfit
+try:
+    from .gaussfit import GaussFit
+    from . import elegant_matrix
+    from . import data_loader
+    from . import wf_model
+    from . import misc
+    from . import doublehornfit
+except ImportError:
+    from gaussfit import GaussFit
+    import elegant_matrix
+    import data_loader
+    import wf_model
+    import misc
+    import doublehornfit
+
 
 import myplotstyle as ms
 
@@ -171,7 +180,7 @@ class ScreenDistribution(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        return sp.plot(x*1e3, y/self.integral, **kwargs)
+        return sp.plot(x*1e3, y/self.integral/1e3, **kwargs)
 
 def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
     """
@@ -189,8 +198,6 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
     screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
 
     return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
-
-
 
 class BeamProfile(Profile):
     def __init__(self, time, current, energy_eV, charge):
@@ -329,7 +336,7 @@ class BeamProfile(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        return sp.plot(x, y*factor, **kwargs)
+        return sp.plot(x, y*factor/1e3, **kwargs)
 
 
 def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False, zero_crossing=1):
@@ -372,7 +379,6 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
         abs_c = np.abs(current_gauss)
         current_gauss[abs_c<cutoff*abs_c.max()] = 0
 
-
     return BeamProfile(time_arr, current_gauss, energy_eV, charge)
 
 
@@ -400,7 +406,9 @@ class Tracker:
 
         self.override_quad_beamsize = False
         self.quad_x_beamsize = [0., 0.]
-        self.wake2d = True
+        self.wake2d = False
+        self.hist_bins_2d = (500, 500)
+        self.split_streaker = 0
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
@@ -418,7 +426,8 @@ class Tracker:
     def get_wake_potential_from_profile(self, profile, gap, beam_offset, n_streaker):
 
         mask_curr = profile.current != 0
-        wake_tt0 = profile.time[mask_curr]
+        where = np.argwhere(mask_curr)
+        wake_tt0 = profile.time[where[0,0]:where[-1,0]]
         wake_tt_range = wake_tt0.max() - wake_tt0.min()
         diff = np.mean(np.diff(wake_tt0))
         try:
@@ -426,7 +435,7 @@ class Tracker:
         except:
             raise ValueError
         wake_tt = np.concatenate([wake_tt0, add_on])
-        wf_current = np.concatenate([profile.current[mask_curr], np.zeros_like(add_on)])
+        wf_current = np.concatenate([profile.current[where[0,0]:where[-1,0]], np.zeros_like(add_on)])
         wake_tt = wake_tt - wake_tt.min()
         wf_xx = wake_tt*c
         #print(wf_current.sum(), wf_xx.min(), wf_xx.max())
@@ -436,7 +445,7 @@ class Tracker:
         if self.quad_wake:
             quad = wf_dict['quadrupole']['wake_potential']
         else:
-            quad = None
+            quad = 0
 
         return wake_tt, wake, quad
 
@@ -476,9 +485,82 @@ class Tracker:
                 else:
                     quad = 0
 
-            wake_dict[n_streaker] = {'wake_t': wake_tt, 'wake': dipole_wake, 'quad': quad_wake}
+            wake_dict[n_streaker] = {
+                'wake_t': wake_tt,
+                'wake': dipole_wake,
+                'quad': quad_wake,
+                'delta_xp_dipole': dipole,
+                'delta_xp_quad': quad,
+            }
 
             return dipole, quad
+
+        def calc_wake2d(n_streaker, beam_before):
+            """
+            Calculate changes in xp for every particle using a 2d histogram of particles.
+            Equations are evaluated based on the x of every histogram point, instead of assuming the same x for every particle.
+            Optionally calculate quadrupole wake.
+            """
+            beam_offset = beam_offsets[n_streaker]
+            gap = gaps[n_streaker]
+
+            # Careful! Effects from beamsize are not considered when beam_offset is 0
+            if beam_offset == 0:
+                return 0, 0
+
+            if self.override_quad_beamsize:
+                x_coords0 = beam_before[0,:]
+                x_coords0 = x_coords0.mean() + (x_coords0 - x_coords0.mean())*self.quad_x_beamsize[n_streaker] / x_coords0.std()
+                x_coords = x_coords0 + beam_offset
+            else:
+                x_coords = beam_before[0,:]+beam_offset
+
+            dict_dipole_2d = wf_model.wf2d(beam_before[4,:]*c, x_coords, gap/2., beamProfile.charge, wf_model.wxd, self.hist_bins_2d)
+            dipole = dict_dipole_2d['wake_on_particles']/self.energy_eV
+
+            dict_quad_2d = wf_model.wf2d_quad(beam_before[4,:]*c, beam_before[0,:]+beam_offset, gap/2., beamProfile.charge, wf_model.wxq, self.hist_bins_2d)
+
+            quad = dict_quad_2d['wake_on_particles']/self.energy_eV
+
+            wake_dict[n_streaker] = {
+                'wake_t': dict_dipole_2d['s_bins']/c,
+                'wake': dict_dipole_2d['wake'],
+                'quad': dict_quad_2d['wake'],
+                'delta_xp_dipole': dipole,
+                'delta_xp_quad': quad,
+            }
+
+            return dipole, quad
+
+        def split_streaker(n_streaker, beam_before):
+            if self.split_streaker in (0, 1):
+                beam_after = np.copy(beam_before)
+                if self.wake2d:
+                    dipole, quad = calc_wake2d(n_streaker, beam_before)
+                else:
+                    dipole, quad = calc_wake(n_streaker, beam_before)
+                beam_after[1,:] += dipole + quad
+            else:
+                beam_after = misc.drift(-self.struct_lengths[n_streaker]/2) @ beam_before
+                delta_l = self.struct_lengths[n_streaker]/self.split_streaker/2
+
+                for n_split in range(self.split_streaker):
+                    np.matmul(misc.drift(delta_l), beam_after, out=beam_after)
+
+                    if self.wake2d:
+                        dipole, quad = calc_wake2d(n_streaker, beam_after)
+                    else:
+                        dipole, quad = calc_wake(n_streaker, beam_after)
+                    beam_after[1,:] += (dipole + quad)/self.split_streaker
+
+                    #if beam_offsets[n_streaker] == 0.004692:
+                    #    import pickle
+                    #    with open('./beam_after.pkl', 'wb') as f:
+                    #        pickle.dump(beam_after, f)
+
+                    np.matmul(misc.drift(delta_l), beam_after, out=beam_after)
+            return beam_after
+
 
         ## Obtain first order matrices from elegant
 
@@ -515,17 +597,10 @@ class Tracker:
 
         s1 = streaker_matrices['start_to_s1']
         beam_before_s1 = np.matmul(s1, beam_start)
-
-        beam_after_s1 = np.copy(beam_before_s1)
-        dipole_s1, quad_s1 = calc_wake(0, beam_before_s1)
-        beam_after_s1[1,:] += dipole_s1 + quad_s1
+        beam_after_s1 = split_streaker(0, beam_before_s1)
 
         beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
-
-        beam_after_s2 = np.copy(beam_before_s2)
-        dipole_s2, quad_s2 = calc_wake(1, beam_before_s2)
-        beam_after_s2[1,:] += dipole_s2 + quad_s2
-
+        beam_after_s2 = split_streaker(1, beam_before_s2)
 
         #if beam_offsets[1] != 0:
         #    import pickle
@@ -919,6 +994,7 @@ class Tracker:
                    'opt_func_screens': opt_func_screens,
                    'opt_func_profiles': opt_func_profiles,
                    'opt_func_sigmas': opt_func_sigmas,
+                   'opt_func_wakes': gauss_wakes,
                    })
 
         return output

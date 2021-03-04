@@ -10,8 +10,12 @@ from scipy.constants import c
 from ElegantWrapper.simulation import ElegantSimulation
 from ElegantWrapper.watcher import FileViewer, Watcher2
 
-import data_loader
-import wf_model
+try:
+    import data_loader
+    import wf_model
+except ImportError:
+    from . import data_loader
+    from . import wf_model
 
 pid = os.getpid()
 ctr = 0
@@ -112,8 +116,8 @@ def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_
             '_bunch_length_': rms_bunch_duration*c,
             '_n_particles_': n_particles,
             }
-    lat = './gen_beam.lat'
-    ele = './gen_beam.ele'
+    lat = os.path.join(this_dir, './gen_beam.lat')
+    ele = os.path.join(this_dir, './gen_beam.ele')
 
     cmd, sim = run_sim(macro_dict, ele, lat)
     w = sim.watch[-1]
@@ -165,8 +169,8 @@ class simulator:
         """
 
         if branch == 'Aramis':
-            lat = './Elegant-Aramis-Reference.lat'
-            ele = './SwissFEL_in0.ele'
+            lat = os.path.join(this_dir, './Elegant-Aramis-Reference.lat')
+            ele = os.path.join(this_dir, './SwissFEL_in0.ele')
 
             if streaker_index != 'NULL':
                 macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_%i$1' % (streaker_index+1)}
@@ -183,8 +187,8 @@ class simulator:
                     print(key, '%.2e' % k1)
 
         elif branch == 'Athos':
-            lat = './Athos_Full.lat'
-            ele = './SwissFEL_in0_Athos.ele'
+            lat = os.path.join(this_dir, './Athos_Full.lat')
+            ele = os.path.join(this_dir, './SwissFEL_in0_Athos.ele')
             macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER$1'}
 
             for quad in quads_athos:
@@ -321,8 +325,8 @@ class simulator:
                 wf_dict = wf_model.generate_elegant_wf(filename, xx, gap/2., beam_offset, L=1.)
                 wf_dicts.append(wf_dict)
 
-        lat = './Aramis.lat'
-        ele = './SwissFEL_in_streaker.ele'
+        lat = os.path.join(this_dir, './Aramis.lat')
+        ele = os.path.join(this_dir, './SwissFEL_in_streaker.ele')
         macro_dict = {
                 '_p_central_': p_central,
                 '_twf_factor_': int(linearize_twf),

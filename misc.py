@@ -1,8 +1,12 @@
 import re
 import numpy as np
 
-import tracking
-import elegant_matrix
+try:
+    import tracking
+    import elegant_matrix
+except ImportError:
+    from . import tracking
+    from . import elegant_matrix
 
 def find_rising_flank(arr, method='Size'):
     """
@@ -59,7 +63,7 @@ def avergage_BeamProfiles(bp_list, align='Max'):
 
 
 def fit_nat_beamsize(screen_meas, screen_sim, emittance, screen_res=0., print_=False):
-    screen_sim2 = tracking.getScreenDistributionFromPointsScreenDistribution(screen_sim.real_x, len(screen_sim._xx), screen_res)
+    screen_sim2 = tracking.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), screen_res)
 
     sig_meas = np.sqrt(screen_meas.gaussfit.sigma**2 - screen_res**2)
     sig_sim = np.sqrt(screen_sim2.gaussfit.sigma**2 - screen_res**2)
@@ -79,4 +83,13 @@ def get_timestamp(filename):
         raise ValueError
     args = [int(x) for x in match.groups()]
     return (elegant_matrix.get_timestamp)(*args)
+
+def drift(L):
+    return np.array([
+        [1, L, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+        [0, 0, 1, L, 0, 0],
+        [0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 1],], float)
 

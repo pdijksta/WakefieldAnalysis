@@ -111,7 +111,6 @@ def wf2d(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)
 
     output = {
             'wake': wake,
-            'wake_s': s_edges,
             'beam_hist': beam_hist,
             's_bins': s_edges,
             'x_bins': x_edges,
@@ -121,6 +120,9 @@ def wf2d(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)
     return output
 
 def wf2d_quad(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
+    """
+    Respects sign of the charge
+    """
 
     beam_hist, s_edges, x_edges = np.histogram2d(s_coords, x_coords, hist_bins)
     beam_hist *= charge / beam_hist.sum()
@@ -138,13 +140,19 @@ def wf2d_quad(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3),
             c2 = (wake0 * x_edges).sum()
             wake[n_output,:] += c1 - c2
 
+    wake *= np.sign(charge)
+
+    ## A much faster interpolation over the grid than from scipy.interpolate.interp2d
     indices = []
     indices_delta = []
     delta_s = np.zeros_like(wake)
     delta_x = delta_s.copy()
+
+    ## Derivative of wake in both directions
     delta_s[:-1,:] = wake[1:,:] - wake[:-1,:]
     delta_x[:,:-1] = wake[:,1:] - wake[:,:-1]
 
+    ## Calculate the indices of the histogram for each point, then also add correction from first derivative
     for grid_points, points in [(s_edges, s_coords), (x_edges, x_coords)]:
         index_float = (points - grid_points[0]) / (grid_points[1] - grid_points[0])
         index = index_float.astype(int)
@@ -153,10 +161,9 @@ def wf2d_quad(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3),
         indices.append(index)
 
     wake_on_particles = wake[indices[0], indices[1]]
+    # Apply derivative
     correction = delta_s[indices[0], indices[1]] * indices_delta[0] + delta_x[indices[0], indices[1]] * indices_delta[1]
     wake_on_particles += correction
-
-    wake_on_particles *= np.sign(charge)
 
     output = {
             'wake': wake,

@@ -60,19 +60,27 @@ class Profile:
         yy2 = np.interp(xx, other._xx, other._yy, left=0, right=0)
         yy1 = yy1 / np.nanmean(yy1)
         yy2 = yy2 / np.nanmean(yy2)
-        diff = (yy1-yy2)**2
-        outp = np.nanmean(diff)
+
+        # modify least squares else large values dominate
+        weight = yy1 + yy2
+        np.clip(weight, weight.max()/2., None, out=weight)
+
+        diff = ((yy1-yy2)/weight)**2
+
+        outp = np.nanmean(diff[np.nonzero(weight)])
+        #import pdb; pdb.set_trace()
         return outp
 
     def reshape(self, new_shape):
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
         old_sum = np.sum(self._yy)
 
-        if new_shape >= len(self._xx):
-            _yy = np.interp(_xx, self._xx, self._yy)
-        else:
-            _yy = np.histogram(self._xx, bins=int(new_shape), weights=self._yy)[0]
-            #import pdb; pdb.set_trace()
+        _yy = np.interp(_xx, self._xx, self._yy)
+        #if new_shape >= len(self._xx):
+        #    _yy = np.interp(_xx, self._xx, self._yy)
+        #else:
+        #    _yy = np.histogram(self._xx, bins=int(new_shape), weights=self._yy)[0]
+        #import pdb; pdb.set_trace()
 
         _yy *= old_sum / _yy.sum()
         self._xx, self._yy = _xx, _yy
@@ -117,12 +125,27 @@ class Profile:
     def integral(self):
         return np.trapz(self._yy, self._xx)
 
-    def smoothen(self, gauss_sigma):
+    def smoothen(self, gauss_sigma, extend=True):
+        diff = self._xx[1] - self._xx[0]
+        if extend:
+            n_extend = int(gauss_sigma // diff * 2)
+            extend0 = np.arange(self._xx[0]-(n_extend+1)*diff, self._xx[0]-0.5*diff, diff)
+            extend1 = np.arange(self._xx[-1]+diff, self._xx[-1]+diff*(n_extend+0.5), diff)
+            zeros0 = np.zeros_like(extend0)
+            zeros1 = np.zeros_like(extend1)
+
+            self._xx = np.concatenate([extend0, self._xx, extend1])
+            self._yy = np.concatenate([zeros0, self._yy, zeros1])
+
+
         if gauss_sigma is None or gauss_sigma == 0:
             return
-        real_sigma = gauss_sigma/np.diff(self._xx).mean()
+        real_sigma = gauss_sigma/diff
         new_yy = gaussian_filter1d(self._yy, real_sigma)
         self._yy = new_yy
+
+        #if gauss_sigma < 5e-15:
+        #    import pdb; pdb.set_trace()
 
     def center(self):
         self._xx = self._xx - self.gaussfit.mean
@@ -693,13 +716,7 @@ class Tracker:
         tt, cc = beamProfile.time, beamProfile.current
         mask = cc != 0
 
-        try:
-            sim, mat_dict, wf_dicts, disp_dict = self.simulator.simulate_streaker(tt[mask], cc[mask], self.timestamp, 'file', None, self.energy_eV, linearize_twf=False, wf_files=filenames, n_particles=self.n_particles, n_emittances=self.n_emittances, optics0=self.optics0)
-        except Exception as e:
-            e
-            raise
-            #print(e)
-            #import pdb; pdb.set_trace()
+        sim, mat_dict, wf_dicts, disp_dict = self.simulator.simulate_streaker(tt[mask], cc[mask], self.timestamp, 'file', None, self.energy_eV, wf_files=filenames, n_particles=self.n_particles, n_emittances=self.n_emittances, optics0=self.optics0)
 
         r12_dict = {}
         for n_streaker in (0, 1):
@@ -725,6 +742,19 @@ class Tracker:
                 'sdds_wakes': sdds_wakes,
                 }
 
+        #output = {
+        #        'beam_at_screen': beam_at_screen,
+        #        'beam0_at_screen': beam0_at_screen,
+        #        'screen': screen,
+        #        'screen_no_smoothen': screen_no_smoothen,
+        #        'beam_profile': beamProfile,
+        #        'r12_dict': r12_dict,
+        #        'initial_beam': watch,
+        #        'wake_dict': wake_dict,
+        #        'bs_at_streaker': [beam_before_s1[0,:].std(), beam_before_s2[0,:].std()],
+        #        }
+
+
         return forward_dict
 
     def set_bs_at_streaker(self):
@@ -733,7 +763,7 @@ class Tracker:
         self.bs_at_streaker = forward_dict['bs_at_streaker']
 
 
-    def track_backward(self, screen, wake_effect, n_streaker, bs_at_streaker=None, plot_details=False):
+    def track_backward(self, screen, wake_effect, n_streaker, plot_details=False):
         screen = copy.deepcopy(screen)
         wake_time = wake_effect['t']
         wake_x = wake_effect['x']
@@ -767,7 +797,9 @@ class Tracker:
             screen._yy = screen_intensity
 
         if self.quad_wake:
-            if bs_at_streaker is None:
+            if self.override_quad_beamsize:
+                bs_at_streaker = self.quad_x_beamsize[n_streaker]
+            else:
                 if self.bs_at_streaker is None:
                     self.set_bs_at_streaker()
                 bs_at_streaker = self.bs_at_streaker[n_streaker]
@@ -817,12 +849,16 @@ class Tracker:
         bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
         bp.crop()
-        bp.reshape(self.len_screen)
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
             #import pdb; pdb.set_trace()
             raise ValueError('NaNs in beam profile')
         if self.bp_smoothen:
+            #bp0 = copy.deepcopy(bp)
             bp.smoothen(self.bp_smoothen)
+            #bp1 = copy.deepcopy(bp)
+            bp.reshape(self.len_screen)
+            #import pdb; pdb.set_trace()
+
 
         if plot_details:
             ms.figure('track_backward')
@@ -946,8 +982,7 @@ class Tracker:
                 bp_back0 = bp_gauss
 
             baf = self.back_and_forward(meas_screen, bp_back0, gaps, beam_offsets, n_streaker)
-            screen = copy.deepcopy(baf['screen_no_smoothen'])
-            screen.smoothen(self.smoothen)
+            screen = copy.deepcopy(baf['screen'])
             diff = screen.compare(meas_screen)
             bp_out = baf['beam_profile']
 
@@ -976,7 +1011,7 @@ class Tracker:
             final_screen = baf['screen']
             final_profile = baf['beam_profile']
         else:
-            final_screen, final_profile = None, None
+            final_screen, final_profile = best_screen, best_profile
 
         output = {
                'gauss_sigma': best_sig_t,

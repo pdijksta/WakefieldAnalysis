@@ -42,15 +42,15 @@ for beam_offset in [4.5e-3, 4.6e-3, 4.7e-3]:
         sp.plot(ss*1e6, z*1e-15, label='%.1f' % (distance*1e6))
 
     probe_s = beam0[4,:] * c
-    probe_x = beam0[0,:]
+    probe_x = beam0[0,:] + beam_offset
 
-    wake2d_dict = wf_model.wf2d(probe_s, probe_x, beam_offset, semigap, bp.charge, wf_model.wxd)
+    wake2d_dict = wf_model.wf2d(probe_s, probe_x, semigap, bp.charge, wf_model.wxd)
     beam_hist = wake2d_dict['beam_hist']
     s_edges = wake2d_dict['s_bins']
     x_edges = wake2d_dict['x_bins']
 
 
-    wake2d_dict_q = wf_model.wf2d(probe_s, probe_x, beam_offset, semigap, bp.charge, wf_model.wxq)
+    wake2d_dict_q = wf_model.wf2d(probe_s, probe_x, semigap, bp.charge, wf_model.wxq)
 
 
     sp = sp1 = subplot(sp_ctr, title='Wake potential', xlabel='s [$\mu$m]', ylabel='Wake [MV/m]')

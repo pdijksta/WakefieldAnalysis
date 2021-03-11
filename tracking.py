@@ -406,7 +406,7 @@ def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cuto
 
 
 class Tracker:
-    def __init__(self, magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_screen, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0):
+    def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.)):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
@@ -426,9 +426,9 @@ class Tracker:
         self.quad_wake = quad_wake
         self.bs_at_streaker = None
         self.bp_smoothen = bp_smoothen
+        self.override_quad_beamsize = override_quad_beamsize
+        self.quad_x_beamsize = quad_x_beamsize
 
-        self.override_quad_beamsize = False
-        self.quad_x_beamsize = [0., 0.]
         self.wake2d = False
         self.hist_bins_2d = (500, 500)
         self.split_streaker = 0
@@ -516,6 +516,7 @@ class Tracker:
                 'delta_xp_quad': quad,
             }
 
+            #print('1d Dipole quad mean', np.abs(dipole).mean(), np.abs(quad).mean())
             return dipole, quad
 
         def calc_wake2d(n_streaker, beam_before):
@@ -532,6 +533,7 @@ class Tracker:
                 return 0, 0
 
             if self.override_quad_beamsize:
+                raise ValueError('Override quad beamsize not tested for 2d wake')
                 x_coords0 = beam_before[0,:]
                 x_coords0 = x_coords0.mean() + (x_coords0 - x_coords0.mean())*self.quad_x_beamsize[n_streaker] / x_coords0.std()
                 x_coords = x_coords0 + beam_offset
@@ -541,18 +543,24 @@ class Tracker:
             dict_dipole_2d = wf_model.wf2d(beam_before[4,:]*c, x_coords, gap/2., beamProfile.charge, wf_model.wxd, self.hist_bins_2d)
             dipole = dict_dipole_2d['wake_on_particles']/self.energy_eV
 
-            dict_quad_2d = wf_model.wf2d_quad(beam_before[4,:]*c, beam_before[0,:]+beam_offset, gap/2., beamProfile.charge, wf_model.wxq, self.hist_bins_2d)
+            if self.quad_wake:
+                dict_quad_2d = wf_model.wf2d_quad(beam_before[4,:]*c, beam_before[0,:]+beam_offset, gap/2., beamProfile.charge, wf_model.wxq, self.hist_bins_2d)
 
-            quad = dict_quad_2d['wake_on_particles']/self.energy_eV
+                quad = dict_quad_2d['wake_on_particles']/self.energy_eV
+                quad_wake = dict_quad_2d['wake']
+            else:
+                quad = 0
+                quad_wake = 0
 
             wake_dict[n_streaker] = {
                 'wake_t': dict_dipole_2d['s_bins']/c,
                 'wake': dict_dipole_2d['wake'],
-                'quad': dict_quad_2d['wake'],
+                'quad': quad_wake,
                 'delta_xp_dipole': dipole,
                 'delta_xp_quad': quad,
             }
 
+            #print('2d Dipole quad mean', np.abs(dipole).mean(), np.abs(quad).mean())
             return dipole, quad
 
         def split_streaker(n_streaker, beam_before):
@@ -563,25 +571,32 @@ class Tracker:
                 else:
                     dipole, quad = calc_wake(n_streaker, beam_before)
                 beam_after[1,:] += dipole + quad
+                #print('Comb Dipole quad mean', np.abs(dipole+quad).mean())
             else:
-                beam_after = misc.drift(-self.struct_lengths[n_streaker]/2) @ beam_before
+                drift_minus = misc.drift(-self.struct_lengths[n_streaker]/2)
+                beam_after = beam_after = np.matmul(drift_minus, beam_before)
                 delta_l = self.struct_lengths[n_streaker]/self.split_streaker/2
+                drift = misc.drift(delta_l)
+                comb_effect = 0
 
                 for n_split in range(self.split_streaker):
-                    np.matmul(misc.drift(delta_l), beam_after, out=beam_after)
+                    np.matmul(drift, beam_after, out=beam_after)
 
                     if self.wake2d:
                         dipole, quad = calc_wake2d(n_streaker, beam_after)
                     else:
                         dipole, quad = calc_wake(n_streaker, beam_after)
                     beam_after[1,:] += (dipole + quad)/self.split_streaker
+                    comb_effect += (dipole + quad)/self.split_streaker
 
                     #if beam_offsets[n_streaker] == 0.004692:
                     #    import pickle
                     #    with open('./beam_after.pkl', 'wb') as f:
                     #        pickle.dump(beam_after, f)
 
-                    np.matmul(misc.drift(delta_l), beam_after, out=beam_after)
+                    np.matmul(drift, beam_after, out=beam_after)
+                np.matmul(drift_minus, beam_after, out=beam_after)
+                #print('Comb Dipole quad mean', np.abs(comb_effect).mean())
             return beam_after
 
 

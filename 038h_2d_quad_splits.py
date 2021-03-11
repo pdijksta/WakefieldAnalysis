@@ -105,7 +105,7 @@ for n_split in range(n_splits):
     sp.imshow(np.abs(beam_hist.T), aspect='auto', extent=[s_edges[0], s_edges[-1], x_edges[0], x_edges[-1]], origin='lower')
 
     wake_from2d = wake2d_dict['wake']
-    wake_s = wake2d_dict['wake_s']
+    wake_s = wake2d_dict['s_bins']
 
     hist1d, _ = np.histogram(probe_s, s_edges)
     hist1d = hist1d / hist1d.sum() * bp.charge

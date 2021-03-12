@@ -2,6 +2,7 @@ import functools
 import json
 import numpy as np
 import h5py
+from scipy.io import loadmat
 
 try:
     from h5_storage import loadH5Recursive
@@ -130,4 +131,53 @@ def load_blmeas(file_):
             })
 
     return output
+
+# For application
+
+def load_screen_data(filename, key, index):
+    if filename.endswith('.h5'):
+        dict_ = loadH5Recursive(filename)
+    elif filename.endswith('.mat'):
+        dict_ = loadmat(filename)
+    else:
+        raise ValueError('Must be h5 or mat file. Is: %s' % filename)
+
+    x_axis = dict_['x_axis']*1e-6
+    data = dict_[key]
+    if index != 'None':
+        index = int(index)
+        data = data[index]
+
+    if len(data.shape) == 2:
+        # Assume saved data are already projections
+        projx = data
+    elif len(data.shape) == 3:
+        # Assume saved data are images
+        projx = np.zeros((data.shape[0], len(x_axis)))
+        for n_img, img in enumerate(data):
+            projx[n_img,:] = img.sum(axis=0)
+    else:
+        raise ValueError('Expect shape of 2 or 3. Is: %i' % len(data.shape))
+
+    y_axis = dict_['y_axis']*1e-6 if 'y_axis' in dict_ else None
+
+    # TBD
+    # - Add y information. Needed for lasing reconstruction.
+
+    if x_axis[1] < x_axis[0]:
+        x_axis = x_axis[::-1]
+        projx = projx[:,::-1]
+    if y_axis[1] < y_axis[0]:
+        y_axis = y_axis[::-1]
+
+    return {
+            'x_axis': x_axis,
+            'projx': projx,
+            'y_axis': y_axis,
+            }
+
+
+
+
+
 

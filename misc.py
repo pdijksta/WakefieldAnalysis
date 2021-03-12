@@ -93,3 +93,21 @@ def drift(L):
         [0, 0, 0, 0, 1, 0],
         [0, 0, 0, 0, 0, 1],], float)
 
+def get_median(projx):
+    """
+    From list of projections, return the median one
+    """
+    all_mean = np.mean(projx, axis=1)
+    index_median = np.argsort(all_mean)[len(all_mean)//2]
+    projx_median = projx[index_median]
+
+    #import matplotlib.pyplot as plt
+    #plt.figure()
+    #for proj in projx:
+    #    plt.plot(proj)
+    #plt.plot(projx_median, color='black', lw=3)
+    #plt.show()
+    #import pdb; pdb.set_trace()
+
+    return projx_median
+

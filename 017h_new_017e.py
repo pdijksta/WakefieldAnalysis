@@ -126,8 +126,6 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
                 continue
             meas_screen.plot_standard(sp_, label='Real', lw=real_lw)
 
-
-
     gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent, details=True)
 
     best_profile = gauss_dict['reconstructed_profile']
@@ -136,7 +134,6 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
     opt_func_screens = gauss_dict['opt_func_screens']
     opt_func_profiles = gauss_dict['opt_func_profiles']
     opt_func_sigmas = gauss_dict['opt_func_sigmas']
-
 
     if opt_plot:
         plot_ctr = 5
@@ -158,11 +155,6 @@ for n_loop, (quad_wake, n_particles, bp_smoothen) in enumerate(itertools.product
             sp2.plot(profile.time*1e15, profile.current/profile.integral, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
             sp.legend()
             sp2.legend()
-            plt.show()
-            plt.pause(0.01)
-
-
-
 
     best_profile.plot_standard(sp_profile, label=label+' %i' % (best_profile.gaussfit.sigma*1e15), center='Left_fit')
     sp_opt.scatter(opt_func_values[:,0]*1e15, opt_func_values[:,1], label=label)

@@ -974,7 +974,7 @@ class Tracker:
                 'best_profile': profiles[best_index],
                 }
 
-    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=False):
+    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True):
 
         opt_func_values = []
         opt_func_screens = []
@@ -1037,13 +1037,14 @@ class Tracker:
                'best_gauss_wake': gauss_wakes[index_min],
                'final_screen': final_screen,
                'final_profile': final_profile,
+               'meas_screen': meas_screen,
                }
         if details:
             output.update({
                    'opt_func_values': opt_func_values,
                    'opt_func_screens': opt_func_screens,
                    'opt_func_profiles': opt_func_profiles,
-                   'opt_func_sigmas': opt_func_sigmas,
+                   'opt_func_sigmas': np.array(opt_func_sigmas),
                    'opt_func_wakes': gauss_wakes,
                    })
 

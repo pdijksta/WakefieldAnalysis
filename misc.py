@@ -4,9 +4,11 @@ import numpy as np
 try:
     import tracking
     import elegant_matrix
+    import gaussfit
 except ImportError:
     from . import tracking
     from . import elegant_matrix
+    from . import gaussfit
 
 def find_rising_flank(arr, method='Size'):
     """
@@ -97,7 +99,12 @@ def get_median(projx):
     """
     From list of projections, return the median one
     """
-    all_mean = np.mean(projx, axis=1)
+    x_axis = np.arange(len(projx[0]))
+    all_mean = []
+    for proj in projx:
+        gf = gaussfit.GaussFit(x_axis, proj)
+        all_mean.append(gf.mean)
+
     index_median = np.argsort(all_mean)[len(all_mean)//2]
     projx_median = projx[index_median]
 

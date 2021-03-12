@@ -257,7 +257,7 @@ class simulator:
         curr = current_profile
         tt = current_time
         integrated_curr = np.cumsum(curr)
-        integrated_curr /= integrated_curr.max()
+        integrated_curr /= integrated_curr[-1]
 
         randoms = np.random.rand(n_particles)
         interp_tt = np.interp(randoms, integrated_curr, tt)

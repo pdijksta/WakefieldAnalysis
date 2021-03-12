@@ -4,6 +4,7 @@ import re
 from functools import lru_cache
 import h5py
 import numpy as np
+import tracking
 
 dt = h5py.special_dtype(vlen=bytes)
 
@@ -41,7 +42,12 @@ def saveH5Recursive(h5_filename, data_dict):
             print("'recurse_save' has been called with None")
             raise ValueError
         if type(dict_or_data) is dict:
-            new_group = group.create_group(dict_or_data_name)
+
+            try:
+                new_group = group.create_group(dict_or_data_name)
+            except:
+                print(dict_or_data_name, 'error')
+                #raise
             if new_group is None:
                 raise ValueError
             for key, val in dict_or_data.items():
@@ -55,6 +61,12 @@ def saveH5Recursive(h5_filename, data_dict):
             inner_key = dict_or_data_name
             if type(mydata) is str:
                 add_dataset(group, inner_key, mydata.encode('utf-8'), 'unknown')
+            elif type(mydata) is tracking.BeamProfile:
+                #raise NotImplementedError
+                pass
+            elif type(mydata) is tracking.ScreenDistribution:
+                #raise NotImplementedError
+                pass
             elif (type(mydata) is list and type(mydata[0]) is str) or (hasattr(mydata, 'dtype') and mydata.dtype.type is np.str_):
                 # For list of strings, we need this procedure
                 try:

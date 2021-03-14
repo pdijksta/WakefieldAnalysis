@@ -3,6 +3,7 @@ No SwissFEL / PSI specific imports in this file.
 Should handle analysis, saving and reloading of data.
 """
 import os
+from datetime import datetime
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 import tracking
 import myplotstyle as ms
 import h5_storage
-from datetime import datetime
+import elegant_matrix
 
 class Reconstruction:
     def __init__(self):
@@ -32,15 +33,15 @@ class Reconstruction:
         #        'screen_x0': screen_x0,
         #        }
 
-    def current_profile_rec_gauss(self, kwargs, do_plot, plot_handles=None):
+    def prepare_rec_gauss_args(self, kwargs):
         """
         kwargs are getting prepared for input to the find_best_gauss procedure.
-        plot_handles need to be matplotlib axes for (screen, profile, opt)
         """
+        kwargs = copy.deepcopy(kwargs)
         kwargs['meas_screen']._xx = kwargs['meas_screen']._xx - self.input_data['screen_x0']
-        kwargs['beam_offsets'] = np.array(kwargs['beam_offsets'])
-        kwargs['beam_offsets'] -= np.array(self.input_data['streaker_means'])
-        kwargs['beam_offsets'] *= -1
+        streaker_offsets = np.array(kwargs['streaker_offsets'])
+        kwargs['beam_offsets'] = -(streaker_offsets - np.array(self.input_data['streaker_means']))
+        del kwargs['streaker_offsets']
         kwargs['meas_screen'].cutoff(self.input_data['tracker_kwargs']['screen_cutoff'])
         kwargs['meas_screen'].crop()
 
@@ -48,6 +49,10 @@ class Reconstruction:
         for n in (0,1):
             if n != kwargs['n_streaker']:
                 kwargs['beam_offsets'][n] = 0
+
+        return kwargs
+
+    def current_profile_rec_gauss(self, kwargs, do_plot, plot_handles=None):
 
         kwargs_save = copy.deepcopy(kwargs)
         del kwargs_save['meas_screen']
@@ -103,7 +108,6 @@ class Reconstruction:
             os.makedirs(save_path)
         date = datetime.now()
         filename = os.path.join(save_path, date.strftime('%Y%m%d_%H%M%S_PassiveReconstruction.h5'))
-        import pdb; pdb.set_trace()
         save_dict = {
                 'input': self.input_data,
                 'gaussian_reconstruction': self.gauss_dict,
@@ -111,47 +115,31 @@ class Reconstruction:
         h5_storage.saveH5Recursive(filename, save_dict)
         return filename
 
-def load_reconstruction(filename):
-    pass
+def load_reconstruction(filename, tmp_dir):
+    elegant_matrix.set_tmp_dir(tmp_dir)
+    saved_dict = h5_storage.loadH5Recursive(filename)
+    analysis_obj = Reconstruction()
+    analysis_obj.add_tracker(saved_dict['input']['tracker_kwargs'])
+    rec_kwargs = saved_dict['input']['gaussian_reconstruction']
+    rec_kwargs['meas_screen'] = tracking.ScreenDistribution(rec_kwargs['meas_screen_x'], rec_kwargs['meas_screen_intensity'])
+    del rec_kwargs['meas_screen_x']
+    del rec_kwargs['meas_screen_intensity']
+    analysis_obj.current_profile_rec_gauss(rec_kwargs, True)
+    return analysis_obj
+
+
 
 if __name__ == '__main__':
-    plt.close('all')
-    import pickle
-    with open('/tmp/tmp_gauss_dict.pkl', 'rb') as f:
-        gauss_dict, tracker_args, kwargs = pickle.load(f)
+    filename = '/tmp/streaker_reconstruction/20210314_165747_PassiveReconstruction.h5'
+    saved_dict = h5_storage.loadH5Recursive(filename)
+    analysis_obj = Reconstruction()
+    analysis_obj.add_tracker(saved_dict['input']['tracker_kwargs'])
+    rec_kwargs = saved_dict['input']['gaussian_reconstruction']
+    rec_kwargs['meas_screen'] = tracking.ScreenDistribution(rec_kwargs['meas_screen_x'], rec_kwargs['meas_screen_intensity'])
+    del rec_kwargs['meas_screen_x']
+    del rec_kwargs['meas_screen_intensity']
+    elegant_matrix.set_tmp_dir('/tmp/streaker_reconstruction/')
 
-    #tracker = tracking.Tracker(**tracker_args)
-    #gauss_dict = tracker.find_best_gauss(**kwargs)
+    analysis_obj.current_profile_rec_gauss(rec_kwargs, True)
 
-    best_profile = gauss_dict['reconstructed_profile']
-    best_screen = gauss_dict['reconstructed_screen']
-    opt_func_values = gauss_dict['opt_func_values']
-    opt_func_screens = gauss_dict['opt_func_screens']
-    opt_func_profiles = gauss_dict['opt_func_profiles']
-    opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
-    meas_screen = gauss_dict['meas_screen']
-
-    ms.figure('Optimization')
-    sp_ctr = 1
-    subplot = ms.subplot_factory(2,2)
-    sp_screen = subplot(sp_ctr, title='Screen', xlabel='x [mm]', ylabel='Intensity (arb. units)')
-    sp_ctr += 1
-    meas_screen.plot_standard(sp_screen, label='Original', color='black', lw=3)
-    sp_profile = subplot(sp_ctr, title='Profile', xlabel='t [fs]', ylabel='Current [kA]')
-    sp_ctr += 1
-    sp_opt = subplot(sp_ctr, title='Optimization')
-    sp_ctr += 1
-
-    for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
-        screen.plot_standard(sp_screen, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
-        profile.plot_standard(sp_profile, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value), center='Gauss')
-
-    gauss_dict['reconstructed_screen'].plot_standard(sp_screen, color='red', lw=3, label='Final')
-    gauss_dict['reconstructed_profile'].plot_standard(sp_profile, color='red', lw=3, label='Final', center='Gauss')
-
-    sp_screen.legend()
-    sp_profile.legend()
-
-    sp_opt.scatter(opt_func_sigmas*1e15, opt_func_values[:,1])
-    plt.show()
 

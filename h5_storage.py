@@ -63,9 +63,11 @@ def saveH5Recursive(h5_filename, data_dict):
                 add_dataset(group, inner_key, mydata.encode('utf-8'), 'unknown')
             elif type(mydata) is tracking.BeamProfile:
                 #raise NotImplementedError
+                print('BeamProfile save not implemented')
                 pass
             elif type(mydata) is tracking.ScreenDistribution:
                 #raise NotImplementedError
+                print('ScreenDistribution save not implemented')
                 pass
             elif (type(mydata) is list and type(mydata[0]) is str) or (hasattr(mydata, 'dtype') and mydata.dtype.type is np.str_):
                 # For list of strings, we need this procedure
@@ -145,15 +147,20 @@ def loadH5Recursive(h5_file):
             #if not hasattr(group_or_val, 'value'):
             #    print('Could not store key %s with type %s in dict' % (key, dtype))
             #    return
-            if dtype in (np.dtype('int64'), np.dtype('int32'), np.dtype('int16'), np.dtype('int8'), np.dtype('uint32'), np.dtype('uint16'), np.dtype('uint8')):
+            if dtype in (np.dtype('int64'), np.dtype('int32'), np.dtype('int16'), np.dtype('int8'), np.dtype('uint32'), np.dtype('uint16'), np.dtype('uint8'), np.dtype('uint64')):
                 saved_dict_curr[key] = np.array(group_or_val[()], int).squeeze()
+                if saved_dict_curr[key].size == 1:
+                    saved_dict_curr[key] = int(saved_dict_curr[key])
             elif dtype == np.dtype('bool'):
                 try:
                     saved_dict_curr[key] = bool(group_or_val[()])
                 except:
                     print('Could not store key %s with type %s in dict (1)' % (key, dtype))
-            elif dtype in (np.dtype('float64'), np.dtype('float32'), np.dtype('uint16'), np.dtype('uint64')):
+            elif dtype in (np.dtype('float64'), np.dtype('float32')):
                 saved_dict_curr[key] = np.array(group_or_val[()]).squeeze()
+                if saved_dict_curr[key].size == 1:
+                    saved_dict_curr[key] = float(saved_dict_curr[key])
+
             elif dtype.str.startswith('|S'):
                 if group_or_val[()].shape == (1,1):
                     saved_dict_curr[key] = group_or_val[()][0,0].decode()

@@ -442,7 +442,7 @@ class Tracker:
     def calcR12(self):
         outp = {}
         for n_streaker in (0, 1):
-            mat_dict, _ = self.simulator.get_elegant_matrix(n_streaker, self.timestamp)
+            mat_dict, _ = self.simulator.get_elegant_matrix(int(n_streaker), int(self.timestamp))
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
@@ -984,12 +984,18 @@ class Tracker:
         gauss_profiles = []
         gauss_wakes = []
 
+        meas_screen.reshape(self.len_screen)
+        meas_screen.cutoff(self.screen_cutoff)
+        meas_screen.crop()
+        meas_screen.reshape(self.len_screen)
+
+
         @functools.lru_cache(50)
         def gaussian_baf(sig_t):
 
             assert 1e-15 < sig_t < 1e-12
 
-            bp_gauss = get_gaussian_profile(sig_t, tt_halfrange, self.len_screen, charge, self.energy_eV)
+            bp_gauss = get_gaussian_profile(sig_t, float(tt_halfrange), int(self.len_screen), float(charge), float(self.energy_eV))
 
             if self_consistent:
                 bp_back0 = self.track_backward2(meas_screen, bp_gauss, gaps, beam_offsets, n_streaker)
@@ -1010,7 +1016,7 @@ class Tracker:
             gauss_wakes.append(baf['wake_dict'])
 
         for sig_t in sig_t_range:
-            gaussian_baf(sig_t)
+            gaussian_baf(float(sig_t))
 
         opt_func_values = np.array(opt_func_values)
 

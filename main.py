@@ -2,8 +2,11 @@ import sys
 import os
 import re
 import numpy as np
+import matplotlib
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtRemoveInputHook
+from matplotlib.pyplot import close
+import matplotlib.pyplot as plt
 
 import tracking
 import elegant_matrix
@@ -11,6 +14,11 @@ import data_loader
 import misc
 import analysis
 import gaussfit
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+
+matplotlib.use('Qt5Agg')
+
 
 pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
@@ -26,6 +34,8 @@ class StartMain(QtWidgets.QMainWindow):
         self.DoReconstruction.clicked.connect(self.do_reconstruction)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction_data)
         self.SaveData.clicked.connect(self.save_data)
+        self.LoadData.clicked.connect(self.load_data)
+        self.CloseAll.clicked.connect(lambda: close('all'))
 
         self.tracker_initialized = False
         self.screen_calibrated = False
@@ -35,6 +45,12 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.analysis_obj = analysis.Reconstruction()
         self.other_input = {}
+
+        figure = plt.figure()
+        sp1 = plt.subplot(2,2,1)
+        sp1.plot([1, 2], [1, 2])
+        canvas = FigureCanvasQTAgg(figure)
+        self.tabWidget.addTab(canvas, 'Plots')
 
     def init_tracker(self):
 
@@ -164,7 +180,7 @@ class StartMain(QtWidgets.QMainWindow):
         if self.SetStreakerDirectCheck.isChecked():
             gaps = [float(self.StreakerGap0.text())*1e-3, float(self.StreakerGap1.text())*1e-3]
             # beam offset is negative of streaker offset
-            beam_offsets = [float(self.StreakerOffset0.text())*1e-3, float(self.StreakerOffset1.text())*1e-3]
+            streaker_offsets = [float(self.StreakerOffset0.text())*1e-3, float(self.StreakerOffset1.text())*1e-3]
             other_input = {'func': 'direct_input'}
         elif self.SetStreakerFromFileCheck.isChecked():
             raise NotImplementedError
@@ -172,13 +188,13 @@ class StartMain(QtWidgets.QMainWindow):
             raise NotImplementedError
 
         self.gaps = gaps
-        self.beam_offsets = beam_offsets
+        self.streaker_offsets = streaker_offsets
         other_input['gaps'] = gaps,
-        other_input['beam_offsets'] = beam_offsets
+        other_input['streaker_offsets'] = streaker_offsets
         self.other_input['streaker_set'] = other_input
         self.streaker_is_set = True
         print('Streaker is set')
-        return gaps, beam_offsets
+        return gaps, streaker_offsets
 
     def obtain_reconstruction_data(self):
         widgets = (self.ReconstructionDataLoadCheck,)
@@ -229,7 +245,7 @@ class StartMain(QtWidgets.QMainWindow):
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
         meas_screen = self.meas_screen
         gaps = self.gaps
-        beam_offsets = self.beam_offsets
+        streaker_offsets = self.streaker_offsets
         n_streaker = int(self.StreakerSelect.currentText())
         charge = float(self.Charge.text())*1e-12
         self_consistent = {'True': True, 'False': False}[self.SelfConsistentSelect.currentText()]
@@ -237,18 +253,24 @@ class StartMain(QtWidgets.QMainWindow):
                 'sig_t_range': sig_t_range,
                 'tt_halfrange': tt_halfrange,
                 'gaps': gaps,
-                'beam_offsets': beam_offsets,
+                'streaker_offsets': streaker_offsets,
                 'n_streaker': n_streaker,
                 'charge': charge,
                 'self_consistent': self_consistent,
                 'meas_screen': meas_screen,
                 }
         self.analysis_obj.input_data['other'] = self.other_input
-        self.analysis_obj.current_profile_rec_gauss(kwargs_recon, True, None)
+        kwargs_recon2 = self.analysis_obj.prepare_rec_gauss_args(kwargs_recon)
+        self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, None)
 
     def save_data(self):
         filename = self.analysis_obj.save_data(os.path.expanduser(self.SaveDir.text()))
         print('Saved at %s' % filename)
+
+    def load_data(self):
+        filename = os.path.expanduser(self.LoadDataFilename.text().strip())
+        tmp_dir = os.path.expanduser(self.TmpDir.text().strip())
+        analysis.load_reconstruction(filename, tmp_dir)
 
 
 if __name__ == '__main__':

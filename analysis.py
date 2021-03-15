@@ -233,14 +233,5 @@ def streaker_calibration_figure(screen):
     return fig, (sp_center, )
 
 if __name__ == '__main__':
-    dirname = '/home/work/data_2020-10-03/'
-    file_ = dirname+'Passive_alignment_20201003T221023.mat'
-
-    import scipy.io as sio
-    dict_ = sio.loadmat(file_)
-
-
-    #analyze_streaker_calibration(file_
-
-
+    pass
 

@@ -69,6 +69,7 @@ class Reconstruction:
 
         self.gauss_dict = gauss_dict
 
+        print('Do plotting')
         if do_plot:
             best_profile = gauss_dict['reconstructed_profile']
             best_screen = gauss_dict['reconstructed_screen']
@@ -141,28 +142,32 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         raise ValueError(type(filename_or_dict))
     result_dict = data_dict['pyscan_result']
 
-    images = result_dict['image'].astype(float)
-    proj_x = np.sum(images, axis=-2)
-    x_axis = result_dict['x_axis']*1e-6
-    offsets = data_dict['streaker_offsets']
+    images = result_dict['image'].astype(float).squeeze()
+    proj_x = np.sum(images, axis=-2).squeeze()
+    x_axis = result_dict['x_axis']
+    offsets = data_dict['streaker_offsets'].squeeze()
     n_images = int(data_dict['n_images'])
 
     centroids = np.zeros([len(offsets), n_images])
-    #import pdb; pdb.set_trace()
-    for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
-        centroids[n_o,n_i] = np.sum(proj_x[n_o,n_i]*x_axis) / np.sum(proj_x[n_o,n_i])
-
-    centroid_mean = np.mean(centroids, axis=1)
-    centroid_std = np.std(centroids, axis=1)
+    if n_images > 1:
+        for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
+            centroids[n_o,n_i] = np.sum(proj_x[n_o,n_i]*x_axis) / np.sum(proj_x[n_o,n_i])
+        centroid_mean = np.mean(centroids, axis=1)
+        centroid_std = np.std(centroids, axis=1)
+    elif n_images == 1:
+        for n_o in range(len(offsets)):
+            centroids[n_o] = np.sum(proj_x[n_o]*x_axis) / np.sum(proj_x[n_o])
+        centroid_mean = centroids.squeeze()
+        centroid_std = np.ones_like(centroid_mean)*1e-10
 
     streaker = data_dict['streaker']
-    semigap = data_dict['meta_data'][streaker+':GAP']/2.
+    semigap = data_dict['meta_data'][streaker+':GAP']/2.*1e-3
 
     wall0, wall1 = -semigap, semigap
 
     where0 = np.argwhere(offsets == 0).squeeze()
     const0 = centroid_mean[where0]
-    delta_offset0 = 0
+    delta_offset0 = (offsets.min() + offsets.max())/2
     order0 = 3
 
     s01 = (centroid_mean[0] - const0) / (np.abs((offsets[0]-wall0))**(-order0) - np.abs((offsets[0]-wall1))**(-order0))
@@ -175,7 +180,9 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         return streaker_calibration_fit_func(*args, semigap)
 
     p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
-    reconstruction = fit_func(offsets, *p_opt)
+    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e2))
+    reconstruction = fit_func(xx_fit, *p_opt)
+    initial_guess = fit_func(xx_fit, *p0)
     streaker_offset = p_opt[0]
 
     meta_data = {
@@ -204,9 +211,11 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     screen = data_dict['screen']
     sp_center.set_title(screen)
 
-    xx_plot = offsets - streaker_offset
+    xx_plot = (offsets - streaker_offset)*1e3
+    xx_plot_fit = (xx_fit - streaker_offset)*1e3
     sp_center.errorbar(xx_plot, centroid_mean, yerr=centroid_std, label='Data')
-    sp_center.plot(xx_plot, reconstruction, label='Fit')
+    sp_center.plot(xx_plot_fit, reconstruction, label='Fit')
+    sp_center.plot(xx_plot_fit, initial_guess, label='Guess')
     sp_center.legend()
 
     return output
@@ -299,8 +308,13 @@ def streaker_calibration_figure():
 
 if __name__ == '__main__':
     plt.close('all')
-    filename = '/tmp/2021_03_16-09_53_32_Screen_Calibration_data_simulation.h5'
-    output = analyze_screen_calibration(filename)
+
+    filename='/tmp/2021_03_16-18_02_31_Screen_data_simulation.h5'
+    #from h5_storage import loadH5Recursive
+    #dict_ = loadH5Recursive(filename)
+    import data_loader
+    screen_data = data_loader.load_screen_data(filename, None, None)
+
 
     plt.show()
 

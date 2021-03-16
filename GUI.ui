@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -1232,14 +1232,14 @@
      <widget class="QLineEdit" name="ReconstructionDataLoad">
       <property name="geometry">
        <rect>
-        <x>230</x>
+        <x>120</x>
         <y>60</y>
-        <width>501</width>
+        <width>611</width>
         <height>26</height>
        </rect>
       </property>
       <property name="text">
-       <string>/home/work/data_2020-10-03/Passive_data_20201003T231958.mat.h5</string>
+       <string>./tmp_streaker_reconstruction/2021_03_16-18_02_31_Screen_data_simulation.h5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1255,7 +1255,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>projx</string>
+       <string>image</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1271,7 +1271,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>None</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1364,22 +1364,6 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QCheckBox" name="ReconstructionDataLoadCheck_2">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>170</y>
-        <width>91</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>From live</string>
-      </property>
-      <property name="checked">
-       <bool>false</bool>
-      </property>
-     </widget>
      <widget class="QLabel" name="label_40">
       <property name="geometry">
        <rect>
@@ -1401,7 +1385,7 @@
        <rect>
         <x>20</x>
         <y>240</y>
-        <width>141</width>
+        <width>131</width>
         <height>41</height>
        </rect>
       </property>
@@ -1456,7 +1440,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>300</y>
+        <y>330</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1506,6 +1490,38 @@
       </property>
       <property name="text">
        <string>Clear plots</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_54">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>250</y>
+        <width>121</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Number of images</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="ReconNumberImages">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>240</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>20</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </widget>
@@ -2125,7 +2141,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>./tmp_streaker_reconstruction</string>
+       <string>/sf/data/measurements/2021/03/16/</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

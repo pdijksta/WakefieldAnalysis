@@ -43,8 +43,7 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
     return output
 
 def get_images(screen, n_images):
-    time_interval = 1.
-    time_positioner = pyscan.TimePositioner(time_interval=time_interval, n_intervals=n_images)
+    positioner = pyscan.BsreadPositioner(n_messages=n_images)
     readables = [
             #'bs://gr_x_fit_standard_deviation',
             #'bs://gr_y_fit_standard_deviation',
@@ -72,26 +71,33 @@ def get_images(screen, n_images):
 
     logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
 
-    raw_output = pyscan.scan(positioner=time_positioner, readables=readables, settings=settings)
+    raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings)
     output = [[x] for x in raw_output]
 
-    output_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
+    result_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
 
     for ax in ['x_axis', 'y_axis']:
-        arr = output_dict[ax]*1e-6 # convert to um
+        arr = result_dict[ax]*1e-6 # convert to um
         if len(arr.shape) == 3:
-            output_dict[ax] = arr[0,0,:]
+            result_dict[ax] = arr[0,0,:]
         elif len(arr.shape) == 2:
-            output_dict[ax] = arr[0,:]
+            result_dict[ax] = arr[0,:]
         else:
             raise ValueError('Unexpected', len(arr.shape))
+
+    meta_dict = get_meta_data()
+
+    output_dict = {
+            'pyscan_result': result_dict,
+            'meta_data': meta_dict,
+            }
 
     return output_dict
 
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
-    writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.05)]
+    writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.001)]
     if dry_run:
         screen = 'simulation'
         positions = np.ones_like(offset_range)*caget(offset_pv)
@@ -110,7 +116,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
 
     logging.getLogger('mflow.mflow').setLevel(logging.ERROR)
 
-    settings = pyscan.scan_settings(settling_time=0.5, measurement_interval=0.2, n_measurements=1)
+    settings = pyscan.scan_settings(settling_time=1, n_measurements=n_images, write_timeout=60)
 
     readables = [
             #'bs://gr_x_fit_standard_deviation',
@@ -165,6 +171,17 @@ def get_aramis_quad_strengths():
     energy_pv = 'SARBD01-MBND100:P-SET'
     k1l_dict[energy_pv] = caget(energy_pv)
     return k1l_dict
+
+
+def get_meta_data():
+    all_streakers = config.all_streakers
+    meta_dict = {}
+    meta_dict.update({x+':GAP': caget(x+':GAP') for x in all_streakers})
+    meta_dict.update({x+':CENTER': caget(x+':CENTER') for x in all_streakers})
+
+    k1l_dict = get_aramis_quad_strengths()
+    meta_dict.update(k1l_dict)
+    return meta_dict
 
 
 

@@ -142,9 +142,18 @@ def load_screen_data(filename, key, index):
     else:
         raise ValueError('Must be h5 or mat file. Is: %s' % filename)
 
-    x_axis = dict_['x_axis']*1e-6
+    if 'pyscan_result' in dict_:
+        #dict0 = dict_
+        dict_ = dict_['pyscan_result']
+        key = 'image'
+
+    try:
+        x_axis = dict_['x_axis']*1e-6
+    except Exception as e:
+        print(e)
+        import pdb; pdb.set_trace()
     data = dict_[key].astype(float)
-    if index != 'None':
+    if index not in ('None', None):
         index = int(index)
         data = data[index]
 

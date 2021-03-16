@@ -18,6 +18,19 @@ import analysis
 import h5_storage
 import myplotstyle as ms
 
+#TODO
+#
+# - axes label after clear
+# - elog
+# /sf/data/measurements/2021/03/16/2021_03_16-18_50_47_Calibration_data_SARUN18-UDCP020.h5
+#  File "main.py", line 394, in calibrate_streaker
+#    full_dict = analysis.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles)
+#  File "/afs/psi.ch/user/d/dijkstal_p/pythonpath/WakefieldAnalysis/analysis.py", line 154, in analyze_streaker_calibration
+#    centroids[n_o,n_i] = np.sum(proj_x[n_o,n_i]*x_axis) / np.sum(proj_x[n_o,n_i])
+#IndexError: index 1 is out of bounds for axis 1 with size 1
+# - non blocking daq
+
+
 try:
     import daq
     always_dryrun = False
@@ -39,7 +52,7 @@ class StartMain(QtWidgets.QMainWindow):
         uic.loadUi('GUI.ui', self)
 
         self.DoReconstruction.clicked.connect(self.do_reconstruction)
-        self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction_data)
+        self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.SaveData.clicked.connect(self.save_data)
         self.LoadData.clicked.connect(self.load_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
@@ -51,6 +64,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.ClearScreenPlots.clicked.connect(self.clear_screen_plots)
         self.SetXEmittance.clicked.connect(self.set_x_emittance)
         self.LoadScreenCalibration.clicked.connect(self.load_screen_calibration)
+        self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
 
         self.StreakerSelect.activated.connect(self.update_streaker)
         self.BeamlineSelect.activated.connect(self.update_streaker)
@@ -62,28 +76,35 @@ class StartMain(QtWidgets.QMainWindow):
         fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
         canvas = FigureCanvasQTAgg(fig)
         self.rec_plot_tab_index = self.tabWidget.addTab(canvas, 'Rec plots')
+        self.rec_canvas = canvas
 
         fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
         canvas = FigureCanvasQTAgg(fig)
         self.streaker_calib_plot_tab_index = self.tabWidget.addTab(canvas, 'Cal. plots')
+        self.streaker_calib_canvas = canvas
 
         fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
         canvas = FigureCanvasQTAgg(fig)
         self.screen_calib_plot_tab_index = self.tabWidget.addTab(canvas, 'Screen plots')
+        self.screen_calib_canvas = canvas
 
         self.tracker_initialized = False
 
     def clear_rec_plots(self):
         for sp in self.reconstruction_plot_handles:
             sp.clear()
+        self.rec_canvas.draw()
+        print('Cleared reconstruction plot')
 
     def clear_calib_plots(self):
         for sp in self.streaker_calib_plot_handles:
             sp.clear()
+        self.streaker_calib_canvas.draw()
 
     def clear_screen_plots(self):
         for sp in self.screen_calib_plot_handles:
             sp.clear()
+        self.screen_calib_canvas.draw()
 
     def init_tracker(self):
 
@@ -337,6 +358,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.analysis_obj.input_data['other'] = self.other_input
 
         kwargs_recon2 = self.analysis_obj.prepare_rec_gauss_args(kwargs_recon)
+        print('Analysing reconstruction')
         self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles)
 
     def save_data(self):
@@ -417,6 +439,15 @@ class StartMain(QtWidgets.QMainWindow):
         new = float(widget.text())
         print('Updated calibration for streaker %i. Old: %.3f um New: %.3f um' % (self.n_streaker, old, new))
 
+    def obtain_reconstruction(self):
+        n_images = int(self.ReconNumberImages.text())
+        screen_dict = daq.get_images(self.screen, n_images)
+        date = datetime.now()
+        basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
+        filename = os.path.join(self.save_dir, basename)
+        h5_storage.saveH5Recursive(filename, screen_dict)
+        print('Saved screen data %s' % filename)
+
     @property
     def n_streaker(self):
         return int(self.StreakerSelect.currentText())
@@ -434,6 +465,13 @@ class StartMain(QtWidgets.QMainWindow):
         return self.ScreenSelect.currentText()
 
 if __name__ == '__main__':
+    def my_excepthook(type, value, tback):
+        # log the exception here
+        # then call the default handler
+        sys.__excepthook__(type, value, tback)
+        print(type, value, tback)
+    sys.excepthook = my_excepthook
+
     app = QtWidgets.QApplication(sys.argv)
     window = StartMain()
     window.show()

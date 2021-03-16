@@ -14,6 +14,7 @@ import tracking
 import myplotstyle as ms
 import h5_storage
 import elegant_matrix
+import gaussfit
 
 class Reconstruction:
     def __init__(self):
@@ -104,7 +105,7 @@ class Reconstruction:
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
         date = datetime.now()
-        filename = os.path.join(save_path, date.strftime('%Y%m%d_%H%M%S_PassiveReconstruction.h5'))
+        filename = os.path.join(save_path, date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5'))
         save_dict = {
                 'input': self.input_data,
                 'gaussian_reconstruction': self.gauss_dict,
@@ -125,10 +126,10 @@ def load_reconstruction(filename, tmp_dir, plot_handles=None):
     return analysis_obj
 
 
-def streaker_calibration_fit_func(offsets, delta_offset, strength, order, const, semigap):
+def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, const, semigap):
     wall0, wall1 = -semigap, semigap
-    c1 = np.abs((offsets-delta_offset-wall0))**(-order)
-    c2 = np.abs((offsets-delta_offset-wall1))**(-order)
+    c1 = np.abs((offsets-streaker_offset-wall0))**(-order)
+    c2 = np.abs((offsets-streaker_offset-wall1))**(-order)
     return const + (c1 - c2)*strength
 
 def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None):
@@ -141,12 +142,13 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     result_dict = data_dict['pyscan_result']
 
     images = result_dict['image'].astype(float)
-    proj_x = np.sum(images, axis=1)
+    proj_x = np.sum(images, axis=-2)
     x_axis = result_dict['x_axis']*1e-6
     offsets = data_dict['streaker_offsets']
     n_images = int(data_dict['n_images'])
 
     centroids = np.zeros([len(offsets), n_images])
+    #import pdb; pdb.set_trace()
     for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
         centroids[n_o,n_i] = np.sum(proj_x[n_o,n_i]*x_axis) / np.sum(proj_x[n_o,n_i])
 
@@ -173,8 +175,8 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         return streaker_calibration_fit_func(*args, semigap)
 
     p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
-    reconstruction = fit_func(*p_opt)
-    delta_offset = p_opt[0]
+    reconstruction = fit_func(offsets, *p_opt)
+    streaker_offset = p_opt[0]
 
     meta_data = {
             'p_opt': p_opt,
@@ -183,7 +185,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             'centroid_std': centroid_std,
             'offsets': offsets,
             'semigap': semigap,
-            'delta_offset': delta_offset,
+            'streaker_offset': streaker_offset,
             'reconstruction': reconstruction,
             }
 
@@ -196,17 +198,81 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         return output
 
     if plot_handles is None:
-        screen = data_dict['screen']
-        fig, (sp_center, ) = streaker_calibration_figure(screen)
+        fig, (sp_center, ) = streaker_calibration_figure()
     else:
         (sp_center, ) = plot_handles
+    screen = data_dict['screen']
+    sp_center.set_title(screen)
 
-    xx_plot = offsets - delta_offset
+    xx_plot = offsets - streaker_offset
     sp_center.errorbar(xx_plot, centroid_mean, yerr=centroid_std, label='Data')
     sp_center.plot(xx_plot, reconstruction, label='Fit')
     sp_center.legend()
 
     return output
+
+def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None):
+    if type(filename_or_dict) is dict:
+        data_dict = filename_or_dict
+    elif type(filename_or_dict) is str:
+        data_dict = h5_storage.loadH5Recursive(filename_or_dict)
+    else:
+        raise ValueError(type(filename_or_dict))
+
+    if 'raw_data' in data_dict:
+        screen_data = data_dict['raw_data']
+    else:
+        screen_data = data_dict
+
+    x_axis = screen_data['x_axis']
+    if 'projx' in screen_data:
+        projx = screen_data['projx']
+    else:
+        images = screen_data['image'].astype(float).squeeze()
+        projx = images.sum(axis=-2)
+
+    all_mean = []
+    all_std = []
+    for proj in projx:
+        gf = gaussfit.GaussFit(x_axis, proj)
+        all_mean.append(gf.mean)
+        all_std.append(gf.sigma)
+
+    index_median = np.argsort(all_mean)[len(all_mean)//2]
+    projx_median = projx[index_median]
+    beamsize = np.mean(all_std)
+
+    x0 = gaussfit.GaussFit(x_axis, projx_median).mean
+    output = {
+            'raw_data': data_dict,
+            'x0': x0,
+            'beamsize': beamsize,
+            }
+
+    if not do_plot:
+        return output
+
+    if plot_handles is None:
+        fig, (sp_proj,) = screen_calibration_figure()
+    else:
+        (sp_proj, ) = plot_handles
+
+    for proj in projx:
+        sp_proj.plot(x_axis*1e3, proj)
+    sp_proj.plot(x_axis*1e3, projx_median, lw=3)
+    sp_proj.axvline(x0*1e3)
+
+    return output
+
+def screen_calibration_figure():
+    fig = plt.figure()
+    fig.subplots_adjust(hspace=0.35)
+    sp_ctr = 1
+    subplot = ms.subplot_factory(1, 1)
+
+    sp_proj = subplot(sp_ctr, xlabel='x [mm]', ylabel='Intensity (arb. units)', grid=False, sciy=True)
+    sp_ctr += 1
+    return fig, (sp_proj, )
 
 def reconstruction_figure():
     fig = plt.figure()
@@ -221,17 +287,20 @@ def reconstruction_figure():
     sp_ctr += 1
     return fig, (sp_screen, sp_profile, sp_opt)
 
-def streaker_calibration_figure(screen):
-
+def streaker_calibration_figure():
     fig = plt.figure()
     fig.subplots_adjust(hspace=0.35)
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 1)
 
-    sp_center = subplot(sp_ctr, title=screen, xlabel='Center (mm)', ylabel='Streaker offset (mm)', grid=False)
+    sp_center = subplot(sp_ctr, xlabel='Center (mm)', ylabel='Streaker offset (mm)', grid=False)
     sp_ctr += 1
     return fig, (sp_center, )
 
 if __name__ == '__main__':
-    pass
+    plt.close('all')
+    filename = '/tmp/2021_03_16-09_53_32_Screen_Calibration_data_simulation.h5'
+    output = analyze_screen_calibration(filename)
+
+    plt.show()
 

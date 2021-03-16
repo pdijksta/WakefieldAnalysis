@@ -1,12 +1,14 @@
 import numpy as np
 import logging
 
-import config
 
 import pyscan
 from cam_server import PipelineClient
 from cam_server.utils import get_host_port_from_stream_address
 from epics import caget; caget
+
+import config
+import elegant_matrix
 
 def pyscan_result_to_dict(readables, result, scrap_bs=False):
     """
@@ -40,10 +42,8 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
 
     return output
 
-def get_screen(screen, n_images, dry_run):
+def get_images(screen, n_images):
     time_interval = 1.
-    print(time_interval, n_images)
-
     time_positioner = pyscan.TimePositioner(time_interval=time_interval, n_intervals=n_images)
     readables = [
             #'bs://gr_x_fit_standard_deviation',
@@ -61,9 +61,6 @@ def get_screen(screen, n_images, dry_run):
 
     settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=1)
 
-    if dry_run:
-        screen = 'simulation'
-
     pipeline_client = PipelineClient("http://sf-daqsync-01:8889/")
     cam_instance_name = str(screen) + "_sp1"
     stream_address = pipeline_client.get_instance_stream(cam_instance_name)
@@ -75,24 +72,32 @@ def get_screen(screen, n_images, dry_run):
 
     logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
 
-
     raw_output = pyscan.scan(positioner=time_positioner, readables=readables, settings=settings)
     output = [[x] for x in raw_output]
 
     output_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
+
+    for ax in ['x_axis', 'y_axis']:
+        arr = output_dict[ax]*1e-6 # convert to um
+        if len(arr.shape) == 3:
+            output_dict[ax] = arr[0,0,:]
+        elif len(arr.shape) == 2:
+            output_dict[ax] = arr[0,:]
+        else:
+            raise ValueError('Unexpected', len(arr.shape))
+
     return output_dict
 
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
+    writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.05)]
     if dry_run:
         screen = 'simulation'
-        writables = None
-        positioner = pyscan.TimePositioner(time_interval=1, n_intervals=n_images)
+        positions = np.ones_like(offset_range)*caget(offset_pv)
     else:
-        writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.05)]
-        offset_range_mm = offset_range * 1e3
-        positioner = pyscan.VectorPositioner(positions=(offset_range_mm).tolist())
+        positions = offset_range * 1e3 # convert to mm
+    positioner = pyscan.VectorPositioner(positions=positions.tolist())
 
     cam_instance_name = screen + '_sp1'
 
@@ -123,12 +128,22 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
 
     raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings, writables=writables)
     output = [[x] for x in raw_output]
-
     result_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
+    for ax in ['x_axis', 'y_axis']:
+        arr = result_dict[ax]*1e-6
+        if len(arr.shape) == 3:
+            result_dict[ax] = arr[0,0,:]
+        elif len(arr.shape) == 2:
+            result_dict[ax] = arr[0,:]
+        else:
+            raise ValueError('Unexpected', len(arr.shape))
+
     all_streakers = config.all_streakers
     meta_dict = {}
     meta_dict.update({x+':GAP': caget(x+':GAP') for x in all_streakers})
     meta_dict.update({x+':CENTER': caget(x+':CENTER') for x in all_streakers})
+
+    #for key in ['x_axis', 'y_axis']:
 
     output = {
             'pyscan_result': result_dict,
@@ -139,4 +154,18 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
             'streaker': streaker,
             'meta_data': meta_dict,
             }
+    return output
+
+def get_aramis_quad_strengths():
+    quads = elegant_matrix.quads
+
+    k1l_dict = {}
+    for quad in quads:
+        k1l_dict[quad] = caget(quad.replace('.', '-')+':K1L-SET')
+    energy_pv = 'SARBD01-MBND100:P-SET'
+    k1l_dict[energy_pv] = caget(energy_pv)
+    return k1l_dict
+
+
+
 

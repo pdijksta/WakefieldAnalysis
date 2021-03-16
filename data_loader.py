@@ -143,7 +143,7 @@ def load_screen_data(filename, key, index):
         raise ValueError('Must be h5 or mat file. Is: %s' % filename)
 
     x_axis = dict_['x_axis']*1e-6
-    data = dict_[key]
+    data = dict_[key].astype(float)
     if index != 'None':
         index = int(index)
         data = data[index]

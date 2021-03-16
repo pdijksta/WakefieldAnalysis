@@ -145,25 +145,38 @@ class simulator:
     beta_y0 = 16.807
     alpha_y0 = 1.782
 
-    def __init__(self, file_):
+    def __init__(self, file_or_dict):
         file_h5, file_json = None, None
-        if '.json' in file_:
-            file_json = file_
-        elif '.h5' in file_:
-            file_h5 = file_
-        else:
-            raise ValueError(file_)
-        self.mag_data = data_loader.DataLoader(file_json=file_json, file_h5=file_h5)
+        if type(file_or_dict) is str:
+            file_ = file_or_dict
+            if '.json' in file_:
+                file_json = file_
+            elif '.h5' in file_:
+                file_h5 = file_
+            else:
+                raise ValueError(file_)
+            self.mag_data = data_loader.DataLoader(file_json=file_json, file_h5=file_h5)
+            self.data_type = 0
+        elif type(file_or_dict) is dict:
+            self.data_type = 1
+            self.mag_data = file_or_dict
 
-    def get_data_quad(self, mag_name, timestamp):
-        new_key = mag_name.replace('.','-')+':K1L-SET'
-        return self.get_data(new_key, timestamp)
+    def get_data_quad(self, mag_name, timestamp=0):
+        if self.data_type == 0:
+            new_key = mag_name.replace('.','-')+':K1L-SET'
+            return self.get_data(new_key, timestamp)
 
-    def get_data(self, key, timestamp):
-        return self.mag_data.get_prev_datapoint(key, timestamp)
+        elif self.data_type == 1:
+            return self.mag_data[mag_name]
+
+    def get_data(self, key, timestamp=0):
+        if self.data_type == 0:
+            return self.mag_data.get_prev_datapoint(key, timestamp)
+        elif self.data_type == 1:
+            return self.mag_data[key]
 
     @functools.lru_cache()
-    def get_elegant_matrix(self, streaker_index, timestamp, del_sim=True, print_=False, branch='Aramis'):
+    def get_elegant_matrix(self, streaker_index, timestamp=0, del_sim=True, print_=False, branch='Aramis'):
         """
         streaker_index must be in (0,1)
         """
@@ -361,7 +374,7 @@ class simulator:
         return sim, mat_dict, wf_dicts, disp_dict
 
 #@functools.wraps(simulator)
-@functools.lru_cache(400)
+#@functools.lru_cache(400)
 def get_simulator(file_):
     return simulator(file_)
 

@@ -410,7 +410,7 @@ class Tracker:
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
-            energy_eV = self.simulator.mag_data.get_prev_datapoint('SARBD01-MBND100:P-SET', timestamp)*1e6
+            energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
         self.energy_eV = energy_eV
         self.timestamp = timestamp
         self.struct_lengths = struct_lengths

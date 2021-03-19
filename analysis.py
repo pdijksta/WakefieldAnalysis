@@ -55,13 +55,26 @@ class Reconstruction:
 
         return kwargs
 
-    def current_profile_rec_gauss(self, kwargs, do_plot, plot_handles=None):
+    def current_profile_rec_gauss(self, kwargs, do_plot, plot_handles=None, debug=False):
 
         kwargs_save = copy.deepcopy(kwargs)
         del kwargs_save['meas_screen']
         kwargs_save['meas_screen_x'] = kwargs['meas_screen'].x
         kwargs_save['meas_screen_intensity'] = kwargs['meas_screen'].intensity
         self.input_data['gaussian_reconstruction'] = kwargs_save
+
+        if debug:
+            import matplotlib
+            matplotlib.use('TKAgg')
+
+            ms.figure('Debug find_best_gauss')
+            subplot = ms.subplot_factory(1,1)
+            sp = subplot(1)
+            meas_screen = kwargs['meas_screen']
+            meas_screen.plot_standard(sp)
+            plt.show()
+            import pdb; pdb.set_trace()
+
         gauss_dict = self.tracker.find_best_gauss(**kwargs)
         #import pickle
         #with open('/tmp/tmp_gauss_dict.pkl', 'wb') as f:
@@ -179,8 +192,12 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     def fit_func(*args):
         return streaker_calibration_fit_func(*args, semigap)
 
-    p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
-    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e2))
+    try:
+        p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
+    except RuntimeError:
+        print('Streaker calibration did not converge')
+        p_opt = p0
+    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
     reconstruction = fit_func(xx_fit, *p_opt)
     initial_guess = fit_func(xx_fit, *p0)
     streaker_offset = p_opt[0]
@@ -228,8 +245,8 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
     else:
         raise ValueError(type(filename_or_dict))
 
-    if 'raw_data' in data_dict:
-        screen_data = data_dict['raw_data']
+    if 'pyscan_result' in data_dict:
+        screen_data = data_dict['pyscan_result']
     else:
         screen_data = data_dict
 
@@ -279,42 +296,73 @@ def screen_calibration_figure():
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 1)
 
-    sp_proj = subplot(sp_ctr, xlabel='x [mm]', ylabel='Intensity (arb. units)', grid=False, sciy=True)
+    sp_proj = subplot(sp_ctr, xlabel='x [mm]', ylabel='Intensity (arb. units)', sciy=True)
     sp_ctr += 1
+    clear_screen_calibration(sp_proj)
     return fig, (sp_proj, )
+
+def clear_screen_calibration(sp_proj):
+    for sp, title, xlabel, ylabel in [
+            (sp_proj, 'Unstreaked beam', 'x [mm]', 'Intensity (arb. units)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(True)
 
 def reconstruction_figure():
     fig = plt.figure()
-    fig.subplots_adjust(hspace=0.35)
+    fig.subplots_adjust(hspace=0.4)
     sp_ctr = 1
     subplot = ms.subplot_factory(2,2)
-    sp_screen = subplot(sp_ctr, title='Screen', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+    sp_screen = subplot(sp_ctr)
     sp_ctr += 1
-    sp_profile = subplot(sp_ctr, title='Profile', xlabel='t [fs]', ylabel='Current [kA]')
+    sp_profile = subplot(sp_ctr)
     sp_ctr += 1
-    sp_opt = subplot(sp_ctr, title='Optimization')
+    sp_opt = subplot(sp_ctr)
     sp_ctr += 1
+    clear_reconstruction(sp_screen, sp_profile, sp_opt)
+
     return fig, (sp_screen, sp_profile, sp_opt)
+
+def clear_reconstruction(sp_screen, sp_profile, sp_opt):
+    for sp, title, xlabel, ylabel in [
+            (sp_screen, 'Screen', 'x [mm]', 'Intensity (arb. units)'),
+            (sp_profile, 'Profile', 't [fs]', 'Current [kA]'),
+            (sp_opt, 'Optimization', 'Gaussian $\sigma$ [fs]', 'Opt value'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(True)
 
 def streaker_calibration_figure():
     fig = plt.figure()
-    fig.subplots_adjust(hspace=0.35)
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 1)
 
-    sp_center = subplot(sp_ctr, xlabel='Center (mm)', ylabel='Streaker offset (mm)', grid=False)
+    sp_center = subplot(sp_ctr, xlabel='Streaker center [mm]', ylabel='Beam X centroid [mm]')
     sp_ctr += 1
+    clear_streaker_calibration(sp_center)
     return fig, (sp_center, )
+
+def clear_streaker_calibration(sp_center):
+    for sp, title, xlabel, ylabel in [
+            (sp_center, 'Screen center', 'Streaker center [mm]', 'Beam X centroid [mm]')
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(True)
 
 if __name__ == '__main__':
     plt.close('all')
 
-    filename='/tmp/2021_03_16-18_02_31_Screen_data_simulation.h5'
-    #from h5_storage import loadH5Recursive
-    #dict_ = loadH5Recursive(filename)
-    import data_loader
-    screen_data = data_loader.load_screen_data(filename, None, None)
-
+    filename = '/tmp/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
+    dict_ = h5_storage.loadH5Recursive(filename)
 
     plt.show()
 

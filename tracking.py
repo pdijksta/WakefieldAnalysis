@@ -172,11 +172,13 @@ class Profile:
         self._yy = self._yy[::-1]
 
 class ScreenDistribution(Profile):
-    def __init__(self, x, intensity, real_x=None):
+    def __init__(self, x, intensity, real_x=None, subtract_min=True):
         super().__init__()
         self._xx = x
         assert np.all(np.diff(self._xx)>=0)
         self._yy = intensity
+        if subtract_min:
+            self._yy = self._yy - np.min(self._yy)
         self.real_x = real_x
 
     @property
@@ -843,9 +845,12 @@ class Tracker:
             t_interp = np.linspace(t_interp0[0], t_interp0[-1], len(charge_interp))
 
         try:
+            if np.any(np.diff(t_interp) < 0):
+                t_interp = t_interp[::-1]
+                charge_interp = charge_interp[::-1]
             assert np.all(np.diff(t_interp) >= 0)
             bp = BeamProfile(t_interp, charge_interp, self.energy_eV, charge)
-        except ValueError as e:
+        except (ValueError, AssertionError) as e:
             print(e)
             ms.figure('')
             self.set_bs_at_streaker()
@@ -860,7 +865,8 @@ class Tracker:
             sp = subplot(3, title='Current profile', xlabel='time', ylabel='Current')
             sp.plot(t_interp, charge_interp)
             plt.show()
-            #import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace()
+            raise
         bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
         bp.crop()

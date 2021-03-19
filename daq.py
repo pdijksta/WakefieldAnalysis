@@ -1,6 +1,7 @@
+import itertools
 import numpy as np
 import logging
-
+import datetime
 
 import pyscan
 from cam_server import PipelineClient
@@ -77,7 +78,7 @@ def get_images(screen, n_images):
     result_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
 
     for ax in ['x_axis', 'y_axis']:
-        arr = result_dict[ax]*1e-6 # convert to um
+        arr = result_dict[ax]*1e-6 # convert to m
         if len(arr.shape) == 3:
             result_dict[ax] = arr[0,0,:]
         elif len(arr.shape) == 2:
@@ -97,7 +98,7 @@ def get_images(screen, n_images):
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
-    writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.001)]
+    writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.005)]
     if dry_run:
         screen = 'simulation'
         positions = np.ones_like(offset_range)*caget(offset_pv)
@@ -133,16 +134,21 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
             ]
 
     raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings, writables=writables)
-    output = [[x] for x in raw_output]
-    result_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
+    result_dict = pyscan_result_to_dict(readables, raw_output, scrap_bs=True)
+    #import pdb; pdb.set_trace()
     for ax in ['x_axis', 'y_axis']:
         arr = result_dict[ax]*1e-6
         if len(arr.shape) == 3:
-            result_dict[ax] = arr[0,0,:]
+            result_dict[ax] = arr[0][0]
         elif len(arr.shape) == 2:
-            result_dict[ax] = arr[0,:]
+            result_dict[ax] = arr[0]
         else:
             raise ValueError('Unexpected', len(arr.shape))
+
+    images = np.zeros([len(positions), n_images, len(result_dict['y_axis']), len(result_dict['x_axis'])], dtype=result_dict['image'][0][0].dtype)
+    images_raw = result_dict['image'].squeeze()
+    for n_p, n_i in itertools.product(range(len(positions)), range(n_images)):
+        images[n_p][n_i] = images_raw[n_p][n_i]
 
     all_streakers = config.all_streakers
     meta_dict = {}
@@ -181,6 +187,7 @@ def get_meta_data():
 
     k1l_dict = get_aramis_quad_strengths()
     meta_dict.update(k1l_dict)
+    meta_dict['time'] = str(datetime.datetime.now())
     return meta_dict
 
 

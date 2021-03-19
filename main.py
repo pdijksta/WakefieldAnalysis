@@ -3,10 +3,11 @@ import os
 import re
 from datetime import datetime
 import numpy as np
+import PyQt5.Qt
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtRemoveInputHook
 import matplotlib
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 
 import config
 import tracking
@@ -22,13 +23,11 @@ import myplotstyle as ms
 #
 # - axes label after clear
 # - elog
-# /sf/data/measurements/2021/03/16/2021_03_16-18_50_47_Calibration_data_SARUN18-UDCP020.h5
-#  File "main.py", line 394, in calibrate_streaker
-#    full_dict = analysis.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles)
-#  File "/afs/psi.ch/user/d/dijkstal_p/pythonpath/WakefieldAnalysis/analysis.py", line 154, in analyze_streaker_calibration
-#    centroids[n_o,n_i] = np.sum(proj_x[n_o,n_i]*x_axis) / np.sum(proj_x[n_o,n_i])
-#IndexError: index 1 is out of bounds for axis 1 with size 1
 # - non blocking daq
+# - start at closer edge of scan
+# - sort out daq pyscan_result_to_dict
+# - add info of beamsize with / without assumed screen resolution
+# - debug delay after using BsreadPositioner
 
 
 try:
@@ -41,7 +40,11 @@ except ImportError:
 
 ms.set_fontsizes(8)
 
-matplotlib.use('Qt5Agg')
+# For debug purposes, set this to true
+qt5_plot = True
+
+if qt5_plot:
+    matplotlib.use('Qt5Agg')
 pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
 
@@ -52,7 +55,6 @@ class StartMain(QtWidgets.QMainWindow):
         uic.loadUi('GUI.ui', self)
 
         self.DoReconstruction.clicked.connect(self.do_reconstruction)
-        self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.SaveData.clicked.connect(self.save_data)
         self.LoadData.clicked.connect(self.load_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
@@ -72,38 +74,56 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.analysis_obj = analysis.Reconstruction()
         self.other_input = {}
-
-        fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
-        canvas = FigureCanvasQTAgg(fig)
-        self.rec_plot_tab_index = self.tabWidget.addTab(canvas, 'Rec plots')
-        self.rec_canvas = canvas
-
-        fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
-        canvas = FigureCanvasQTAgg(fig)
-        self.streaker_calib_plot_tab_index = self.tabWidget.addTab(canvas, 'Cal. plots')
-        self.streaker_calib_canvas = canvas
-
-        fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
-        canvas = FigureCanvasQTAgg(fig)
-        self.screen_calib_plot_tab_index = self.tabWidget.addTab(canvas, 'Screen plots')
-        self.screen_calib_canvas = canvas
-
         self.tracker_initialized = False
 
+
+        if qt5_plot:
+
+            def get_new_tab(fig, title):
+                new_tab = QtWidgets.QWidget()
+                layout = PyQt5.Qt.QVBoxLayout()
+                new_tab.setLayout(layout)
+                canvas = FigureCanvasQTAgg(fig)
+                toolbar = NavigationToolbar2QT(canvas, self)
+                layout.addWidget(canvas)
+                layout.addWidget(toolbar)
+                tab_index = self.tabWidget.addTab(new_tab, title)
+                return tab_index, canvas
+
+            fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
+            self.rec_plot_tab_index, self.rec_canvas = get_new_tab(fig, 'Rec plots')
+
+            fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
+            self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(fig, 'Cal. plots')
+
+            fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
+            self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(fig, 'Screen plots')
+
+        else:
+            self.reconstruction_plot_handles = None
+            self.streaker_calib_plot_handles = None
+            self.screen_calib_plot_handles = None
+
+
+        #meas_screen = self.obtain_reconstruction_data()
+        #import matplotlib.pyplot as plt
+        #plt.figure()
+        #sp = plt.subplot(1,1,1)
+        #meas_screen.plot_standard(sp)
+        #plt.show()
+
+
     def clear_rec_plots(self):
-        for sp in self.reconstruction_plot_handles:
-            sp.clear()
+        analysis.clear_reconstruction(*self.reconstruction_plot_handles)
         self.rec_canvas.draw()
         print('Cleared reconstruction plot')
 
     def clear_calib_plots(self):
-        for sp in self.streaker_calib_plot_handles:
-            sp.clear()
+        analysis.clear_streaker_calibration(*self.streaker_calib_plot_handles)
         self.streaker_calib_canvas.draw()
 
     def clear_screen_plots(self):
-        for sp in self.screen_calib_plot_handles:
-            sp.clear()
+        analysis.clear_screen_calibration(*self.screen_calib_plot_handles)
         self.screen_calib_canvas.draw()
 
     def init_tracker(self):
@@ -223,7 +243,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.DirectBeamsizeScreen.setText('%.3f' % (beamsize*1e6))
         print('X0 is %.3f um' % (x0*1e6))
         print('Beamsize is %.3f um' % (beamsize*1e6))
-        self.tabWidget.setCurrentIndex(self.screen_calib_plot_tab_index)
+        #self.tabWidget.setCurrentIndex(self.screen_calib_plot_tab_index)
 
     def set_x_emittance(self):
         if not self.tracker_initialized:
@@ -314,8 +334,22 @@ class StartMain(QtWidgets.QMainWindow):
                 median_projx = misc.get_median(projx)
             elif self.ReconstructionDataLoadUseSelect.currentText() == 'All':
                 raise NotImplementedError
-
             meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
+
+            #import matplotlib.pyplot as plt
+            #plt.figure()
+            #plt.suptitle('Debug')
+            #sp = plt.subplot(1,1,1)
+            #sp.plot(meas_screen.x, meas_screen.intensity)
+            #meas_screen._yy -= meas_screen._yy.min()
+            #gf = meas_screen.gaussfit
+            #print(gf.sigma)
+            #meas_screen._yy = meas_screen._yy - gf.const
+            #sp.plot(meas_screen.x, meas_screen.intensity)
+            #sp.plot(gf.xx, gf.reconstruction)
+            #sp.plot(gf.xx, gf.fit_func(gf.xx, *gf.p0))
+            #plt.show()
+            #import pdb; pdb.set_trace()
         else:
             raise NotImplementedError
 
@@ -359,7 +393,14 @@ class StartMain(QtWidgets.QMainWindow):
 
         kwargs_recon2 = self.analysis_obj.prepare_rec_gauss_args(kwargs_recon)
         print('Analysing reconstruction')
+        import pickle
+        p_file = '/tmp/rec_args.pkl'
+        with open(p_file, 'wb') as f:
+            pickle.dump((kwargs_recon2, self.analysis_obj), f)
+            print('Saved %s' % p_file)
         self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles)
+        self.rec_canvas.draw()
+        self.reconstruction_plot_handles[2].set_ylim(0, None)
 
     def save_data(self):
         filename = self.analysis_obj.save_data(self.save_dir)
@@ -374,7 +415,7 @@ class StartMain(QtWidgets.QMainWindow):
         tmp_dir = os.path.expanduser(self.TmpDir.text().strip())
         analysis.load_reconstruction(filename, tmp_dir, self.reconstruction_plot_handles)
         print('Loaded %s' % filename)
-        self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
+        #self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
 
     def update_streaker(self):
         beamline = self.beamline
@@ -383,11 +424,12 @@ class StartMain(QtWidgets.QMainWindow):
 
     def calibrate_streaker(self):
         start, stop, step= float(self.Range1Begin.text()), float(self.Range1Stop.text()), float(self.Range1Step.text())
-        range1 = np.arange(start, stop+0.01*step, step)
+        range1 = np.linspace(start, stop, step)
         start, stop, step= float(self.Range2Begin.text()), float(self.Range2Stop.text()), float(self.Range2Step.text())
-        range2 = np.arange(start, stop+0.01*step, step)
+        range2 = np.linspace(start, stop, step)
         range_ = np.concatenate([range1, [0], range2])*1e-3 # Convert mm to m
         range_.sort()
+        range_ = np.unique(range_)
 
         streaker = config.streaker_names[self.beamline][self.n_streaker]
         n_images = int(self.CalibrateStreakerImages.text())
@@ -415,7 +457,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         streaker_offset = full_dict['meta_data']['streaker_offset']
         self.updateCalibration(streaker_offset)
-        self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
+        #self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
 
     def load_calibration(self):
         filename = self.LoadCalibrationFilename.text().strip()
@@ -427,7 +469,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         streaker_offset = full_dict['meta_data']['streaker_offset']
         self.updateCalibration(streaker_offset)
-        self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
+        #self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
 
     def updateCalibration(self, streaker_offset):
         if self.n_streaker == 0:

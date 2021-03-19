@@ -4,7 +4,7 @@ import re
 from functools import lru_cache
 import h5py
 import numpy as np
-import tracking
+#import tracking
 
 dt = h5py.special_dtype(vlen=bytes)
 
@@ -34,6 +34,8 @@ def add_dataset(group, name, data, system=None, dtype=None):
         return dset
 
 def saveH5Recursive(h5_filename, data_dict):
+    # import here to prevent circular import
+    import tracking
 
     def recurse_save(group, dict_or_data, dict_or_data_name, new_group=None):
         if dict_or_data is None:

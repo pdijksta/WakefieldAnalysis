@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -136,7 +136,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>555</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -477,7 +477,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>472</string>
+       <string>364</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -605,7 +605,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>-4.22</string>
+       <string>5.12</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -741,7 +741,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>-0.2</string>
+       <string>-4.37</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -773,7 +773,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>-0.1</string>
+       <string>-4.2</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -805,7 +805,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>0.1</string>
+       <string>5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -821,7 +821,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Step [mm]</string>
+       <string>Steps</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -837,7 +837,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>0.1</string>
+       <string>4.9</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -853,7 +853,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>0.2</string>
+       <string>4.12</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -869,7 +869,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>0.1</string>
+       <string>5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1154,7 +1154,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>/home/work/archiver_api_data/2020-10-03.h5</string>
+       <string>/home/work/archiver_api_data/2021-03-16.h5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1173,7 +1173,7 @@
        <string>Import from file (json, h5)</string>
       </property>
       <property name="checked">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
      </widget>
      <widget class="QLineEdit" name="ImportFileTime">
@@ -1186,7 +1186,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>2020-10-03:23-19-58</string>
+       <string>2021-03-16:20-22-26</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1205,7 +1205,7 @@
        <string>From live</string>
       </property>
       <property name="checked">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
      </widget>
      <widget class="QLabel" name="label_24">
@@ -1239,7 +1239,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>./tmp_streaker_reconstruction/2021_03_16-18_02_31_Screen_data_simulation.h5</string>
+       <string>/tmp/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

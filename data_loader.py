@@ -68,6 +68,7 @@ class DataLoader(dict):
         else:
             #return data_list[-1,1]
             #import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace()
             raise KeyError('Requested data at border of data array')
 
 
@@ -148,7 +149,7 @@ def load_screen_data(filename, key, index):
         key = 'image'
 
     try:
-        x_axis = dict_['x_axis']*1e-6
+        x_axis = dict_['x_axis']
     except Exception as e:
         print(e)
         import pdb; pdb.set_trace()
@@ -168,7 +169,14 @@ def load_screen_data(filename, key, index):
     else:
         raise ValueError('Expect shape of 2 or 3. Is: %i' % len(data.shape))
 
-    y_axis = dict_['y_axis']*1e-6 if 'y_axis' in dict_ else None
+    y_axis = dict_['y_axis'] if 'y_axis' in dict_ else None
+
+    if np.abs(x_axis.max()) > 1:
+        x_axis *= 1e-6
+        print('Converting x_axis from um to m')
+    if np.abs(y_axis.max()) > 1:
+        y_axis *= 1e-6
+        print('Converting y_axis from um to m')
 
     # TBD
     # - Add y information. Needed for lasing reconstruction.
@@ -184,9 +192,4 @@ def load_screen_data(filename, key, index):
             'projx': projx,
             'y_axis': y_axis,
             }
-
-
-
-
-
 

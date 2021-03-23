@@ -448,6 +448,19 @@ class Tracker:
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
+    def fit_emittance(self, target_beamsize, assumed_screen_res, tt_halfrange):
+        if target_beamsize <= assumed_screen_res:
+            raise ValueError('Target beamsize must be larger assumed screen resolution')
+
+        bp_test = get_gaussian_profile(40e-15, tt_halfrange, self.len_screen, 200e-12, self.energy_eV)
+        screen_sim = self.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen_no_smoothen']
+
+        target_beamsize2 = np.sqrt(target_beamsize**2 - assumed_screen_res**2)
+        sim_beamsize = screen_sim.gaussfit.sigma
+        emittance = self.n_emittances[0]
+        emittance_fit = emittance * (target_beamsize2 / sim_beamsize)**2
+        return emittance_fit
+
     def get_wake_potential_from_profile(self, profile, gap, beam_offset, n_streaker):
 
         mask_curr = profile.current != 0

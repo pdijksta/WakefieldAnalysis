@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -1239,7 +1239,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>/tmp/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5</string>
+       <string>/mnt/data/data/2021-03-16/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2553,7 +2553,7 @@
      <x>0</x>
      <y>0</y>
      <width>786</width>
-     <height>27</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

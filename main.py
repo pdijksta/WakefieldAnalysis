@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtRemoveInputHook
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
+import matplotlib.pyplot as plt
 
 import config
 import tracking
@@ -21,13 +22,13 @@ import myplotstyle as ms
 
 #TODO
 #
-# - axes label after clear
 # - elog
 # - non blocking daq
-# - start at closer edge of scan
 # - sort out daq pyscan_result_to_dict
 # - add info of beamsize with / without assumed screen resolution
 # - debug delay after using BsreadPositioner
+# - noise reduction from the image
+# - pedestal?
 
 
 try:
@@ -41,10 +42,12 @@ except ImportError:
 ms.set_fontsizes(8)
 
 # For debug purposes, set this to true
-qt5_plot = True
+qt5_plot = False
 
 if qt5_plot:
     matplotlib.use('Qt5Agg')
+else:
+    plt.ion() # Interactive mode
 pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
 
@@ -393,11 +396,13 @@ class StartMain(QtWidgets.QMainWindow):
 
         kwargs_recon2 = self.analysis_obj.prepare_rec_gauss_args(kwargs_recon)
         print('Analysing reconstruction')
-        import pickle
-        p_file = '/tmp/rec_args.pkl'
-        with open(p_file, 'wb') as f:
-            pickle.dump((kwargs_recon2, self.analysis_obj), f)
-            print('Saved %s' % p_file)
+
+        #import pickle
+        #p_file = '/tmp/rec_args.pkl'
+        #with open(p_file, 'wb') as f:
+        #    pickle.dump((kwargs_recon2, self.analysis_obj), f)
+        #    print('Saved %s' % p_file)
+
         self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles)
         self.rec_canvas.draw()
         self.reconstruction_plot_handles[2].set_ylim(0, None)

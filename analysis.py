@@ -153,6 +153,9 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         data_dict = h5_storage.loadH5Recursive(filename_or_dict)
     else:
         raise ValueError(type(filename_or_dict))
+
+    if 'raw_data' in data_dict:
+        data_dict = data_dict['raw_data']
     result_dict = data_dict['pyscan_result']
 
     images = result_dict['image'].astype(float).squeeze()

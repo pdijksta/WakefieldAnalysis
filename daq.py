@@ -98,6 +98,13 @@ def get_images(screen, n_images):
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
+
+    current_val = daq.caget(offset_pv)
+
+    # Start from closer edge of scan
+    if abs(current_val - offset_range[0]) > abs(current_val - offset_range[-1]):
+        offset_range = offset_range[::-1]
+
     writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.005)]
     if dry_run:
         screen = 'simulation'
@@ -107,7 +114,6 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
     positioner = pyscan.VectorPositioner(positions=positions.tolist())
 
     cam_instance_name = screen + '_sp1'
-
     stream_address = pipeline_client.get_instance_stream(cam_instance_name)
     stream_host, stream_port = get_host_port_from_stream_address(stream_address)
 

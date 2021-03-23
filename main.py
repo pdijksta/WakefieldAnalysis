@@ -29,6 +29,7 @@ import myplotstyle as ms
 # - debug delay after using BsreadPositioner
 # - noise reduction from the image
 # - pedestal?
+# - lasing
 
 
 try:

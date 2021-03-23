@@ -312,7 +312,7 @@ class BeamProfile(Profile):
 
     def plot_standard(self, sp, norm=True, center=None, center_max=False, **kwargs):
         """
-        center can be one of 'Max', 'Left', 'Right'
+        center can be one of 'Max', 'Left', 'Right', 'Left_fit', 'Right_fit', 'Gauss'
         """
 
         # Backward compatibility

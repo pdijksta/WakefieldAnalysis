@@ -131,17 +131,17 @@ def get_median(projx, method='gf_mean'):
 
     return projx_median
 
-def image_to_screen(image, x_axis, subtract_min):
+def image_to_screen(image, x_axis, subtract_min, x_offset=0):
     proj = image.sum(axis=-2)
-    return proj_to_screen(proj, x_axis, subtract_min)
+    return proj_to_screen(proj, x_axis, subtract_min, x_offset)
 
-def proj_to_screen(proj, x_axis, subtract_min):
+def proj_to_screen(proj, x_axis, subtract_min, x_offset=0):
 
     if x_axis[1] < x_axis[0]:
         x_axis = x_axis[::-1]
         proj = proj[::-1]
 
-    screen = tracking.ScreenDistribution(x_axis, proj, subtract_min=subtract_min)
+    screen = tracking.ScreenDistribution(x_axis-x_offset, proj, subtract_min=subtract_min)
     return screen
 
 

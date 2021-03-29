@@ -86,6 +86,9 @@ class Profile:
         self._xx, self._yy = _xx, _yy
 
     def cutoff(self, cutoff_factor):
+        """
+        Cutoff based on max value of the y array.
+        """
         if cutoff_factor == 0 or cutoff_factor is None:
             return
         yy = self._yy.copy()
@@ -93,6 +96,31 @@ class Profile:
         abs_yy = np.abs(yy)
         yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
         self._yy = yy / np.sum(yy) * old_sum
+
+    def cutoff2(self, cutoff_factor):
+        """
+        Cutoff based on max value of the y array.
+        Also sets to 0 all values before and after the first 0 value (from the perspective of the maximum).
+        """
+        if cutoff_factor == 0 or cutoff_factor is None:
+            return
+        yy = self._yy.copy()
+        old_sum = np.sum(yy)
+        abs_yy = np.abs(yy)
+        yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
+
+        index_max = np.argmax(abs_yy)
+        index_arr = np.arange(len(yy))
+        is0 = (yy == 0)
+        zero_pos = np.logical_and(index_arr > index_max, is0)
+        nearest_zero_pos = index_arr[zero_pos][0]
+        zero_neg = np.logical_and(index_arr < index_max, is0)
+        nearest_zero_neg = index_arr[zero_neg][-1]
+
+        yy[:nearest_zero_neg] = 0
+        yy[nearest_zero_pos:] = 0
+        self._yy = yy / np.sum(yy) * old_sum
+
 
     def crop(self):
         old_sum = np.sum(self._yy)
@@ -266,6 +294,13 @@ class BeamProfile(Profile):
         self.wake_dict[(gap, beam_offset, struct_length)] = wf_dict
 
         return wf_dict
+
+    def get_x_t(self, gap, beam_offset, struct_length, r12):
+        wake_dict = self.calc_wake(gap, beam_offset, struct_length)
+        wake_effect = self.wake_effect_on_screen(wake_dict, r12)
+        tt, xx = wake_effect['t'], wake_effect['x']
+        tt = tt - tt.min()
+        return tt, xx
 
     def write_sdds(self, filename, gap, beam_offset, struct_length):
         s0 = (self.time - self.time[0])*c
@@ -487,7 +522,10 @@ class Tracker:
 
         return wake_tt, wake, quad
 
-    def matrix_forward(self, beamProfile, gaps, beam_offsets):
+    def matrix_forward(self, beamProfile, gaps, beam_offsets, manipulate_beam=None):
+        """
+        manipulate beam can be a function that takes the starting 6xN particle distribution, manipulates and returns it.
+        """
 
         # wake_dict is needed in output for diagnostics
         wake_dict = {}
@@ -645,6 +683,9 @@ class Tracker:
 
         p_arr = np.ones_like(watch['x'])*self.energy_eV/e0_eV
         beam_start = np.array([watch['x'], watch['xp'], watch['y'], watch['yp'], interp_tt, p_arr])
+
+        if manipulate_beam is not None:
+            beam_start = manipulate_beam(beam_start)
 
         ## Propagation of initial beam
 
@@ -1044,14 +1085,17 @@ class Tracker:
         best_profile = opt_func_profiles[index_min]
         best_sig_t = sig_t_range[index_min]
         best_gauss = gauss_profiles[index_min]
+        best_wake = gauss_wakes[index_min]
 
         # Final step
         if not self_consistent:
             baf = self.back_and_forward(meas_screen, best_profile, gaps, beam_offsets, n_streaker)
             final_screen = baf['screen']
             final_profile = baf['beam_profile']
+            final_wake = baf['wake_dict']
         else:
             final_screen, final_profile = best_screen, best_profile
+            final_wake = best_wake
 
         output = {
                'gauss_sigma': best_sig_t,
@@ -1062,6 +1106,7 @@ class Tracker:
                'best_gauss_wake': gauss_wakes[index_min],
                'final_screen': final_screen,
                'final_profile': final_profile,
+               'final_wake': final_wake,
                'meas_screen': meas_screen,
                }
         if details:

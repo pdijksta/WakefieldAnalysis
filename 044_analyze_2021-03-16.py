@@ -96,6 +96,8 @@ delta_offset = 0e-6
 
 center_plot = 'Right'
 
+all_xt = []
+
 for n_offset, offset in enumerate(offsets[:-1]):
     images = streaker_calib['raw_data']['pyscan_result']['image'][n_offset].astype(float)
     projections = images.sum(axis=-2)
@@ -128,7 +130,9 @@ for n_offset, offset in enumerate(offsets[:-1]):
     recon_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge)
     recon_profile = recon_dict['reconstructed_profile']
     recon_screen = recon_dict['reconstructed_screen']
-    all_reconstructions.append(recon_profile)
+    gap, beam_offset, struct_length = gaps[n_streaker], beam_offsets[n_streaker], struct_lengths[n_streaker]
+    r12 = tracker.calcR12()[n_streaker]
+    all_xt.append(recon_profile.get_x_t(gap, beam_offset, struct_length, r12))
     true_offsets.append(beam_offsets[1])
 
     recon_profile.plot_standard(sp_blmeas, label=label, center=center_plot)
@@ -164,6 +168,19 @@ sp_pos.legend()
 
 for profile, offset in zip(all_reconstructions, true_offsets):
     print('distance = %i um, beam duration = %i fs' % ((gaps[1]/2. - abs(offset))*1e6*np.sign(offset), profile.gaussfit.sigma*1e15))
+
+#save_dict = {
+#        'true_offsets': true_offsets,
+#        'streaker_offsets': offsets,
+#        'xt': all_xt,
+#        'x0': x0,
+#        }
+#
+#filename = './xt_2021-03-16.h5'
+#from h5_storage import saveH5Recursive
+#saveH5Recursive(filename, save_dict)
+#print('Saved %s' % filename)
+
 
 
 ms.plt.show()

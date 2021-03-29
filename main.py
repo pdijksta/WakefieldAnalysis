@@ -28,8 +28,10 @@ import myplotstyle as ms
 # - add info of beamsize with / without assumed screen resolution
 # - debug delay after using BsreadPositioner
 # - noise reduction from the image
+# - add these options to GUI
 # - pedestal?
 # - lasing
+# - add tilt option
 
 
 try:

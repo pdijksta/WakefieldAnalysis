@@ -3,444 +3,22 @@ import copy
 import functools
 import numpy as np
 from scipy.constants import c, m_e, e
-from scipy.ndimage import gaussian_filter1d
 
 try:
-    from .gaussfit import GaussFit
     from . import elegant_matrix
-    from . import data_loader
     from . import wf_model
     from . import misc
-    from . import doublehornfit
+    from . import iap
+    from . import myplotstyle as ms
 except ImportError:
-    from gaussfit import GaussFit
     import elegant_matrix
-    import data_loader
     import wf_model
     import misc
-    import doublehornfit
-
-
-import myplotstyle as ms
+    import image_and_profile as iap
+    import myplotstyle as ms
 
 tmp_folder = './'
-
 e0_eV = m_e*c**2/e
-
-def get_average_profile(p_list):
-    len_profile = max(len(p) for p in p_list)
-
-    xx_list = [p._xx - p.gaussfit.mean for p in p_list]
-    yy_list = [p._yy for p in p_list]
-
-    min_profile = min(x.min() for x in xx_list)
-    max_profile = max(x.max() for x in xx_list)
-
-    xx_interp = np.linspace(min_profile, max_profile, len_profile)
-    yy_interp_arr = np.zeros([len(p_list), len_profile])
-
-    for n, (xx, yy) in enumerate(zip(xx_list, yy_list)):
-        yy_interp_arr[n] = np.interp(xx_interp, xx, yy)
-
-    yy_mean = np.mean(yy_interp_arr, axis=0)
-    return xx_interp, yy_mean
-
-class Profile:
-
-    def __init__(self):
-        self._gf = None
-        self._gf_xx = None
-        self._gf_yy = None
-
-    def compare(self, other):
-        xx_min = min(self._xx.min(), other._xx.min())
-        xx_max = max(self._xx.max(), other._xx.max())
-        xx = np.linspace(xx_min, xx_max, max(len(self._xx), len(other._xx)))
-        yy1 = np.interp(xx, self._xx, self._yy, left=0, right=0)
-        yy2 = np.interp(xx, other._xx, other._yy, left=0, right=0)
-        yy1 = yy1 / np.nanmean(yy1)
-        yy2 = yy2 / np.nanmean(yy2)
-
-        # modify least squares else large values dominate
-        weight = yy1 + yy2
-        np.clip(weight, weight.max()/2., None, out=weight)
-
-        diff = ((yy1-yy2)/weight)**2
-
-        outp = np.nanmean(diff[np.nonzero(weight)])
-        #import pdb; pdb.set_trace()
-        return outp
-
-    def reshape(self, new_shape):
-        _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
-        old_sum = np.sum(self._yy)
-
-        _yy = np.interp(_xx, self._xx, self._yy)
-        #if new_shape >= len(self._xx):
-        #    _yy = np.interp(_xx, self._xx, self._yy)
-        #else:
-        #    _yy = np.histogram(self._xx, bins=int(new_shape), weights=self._yy)[0]
-        #import pdb; pdb.set_trace()
-
-        _yy *= old_sum / _yy.sum()
-        self._xx, self._yy = _xx, _yy
-
-    def cutoff(self, cutoff_factor):
-        """
-        Cutoff based on max value of the y array.
-        """
-        if cutoff_factor == 0 or cutoff_factor is None:
-            return
-        yy = self._yy.copy()
-        old_sum = np.sum(yy)
-        abs_yy = np.abs(yy)
-        yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
-        self._yy = yy / np.sum(yy) * old_sum
-
-    def cutoff2(self, cutoff_factor):
-        """
-        Cutoff based on max value of the y array.
-        Also sets to 0 all values before and after the first 0 value (from the perspective of the maximum).
-        """
-        if cutoff_factor == 0 or cutoff_factor is None:
-            return
-        yy = self._yy.copy()
-        old_sum = np.sum(yy)
-        abs_yy = np.abs(yy)
-        yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
-
-        index_max = np.argmax(abs_yy)
-        index_arr = np.arange(len(yy))
-        is0 = (yy == 0)
-        zero_pos = np.logical_and(index_arr > index_max, is0)
-        nearest_zero_pos = index_arr[zero_pos][0]
-        zero_neg = np.logical_and(index_arr < index_max, is0)
-        nearest_zero_neg = index_arr[zero_neg][-1]
-
-        yy[:nearest_zero_neg] = 0
-        yy[nearest_zero_pos:] = 0
-        self._yy = yy / np.sum(yy) * old_sum
-
-
-    def crop(self):
-        old_sum = np.sum(self._yy)
-        mask = self._yy != 0
-        xx_nonzero = self._xx[mask]
-        new_x = np.linspace(xx_nonzero.min(), xx_nonzero.max(), len(self._xx))
-        new_y = np.interp(new_x, self._xx, self._yy)
-        self._xx = new_x
-        self._yy = new_y / new_y.sum() * old_sum
-
-    def __len__(self):
-        return len(self._xx)
-
-    @property
-    def gaussfit(self):
-        if self._gf is not None and (self._xx.min(), self._xx.max(), self._xx.sum()) == self._gf_xx and (self._yy.min(), self._yy.max(), self._yy.sum()) == self._gf_yy:
-            return self._gf
-
-        self._gf = GaussFit(self._xx, self._yy, fit_const=False)
-        self._gf_xx = (self._xx.min(), self._xx.max(), self._xx.sum())
-        self._gf_yy = (self._yy.min(), self._yy.max(), self._yy.sum())
-        return self._gf
-
-    @property
-    def doublehornfit(self):
-        return doublehornfit.DoublehornFit(self._xx, self._yy)
-
-
-    @property
-    def integral(self):
-        return np.trapz(self._yy, self._xx)
-
-    def smoothen(self, gauss_sigma, extend=True):
-        diff = self._xx[1] - self._xx[0]
-        if extend:
-            n_extend = int(gauss_sigma // diff * 2)
-            extend0 = np.arange(self._xx[0]-(n_extend+1)*diff, self._xx[0]-0.5*diff, diff)
-            extend1 = np.arange(self._xx[-1]+diff, self._xx[-1]+diff*(n_extend+0.5), diff)
-            zeros0 = np.zeros_like(extend0)
-            zeros1 = np.zeros_like(extend1)
-
-            self._xx = np.concatenate([extend0, self._xx, extend1])
-            self._yy = np.concatenate([zeros0, self._yy, zeros1])
-
-
-        if gauss_sigma is None or gauss_sigma == 0:
-            return
-        real_sigma = gauss_sigma/diff
-        new_yy = gaussian_filter1d(self._yy, real_sigma)
-        self._yy = new_yy
-
-        #if gauss_sigma < 5e-15:
-        #    import pdb; pdb.set_trace()
-
-    def center(self):
-        self._xx = self._xx - self.gaussfit.mean
-
-    def scale_xx(self, scale_factor, keep_range=False):
-        new_xx = self._xx * scale_factor
-        if keep_range:
-            old_sum = self._yy.sum()
-            new_yy = np.interp(self._xx, new_xx, self._yy, left=0, right=0)
-            self._yy = new_yy / new_yy.sum() * old_sum
-        else:
-            self._xx = new_xx
-
-    def scale_yy(self, scale_factor):
-        self._yy = self._yy * scale_factor
-
-    def remove0(self):
-        mask = self._yy != 0
-        self._xx = self._xx[mask]
-        self._yy = self._yy[mask]
-
-    def flipx(self):
-        self._xx = -self._xx[::-1]
-        self._yy = self._yy[::-1]
-
-class ScreenDistribution(Profile):
-    def __init__(self, x, intensity, real_x=None, subtract_min=True):
-        super().__init__()
-        self._xx = x
-        assert np.all(np.diff(self._xx)>=0)
-        self._yy = intensity
-        if subtract_min:
-            self._yy = self._yy - np.min(self._yy)
-        self.real_x = real_x
-
-    @property
-    def x(self):
-        return self._xx
-
-    @property
-    def intensity(self):
-        return self._yy
-
-    def normalize(self, norm=1.):
-        self._yy = self._yy / self.integral * norm
-
-    def plot_standard(self, sp, **kwargs):
-        if self._yy[0] != 0:
-            diff = self._xx[1] - self._xx[0]
-            x = np.concatenate([[self._xx[0] - diff], self._xx])
-            y = np.concatenate([[0.], self._yy])
-        else:
-            x, y = self.x, self.intensity
-
-        if y[-1] != 0:
-            diff = self.x[1] - self.x[0]
-            x = np.concatenate([x, [x[-1] + diff]])
-            y = np.concatenate([y, [0.]])
-
-        return sp.plot(x*1e3, y/self.integral/1e3, **kwargs)
-
-def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
-    """
-    Smoothening by applying changes to coordinate.
-    Does not actually smoothen the output, just broadens it.
-    """
-    if smoothen:
-        rand = np.random.randn(len(x_points))
-        rand[rand>3] = 3
-        rand[rand<-3] = -3
-        x_points2 = x_points + rand*smoothen
-    else:
-        x_points2 = x_points
-    screen_hist, bin_edges0 = np.histogram(x_points2, bins=screen_bins, density=True)
-    screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
-
-    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
-
-class BeamProfile(Profile):
-    def __init__(self, time, current, energy_eV, charge):
-        super().__init__()
-
-        if np.any(np.isnan(time)):
-            raise ValueError('nans in time')
-        if np.any(np.isnan(current)):
-            raise ValueError('nans in current')
-
-        self._xx = time
-        assert np.all(np.diff(self._xx)>=0)
-        self._yy = current / current.sum() * charge
-        self.energy_eV = energy_eV
-        self.charge = charge
-        self.wake_dict = {}
-
-    @property
-    def time(self):
-        return self._xx
-
-    @property
-    def current(self):
-        return self._yy
-
-    def scale_yy(self, scale_factor):
-        self.charge *= scale_factor
-        super().scale_yy(scale_factor)
-
-    def calc_wake(self, gap, beam_offset, struct_length):
-
-        if abs(beam_offset) > gap/2.:
-            raise ValueError('Beam offset is too large!')
-
-        if (gap, beam_offset, struct_length) in self.wake_dict:
-            return self.wake_dict[(gap, beam_offset, struct_length)]
-
-        wf_calc = wf_model.WakeFieldCalculator((self.time - self.time.min())*c, self.current, self.energy_eV, struct_length)
-        wf_dict = wf_calc.calc_all(gap/2., R12=0., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=True)
-
-        self.wake_dict[(gap, beam_offset, struct_length)] = wf_dict
-
-        return wf_dict
-
-    def get_x_t(self, gap, beam_offset, struct_length, r12):
-        wake_dict = self.calc_wake(gap, beam_offset, struct_length)
-        wake_effect = self.wake_effect_on_screen(wake_dict, r12)
-        tt, xx = wake_effect['t'], wake_effect['x']
-        tt = tt - tt.min()
-        return tt, xx
-
-    def write_sdds(self, filename, gap, beam_offset, struct_length):
-        s0 = (self.time - self.time[0])*c
-        new_s = np.linspace(0, s0.max()*1.1, int(len(s0)*1.1))
-        w_wld = wf_model.wld(new_s, gap/2., beam_offset)*struct_length
-        if beam_offset == 0:
-            w_wxd = np.zeros_like(w_wld)
-        else:
-            w_wxd = wf_model.wxd(new_s, gap/2., beam_offset)*struct_length
-        w_wxd_deriv = np.zeros_like(w_wxd)
-        return wf_model.write_sdds(filename, new_s/c, w_wld, w_wxd, w_wxd_deriv)
-
-
-    def wake_effect_on_screen(self, wf_dict, r12):
-        wake = wf_dict['dipole']['wake_potential']
-        quad = wf_dict['quadrupole']['wake_potential']
-        wake_effect = wake/self.energy_eV*r12*np.sign(self.charge)
-        quad_effect = quad/self.energy_eV*r12*np.sign(self.charge)
-        output = {
-                't': self.time,
-                'x': wake_effect,
-                'quad': quad_effect,
-                'charge': self.charge,
-                }
-        return output
-
-    def shift(self, center):
-        if center == 'Max':
-            center_index = np.argmax(np.abs(self.current))
-        elif center == 'Left':
-            center_index = misc.find_rising_flank(np.abs(self.current))
-        elif center == 'Right':
-            center_index = len(self.current) - misc.find_rising_flank(np.abs(self.current[::-1]))
-        elif center == 'Right_fit':
-            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
-            center_index = np.argmin((self._xx - dhf.pos_right)**2)
-        elif center == 'Left_fit':
-            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
-            center_index = np.argmin((self._xx - dhf.pos_left)**2)
-        else:
-            raise ValueError(center)
-
-        self._xx = self._xx - self._xx[center_index]
-
-    def plot_standard(self, sp, norm=True, center=None, center_max=False, **kwargs):
-        """
-        center can be one of 'Max', 'Left', 'Right', 'Left_fit', 'Right_fit', 'Gauss'
-        """
-
-        # Backward compatibility
-        if center_max:
-            center='Max'
-
-        factor = np.sign(self.charge)
-        if norm:
-            factor *= self.charge/self.integral
-
-        center_index = None
-        if center is None:
-            pass
-        elif center == 'Max':
-            center_index = np.argmax(np.abs(self.current))
-        elif center == 'Left':
-            center_index = misc.find_rising_flank(self.current)
-        elif center == 'Right':
-            center_index = len(self.current) - misc.find_rising_flank(self.current[::-1])
-        elif center == 'Left_fit':
-            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
-            center_index = np.argmin((self._xx - dhf.pos_left)**2)
-        elif center == 'Right_fit':
-            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
-            center_index = np.argmin((self._xx - dhf.pos_right)**2)
-        elif center == 'Gauss':
-            center_index = np.argmin((self._xx - self.gaussfit.mean)**2)
-
-        else:
-            raise ValueError
-
-        if center_index is None:
-            xx = self.time*1e15
-        else:
-            xx = (self.time - self.time[center_index])*1e15
-
-        if self._yy[0] != 0:
-            diff = xx[1] - xx[0]
-            x = np.concatenate([[xx[0] - diff], xx])
-            y = np.concatenate([[0.], self._yy])
-        else:
-            x, y = xx, self._yy
-
-        if y[-1] != 0:
-            diff = xx[1] - xx[0]
-            x = np.concatenate([x, [x[-1] + diff]])
-            y = np.concatenate([y, [0.]])
-
-        return sp.plot(x, y*factor/1e3, **kwargs)
-
-
-def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False, zero_crossing=1):
-    bl_meas = data_loader.load_blmeas(file_)
-    time_meas0 = bl_meas['time_profile%i' % zero_crossing]
-    current_meas0 = bl_meas['current%i' % zero_crossing]
-
-    if subtract_min:
-        current_meas0 = current_meas0 - current_meas0.min()
-
-    if tt_halfrange is None:
-        tt, cc = time_meas0, current_meas0
-    else:
-        current_meas0 *= charge/current_meas0.sum()
-        gf_blmeas = GaussFit(time_meas0, current_meas0)
-        time_meas0 -= gf_blmeas.mean
-
-        time_meas1 = np.arange(-tt_halfrange, time_meas0.min(), np.diff(time_meas0).mean())
-        time_meas2 = np.arange(time_meas0.max(), tt_halfrange, np.diff(time_meas0).mean())
-        time_meas = np.concatenate([time_meas1, time_meas0, time_meas2])
-        current_meas = np.concatenate([np.zeros_like(time_meas1), current_meas0, np.zeros_like(time_meas2)])
-
-        tt, cc = time_meas, current_meas
-    return BeamProfile(tt, cc, energy_eV, charge)
-
-def dhf_profile(profile):
-    dhf = doublehornfit.DoublehornFit(profile.time, profile.current)
-    return BeamProfile(dhf.xx, dhf.reconstruction, profile.energy_eV, profile.charge)
-
-
-@functools.lru_cache(100)
-def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cutoff=1e-3):
-    """
-    cutoff can be None
-    """
-    time_arr = np.linspace(-tt_halfrange, tt_halfrange, int(tt_points))
-    current_gauss = np.exp(-(time_arr-np.mean(time_arr))**2/(2*sig_t**2))
-
-    if cutoff is not None:
-        abs_c = np.abs(current_gauss)
-        current_gauss[abs_c<cutoff*abs_c.max()] = 0
-
-    return BeamProfile(time_arr, current_gauss, energy_eV, charge)
-
 
 class Tracker:
     def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.)):
@@ -487,7 +65,7 @@ class Tracker:
         if target_beamsize <= assumed_screen_res:
             raise ValueError('Target beamsize must be larger assumed screen resolution')
 
-        bp_test = get_gaussian_profile(40e-15, tt_halfrange, self.len_screen, 200e-12, self.energy_eV)
+        bp_test = iap.get_gaussian_profile(40e-15, tt_halfrange, self.len_screen, 200e-12, self.energy_eV)
         screen_sim = self.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen_no_smoothen']
 
         target_beamsize2 = np.sqrt(target_beamsize**2 - assumed_screen_res**2)
@@ -742,7 +320,7 @@ class Tracker:
         #        print()
 
 
-        screen = getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0)
+        screen = iap.getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0)
         screen_no_smoothen = copy.deepcopy(screen)
         screen.smoothen(self.smoothen)
 
@@ -798,7 +376,7 @@ class Tracker:
             r12_dict[n_streaker] = rr[0,1]
 
         screen_watcher = sim.watch[-1]
-        screen = getScreenDistributionFromPoints(screen_watcher['x'], self.screen_bins)
+        screen = iap.getScreenDistributionFromPoints(screen_watcher['x'], self.screen_bins)
         screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
         screen.reshape(self.len_screen)
@@ -829,7 +407,7 @@ class Tracker:
         return forward_dict
 
     def set_bs_at_streaker(self):
-        test_profile = get_gaussian_profile(40e-15, 200e-15, self.len_screen, 200e-12, self.energy_eV)
+        test_profile = iap.get_gaussian_profile(40e-15, 200e-15, self.len_screen, 200e-12, self.energy_eV)
         forward_dict = self.matrix_forward(test_profile, [10e-3, 10e-3], [0, 0])
         self.bs_at_streaker = forward_dict['bs_at_streaker']
 
@@ -1055,7 +633,7 @@ class Tracker:
 
             assert 1e-15 < sig_t < 1e-12
 
-            bp_gauss = get_gaussian_profile(sig_t, float(tt_halfrange), int(self.len_screen), float(charge), float(self.energy_eV))
+            bp_gauss = iap.get_gaussian_profile(sig_t, float(tt_halfrange), int(self.len_screen), float(charge), float(self.energy_eV))
 
             if self_consistent:
                 bp_back0 = self.track_backward2(meas_screen, bp_gauss, gaps, beam_offsets, n_streaker)
@@ -1161,4 +739,9 @@ class Tracker:
                'all_profiles': opt_func_profiles,
                'all_screens': opt_func_screens,
                }
+
+
+# Backward compatibility
+BeamProfile = iap.BeamProfile
+ScreenDistribution = iap.ScreenDistribution
 

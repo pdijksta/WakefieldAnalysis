@@ -2,13 +2,13 @@ import re
 import numpy as np
 
 try:
-    import tracking
     import elegant_matrix
     import gaussfit
+    import image_and_profile as iap
 except ImportError:
-    from . import tracking
     from . import elegant_matrix
     from . import gaussfit
+    from . import image_and_profile as iap
 
 def find_rising_flank(arr, method='Size'):
     """
@@ -59,13 +59,13 @@ def avergage_BeamProfiles(bp_list, align='Max'):
             all_profiles_current.append(np.interp(new_time, (profile.time), (profile.current), left=0, right=0))
         else:
             all_profiles_current = np.array(all_profiles_current)
-            average_profile = tracking.BeamProfile(new_time, np.mean(all_profiles_current, axis=0), bp_list[0].energy_eV, bp_list[0].charge)
+            average_profile = iap.BeamProfile(new_time, np.mean(all_profiles_current, axis=0), bp_list[0].energy_eV, bp_list[0].charge)
             error_bar = np.std(bp_list, axis=0)
             return (average_profile, error_bar)
 
 
 def fit_nat_beamsize(screen_meas, screen_sim, emittance, screen_res=0., print_=False):
-    screen_sim2 = tracking.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), screen_res)
+    screen_sim2 = iap.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), screen_res)
 
     sig_meas = np.sqrt(screen_meas.gaussfit.sigma**2 - screen_res**2)
     sig_sim = np.sqrt(screen_sim2.gaussfit.sigma**2 - screen_res**2)
@@ -141,7 +141,7 @@ def proj_to_screen(proj, x_axis, subtract_min, x_offset=0):
         x_axis = x_axis[::-1]
         proj = proj[::-1]
 
-    screen = tracking.ScreenDistribution(x_axis-x_offset, proj, subtract_min=subtract_min)
+    screen = iap.ScreenDistribution(x_axis-x_offset, proj, subtract_min=subtract_min)
     return screen
 
 

@@ -1,3 +1,23 @@
+import functools
+import numpy as np
+from scipy.constants import c
+from scipy.ndimage import gaussian_filter1d
+
+try:
+    from . import data_loader
+    from .gaussfit import GaussFit
+    from . import doublehornfit
+    from . import wf_model
+    from . import misc
+    from . import myplotstyle as ms
+except ImportError:
+    import data_loader
+    from gaussfit import GaussFit
+    import doublehornfit
+    import wf_model
+    import misc
+    import myplotstyle as ms
+
 class Profile:
 
     def __init__(self):
@@ -205,4 +225,377 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
 
     return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
 
+class BeamProfile(Profile):
+    def __init__(self, time, current, energy_eV, charge):
+        super().__init__()
+
+        if np.any(np.isnan(time)):
+            raise ValueError('nans in time')
+        if np.any(np.isnan(current)):
+            raise ValueError('nans in current')
+
+        self._xx = time
+        assert np.all(np.diff(self._xx)>=0)
+        self._yy = current / current.sum() * charge
+        self.energy_eV = energy_eV
+        self.charge = charge
+        self.wake_dict = {}
+
+    @property
+    def time(self):
+        return self._xx
+
+    @property
+    def current(self):
+        return self._yy
+
+    def scale_yy(self, scale_factor):
+        self.charge *= scale_factor
+        super().scale_yy(scale_factor)
+
+    def calc_wake(self, gap, beam_offset, struct_length):
+
+        if abs(beam_offset) > gap/2.:
+            raise ValueError('Beam offset is too large!')
+
+        if (gap, beam_offset, struct_length) in self.wake_dict:
+            return self.wake_dict[(gap, beam_offset, struct_length)]
+
+        wf_calc = wf_model.WakeFieldCalculator((self.time - self.time.min())*c, self.current, self.energy_eV, struct_length)
+        wf_dict = wf_calc.calc_all(gap/2., R12=0., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=True)
+
+        self.wake_dict[(gap, beam_offset, struct_length)] = wf_dict
+
+        return wf_dict
+
+    def get_x_t(self, gap, beam_offset, struct_length, r12):
+        wake_dict = self.calc_wake(gap, beam_offset, struct_length)
+        wake_effect = self.wake_effect_on_screen(wake_dict, r12)
+        tt, xx = wake_effect['t'], wake_effect['x']
+        tt = tt - tt.min()
+        return tt, xx
+
+    def write_sdds(self, filename, gap, beam_offset, struct_length):
+        s0 = (self.time - self.time[0])*c
+        new_s = np.linspace(0, s0.max()*1.1, int(len(s0)*1.1))
+        w_wld = wf_model.wld(new_s, gap/2., beam_offset)*struct_length
+        if beam_offset == 0:
+            w_wxd = np.zeros_like(w_wld)
+        else:
+            w_wxd = wf_model.wxd(new_s, gap/2., beam_offset)*struct_length
+        w_wxd_deriv = np.zeros_like(w_wxd)
+        return wf_model.write_sdds(filename, new_s/c, w_wld, w_wxd, w_wxd_deriv)
+
+
+    def wake_effect_on_screen(self, wf_dict, r12):
+        wake = wf_dict['dipole']['wake_potential']
+        quad = wf_dict['quadrupole']['wake_potential']
+        wake_effect = wake/self.energy_eV*r12*np.sign(self.charge)
+        quad_effect = quad/self.energy_eV*r12*np.sign(self.charge)
+        output = {
+                't': self.time,
+                'x': wake_effect,
+                'quad': quad_effect,
+                'charge': self.charge,
+                }
+        return output
+
+    def shift(self, center):
+        if center == 'Max':
+            center_index = np.argmax(np.abs(self.current))
+        elif center == 'Left':
+            center_index = misc.find_rising_flank(np.abs(self.current))
+        elif center == 'Right':
+            center_index = len(self.current) - misc.find_rising_flank(np.abs(self.current[::-1]))
+        elif center == 'Right_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_right)**2)
+        elif center == 'Left_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_left)**2)
+        else:
+            raise ValueError(center)
+
+        self._xx = self._xx - self._xx[center_index]
+
+    def plot_standard(self, sp, norm=True, center=None, center_max=False, **kwargs):
+        """
+        center can be one of 'Max', 'Left', 'Right', 'Left_fit', 'Right_fit', 'Gauss'
+        """
+
+        # Backward compatibility
+        if center_max:
+            center='Max'
+
+        factor = np.sign(self.charge)
+        if norm:
+            factor *= self.charge/self.integral
+
+        center_index = None
+        if center is None:
+            pass
+        elif center == 'Max':
+            center_index = np.argmax(np.abs(self.current))
+        elif center == 'Left':
+            center_index = misc.find_rising_flank(self.current)
+        elif center == 'Right':
+            center_index = len(self.current) - misc.find_rising_flank(self.current[::-1])
+        elif center == 'Left_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_left)**2)
+        elif center == 'Right_fit':
+            dhf = doublehornfit.DoublehornFit(self._xx, self._yy)
+            center_index = np.argmin((self._xx - dhf.pos_right)**2)
+        elif center == 'Gauss':
+            center_index = np.argmin((self._xx - self.gaussfit.mean)**2)
+
+        else:
+            raise ValueError
+
+        if center_index is None:
+            xx = self.time*1e15
+        else:
+            xx = (self.time - self.time[center_index])*1e15
+
+        if self._yy[0] != 0:
+            diff = xx[1] - xx[0]
+            x = np.concatenate([[xx[0] - diff], xx])
+            y = np.concatenate([[0.], self._yy])
+        else:
+            x, y = xx, self._yy
+
+        if y[-1] != 0:
+            diff = xx[1] - xx[0]
+            x = np.concatenate([x, [x[-1] + diff]])
+            y = np.concatenate([y, [0.]])
+
+        return sp.plot(x, y*factor/1e3, **kwargs)
+
+
+def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False, zero_crossing=1):
+    bl_meas = data_loader.load_blmeas(file_)
+    time_meas0 = bl_meas['time_profile%i' % zero_crossing]
+    current_meas0 = bl_meas['current%i' % zero_crossing]
+
+    if subtract_min:
+        current_meas0 = current_meas0 - current_meas0.min()
+
+    if tt_halfrange is None:
+        tt, cc = time_meas0, current_meas0
+    else:
+        current_meas0 *= charge/current_meas0.sum()
+        gf_blmeas = GaussFit(time_meas0, current_meas0)
+        time_meas0 -= gf_blmeas.mean
+
+        time_meas1 = np.arange(-tt_halfrange, time_meas0.min(), np.diff(time_meas0).mean())
+        time_meas2 = np.arange(time_meas0.max(), tt_halfrange, np.diff(time_meas0).mean())
+        time_meas = np.concatenate([time_meas1, time_meas0, time_meas2])
+        current_meas = np.concatenate([np.zeros_like(time_meas1), current_meas0, np.zeros_like(time_meas2)])
+
+        tt, cc = time_meas, current_meas
+    return BeamProfile(tt, cc, energy_eV, charge)
+
+def dhf_profile(profile):
+    dhf = doublehornfit.DoublehornFit(profile.time, profile.current)
+    return BeamProfile(dhf.xx, dhf.reconstruction, profile.energy_eV, profile.charge)
+
+
+@functools.lru_cache(100)
+def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cutoff=1e-3):
+    """
+    cutoff can be None
+    """
+    time_arr = np.linspace(-tt_halfrange, tt_halfrange, int(tt_points))
+    current_gauss = np.exp(-(time_arr-np.mean(time_arr))**2/(2*sig_t**2))
+
+    if cutoff is not None:
+        abs_c = np.abs(current_gauss)
+        current_gauss[abs_c<cutoff*abs_c.max()] = 0
+
+    return BeamProfile(time_arr, current_gauss, energy_eV, charge)
+
+def get_average_profile(p_list):
+    len_profile = max(len(p) for p in p_list)
+
+    xx_list = [p._xx - p.gaussfit.mean for p in p_list]
+    yy_list = [p._yy for p in p_list]
+
+    min_profile = min(x.min() for x in xx_list)
+    max_profile = max(x.max() for x in xx_list)
+
+    xx_interp = np.linspace(min_profile, max_profile, len_profile)
+    yy_interp_arr = np.zeros([len(p_list), len_profile])
+
+    for n, (xx, yy) in enumerate(zip(xx_list, yy_list)):
+        yy_interp_arr[n] = np.interp(xx_interp, xx, yy)
+
+    yy_mean = np.mean(yy_interp_arr, axis=0)
+    return xx_interp, yy_mean
+
+class Image:
+    def __init__(self, image, x_axis, y_axis, dispersion=1, streaker_gap=0, beam_offset=0, streaker_length=0, energy_eV=1):
+
+        assert np.all(np.diff(x_axis)) > 0
+
+        self.image = image
+        self.x_axis = x_axis
+        self.y_axis = y_axis
+        self.dispersion = dispersion
+        self.energy_eV = energy_eV
+        self.streaker_properties = (streaker_gap, beam_offset, streaker_length)
+
+    def child(self, new_i, new_x, new_y):
+        gap, offset, sl = self.streaker_properties
+        return Image(new_i, new_x, new_y, self.dispersion, gap, offset, sl, self.energy_eV)
+
+
+    @property
+    def shape(self):
+        return self.image.shape
+
+    def cut(self, x_min, x_max):
+
+        x_axis = self.x_axis
+        x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)
+        new_image = self.image[:,x_mask]
+        new_x_axis = x_axis[x_mask]
+
+        return self.child(new_image, new_x_axis, self.y_axis)
+
+    def reshape_x(self, new_length):
+        """
+        If new length is larger than current length
+        """
+
+        image2 = np.zeros([len(self.y_axis), new_length])
+        x_axis2 = np.linspace(self.x_axis.min(), self.x_axis.max(), new_length)
+        # Fast interpolation
+        delta_x = np.zeros_like(self.image)
+        delta_x[:,:-1] = self.image[:,1:] - self.image[:,:-1]
+        index_float = (x_axis2 - self.x_axis[0]) / (self.x_axis[1] - self.x_axis[0])
+        index = index_float.astype(int)
+        index_delta = index_float-index
+        np.clip(index, 0, len(self.x_axis)-1, out=index)
+        image2 = self.image[:, index] + index_delta * delta_x[:,index]
+
+        image2 = image2 / image2.sum() * self.image.sum()
+
+        return self.child(image2, x_axis2, self.y_axis)
+
+    def slice_x(self, n_slices):
+        x_axis, y_axis = self.x_axis, self.y_axis
+        max_x_index = len(x_axis) - len(x_axis) % n_slices
+
+        image_extra = np.reshape(self.image[:,:max_x_index], [len(y_axis), n_slices, max_x_index//n_slices])
+        new_image = np.mean(image_extra, axis=-1)
+
+        x_axis_reshaped = np.linspace(x_axis[0], x_axis[-1], n_slices)
+
+        output = self.child(new_image, x_axis_reshaped, y_axis)
+        return output
+
+    def fit_slice(self, smoothen_first=True, smoothen=100e-6):
+        y_axis = self.y_axis
+        n_slices = len(self.x_axis)
+
+        pixelsize = abs(y_axis[1] - y_axis[0])
+        smoothen = smoothen/pixelsize
+
+        slice_mean = []
+        slice_sigma = []
+        slice_gf = []
+        for n_slice in range(n_slices):
+            intensity = self.image[:,n_slice]
+            if smoothen_first:
+                yy_conv = gaussian_filter1d(intensity, smoothen)
+                gf0 = GaussFit(y_axis, yy_conv, fit_const=False)
+                p0 = gf0.popt
+            else:
+                p0 = None
+            gf = GaussFit(y_axis, intensity, fit_const=False, p0=p0)
+            slice_mean.append(gf.mean)
+            slice_sigma.append(gf.sigma)
+            slice_gf.append(gf)
+
+        output = {
+                'slice_mean': np.array(slice_mean),
+                'slice_sigma': np.array(slice_sigma),
+                'slice_gf': slice_gf,
+                }
+        return output
+
+
+    def x_to_t(self, wake_x, wake_time, debug=False):
+        if wake_time[1] < wake_time[0]:
+            wake_x = wake_x[::-1]
+            wake_time = wake_time[::-1]
+
+        new_img0 = np.zeros_like(self.image)
+        new_t_axis = np.linspace(wake_time.min(), wake_time.max(), self.image.shape[1])
+        x_interp = np.interp(new_t_axis, wake_time, wake_x)
+        for t_index, (t, x) in enumerate(zip(new_t_axis, x_interp)):
+            x_index = np.argmin((self.x_axis - x)**2)
+            new_img0[:,t_index] = self.image[:,x_index]
+
+        diff_x = np.concatenate([np.diff(x_interp), [0]])
+
+        new_img = new_img0 * np.abs(diff_x)
+        new_img = new_img / new_img.sum() * self.image.sum()
+
+        output = self.child(new_img, new_t_axis, self.y_axis)
+
+        if debug:
+            ms.figure()
+            subplot = ms.subplot_factory(2,2)
+            sp_ctr = 1
+
+            sp = subplot(sp_ctr, title='Wake', xlabel='time [fs]', ylabel='Screen x [mm]')
+            sp_ctr += 1
+            sp.plot(wake_time*1e15, wake_x*1e3)
+
+            sp = subplot(sp_ctr, title='Image projection X', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+            sp_ctr += 1
+            sp.plot(self.x_axis*1e3, self.image.sum(axis=-2))
+
+            sp = subplot(sp_ctr, title='Image projection T', xlabel='t [fs]', ylabel='Intensity (arb. units)')
+            sp_ctr += 1
+            sp.plot(output.x_axis*1e15, output.image.sum(axis=-2))
+
+            sp = subplot(sp_ctr, title='Image', xlabel='x [mm]', ylabel='y [mm]')
+            sp_ctr += 1
+            self.plot_img_and_proj(sp)
+
+        return output
+
+    def force_projection(self, proj):
+        sum_ = self.image.sum(axis=-2)
+        sum_[sum_ == 0] = np.inf
+        image2 = self.image / sum_ / proj.sum() * proj
+        image2 = image2 / image2.sum() * self.image.sum()
+
+        return self.child(image2, self.x_axis, self.y_axis)
+
+    def plot_img_and_proj(self, sp, x_factor=1e3, y_factor=1e3, plot_proj=True, log=True, revert_x=False):
+
+        x_axis, y_axis, image = self.x_axis, self.y_axis, self.image
+        extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[0]*y_factor, y_axis[-1]*y_factor]
+
+        #if revert_x:
+        #    image = image[:,::-1]
+
+        if log:
+            image_ = np.clip(image, 1, None)
+            #image_ = image
+            log = np.log(image_)
+        else:
+            log = image
+        sp.imshow(log, aspect='auto', extent=extent, origin='lower')
+        if plot_proj:
+            proj = image.sum(axis=-2)
+            proj_plot = (y_axis.min() +(y_axis.max()-y_axis.min()) * proj/proj.max()*0.3)*y_factor
+            sp.plot(x_axis*x_factor, proj_plot, color='red')
+
+        if revert_x:
+            xlim = sp.get_xlim()
+            sp.set_xlim(*xlim[::-1])
 

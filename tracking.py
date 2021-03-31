@@ -419,8 +419,7 @@ class Tracker:
         q_wake_x = wake_effect['quad']
         charge = wake_effect['charge']
 
-        if np.any(np.diff(wake_x) < 0):
-            assert np.all(np.diff(wake_x) <= 0)
+        if np.all(np.diff(wake_x) <= 0):
             wake_x = wake_x[::-1]
             q_wake_x = q_wake_x[::-1]
             wake_time = wake_time[::-1]
@@ -455,8 +454,7 @@ class Tracker:
 
             screen.reshape(self.n_particles)
             rand0 = np.random.randn(len(screen.x))
-            rand0[rand0>3] = 3
-            rand0[rand0<-3] = -3
+            np.clip(rand0, -3, 3, out=rand0)
             randx = rand0*bs_at_streaker
             t_interp0 = np.zeros_like(screen.x)
 

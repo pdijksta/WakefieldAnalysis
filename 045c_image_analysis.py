@@ -34,9 +34,6 @@ sp_ctr = np.inf
 ny, nx = 3, 3
 subplot = ms.subplot_factory(ny, nx)
 
-pixelsize = abs(y_axis[1] - y_axis[0])
-smoothen = 50e-6/pixelsize
-
 slice_dict = new_img.fit_slice()
 
 plot_gaussfits = False
@@ -53,12 +50,10 @@ if plot_gaussfits:
 
         sp.plot(gf.xx, gf.yy)
         sp.plot(gf.xx, gf.reconstruction)
-        #sp.plot(gf.xx, yy_conv)
 
 slice_mean = slice_dict['slice_mean']
 slice_std = slice_dict['slice_sigma']
 sp_re.errorbar(new_img.x_axis*1e15, slice_mean*1e3, yerr=slice_std*1e3, ls='None', marker='+', color='red')
-
 
 plt.show()
 

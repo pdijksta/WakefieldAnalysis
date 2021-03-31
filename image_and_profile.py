@@ -1,4 +1,4 @@
-import functools
+#import functools
 import numpy as np
 from scipy.constants import c
 from scipy.ndimage import gaussian_filter1d
@@ -400,7 +400,7 @@ def dhf_profile(profile):
     return BeamProfile(dhf.xx, dhf.reconstruction, profile.energy_eV, profile.charge)
 
 
-@functools.lru_cache(100)
+#@functools.lru_cache(100)
 def get_gaussian_profile(sig_t, tt_halfrange, tt_points, charge, energy_eV, cutoff=1e-3):
     """
     cutoff can be None
@@ -435,7 +435,7 @@ def get_average_profile(p_list):
 class Image:
     def __init__(self, image, x_axis, y_axis, dispersion=1, streaker_gap=0, beam_offset=0, streaker_length=0, energy_eV=1):
 
-        assert np.all(np.diff(x_axis)) > 0
+        assert np.all(np.diff(x_axis) > 0)
 
         self.image = image
         self.x_axis = x_axis
@@ -524,8 +524,7 @@ class Image:
                 }
         return output
 
-
-    def x_to_t(self, wake_x, wake_time, debug=False):
+    def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
         if wake_time[1] < wake_time[0]:
             wake_x = wake_x[::-1]
             wake_time = wake_time[::-1]
@@ -533,9 +532,16 @@ class Image:
         new_img0 = np.zeros_like(self.image)
         new_t_axis = np.linspace(wake_time.min(), wake_time.max(), self.image.shape[1])
         x_interp = np.interp(new_t_axis, wake_time, wake_x)
+
+        to_print = []
         for t_index, (t, x) in enumerate(zip(new_t_axis, x_interp)):
             x_index = np.argmin((self.x_axis - x)**2)
             new_img0[:,t_index] = self.image[:,x_index]
+
+            if print_:
+                to_print.append('%i %i %.1f %.1f' % (t_index, x_index, t*1e15, x*1e6))
+        if print_:
+            print('\n'.join(to_print))
 
         diff_x = np.concatenate([np.diff(x_interp), [0]])
 
@@ -567,10 +573,11 @@ class Image:
 
         return output
 
-    def force_projection(self, proj):
+    def force_projection(self, proj_x, proj):
+        real_proj = np.interp(self.x_axis, proj_x, proj)
         sum_ = self.image.sum(axis=-2)
         sum_[sum_ == 0] = np.inf
-        image2 = self.image / sum_ / proj.sum() * proj
+        image2 = self.image / sum_ / real_proj.sum() * real_proj
         image2 = image2 / image2.sum() * self.image.sum()
 
         return self.child(image2, self.x_axis, self.y_axis)
@@ -580,15 +587,12 @@ class Image:
         x_axis, y_axis, image = self.x_axis, self.y_axis, self.image
         extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[0]*y_factor, y_axis[-1]*y_factor]
 
-        #if revert_x:
-        #    image = image[:,::-1]
-
         if log:
             image_ = np.clip(image, 1, None)
-            #image_ = image
             log = np.log(image_)
         else:
             log = image
+
         sp.imshow(log, aspect='auto', extent=extent, origin='lower')
         if plot_proj:
             proj = image.sum(axis=-2)

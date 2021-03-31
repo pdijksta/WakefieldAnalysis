@@ -10,6 +10,8 @@ import misc
 
 ms.plt.close('all')
 
+elegant_matrix.set_tmp_dir('~/tmp_elegant')
+
 data_dir = '/mnt/data/data_2021-03-16/'
 archiver_dir = '/mnt/data/archiver_api_data/'
 lasing_on_file = data_dir+'20210316_202944_SARBD02-DSCR050_camera_snapshot.h5'
@@ -167,7 +169,7 @@ magnet_file = archiver_dir+'2021-03-16.h5'
 timestamp = elegant_matrix.get_timestamp(2021, 3, 16, 20, 14, 10)
 sig_t_range = np.arange(20, 50.01, 5)*1e-15
 n_streaker = 1
-compensate_negative_screen = True
+compensate_negative_screen = False
 
 
 tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake, bp_smoothen=bp_smoothen, compensate_negative_screen=compensate_negative_screen)
@@ -276,16 +278,17 @@ for image, label in [(image_on, 'Lasing on'), (image_off, 'Lasing off')]:
     sp.plot((time*1e15)[::-1], curr_plot, color='orange')
 
 
-#import pickle
-#with open('./backtrack_image_no_compensate.pkl', 'wb') as f:
-#    pickle.dump({
-#        'image': image_off,
-#        'x_axis': x_axis,
-#        'y_axis': y_axis,
-#        'final_profile': final_profile,
-#        'tt': tt,
-#        'xx': xx,
-#        }, f)
+import pickle
+with open('./backtrack_image_no_compensate.pkl', 'wb') as f:
+    pickle.dump({
+        'image': image_off,
+        'x_axis': x_axis,
+        'y_axis': y_axis,
+        'final_profile': final_profile,
+        'tt': tt,
+        'xx': xx,
+        'meas_screen': meas_screen,
+        }, f)
 
 ms.plt.show()
 

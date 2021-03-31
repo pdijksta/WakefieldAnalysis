@@ -1,8 +1,7 @@
-import numpy as np
+import numpy as np; np
 import pickle
 
 import image_and_profile as iap
-
 import myplotstyle as ms
 
 ms.plt.close('all')
@@ -16,10 +15,12 @@ with open('./backtrack_image_no_compensate.pkl', 'rb') as f:
     xx = d['xx']
     tt = d['tt']
 
+if xx[1] < xx[0]:
+    xx = xx[::-1]
+    tt = tt[::-1]
+
 image_obj = iap.Image(image, x_axis, y_axis)
-
 image_cut = image_obj.cut(xx.min(), xx.max())
-
 image2 = image_cut.reshape_x(len(final_profile))
 
 figure = ms.figure('Backtrack image')
@@ -36,7 +37,7 @@ sp = subplot(sp_ctr, title='X space 2', xlabel='x [mm]', ylabel='y [mm]')
 sp_ctr += 1
 image2.plot_img_and_proj(sp)
 
-new_img = image2.x_to_t(xx, tt, debug=True)
+new_img = image2.x_to_t(xx, tt, debug=True, print_=False)
 ms.plt.figure(figure.number)
 
 sp = subplot(sp_ctr, title='T space', xlabel='t [fs]', ylabel='y [mm]')
@@ -44,13 +45,9 @@ sp_ctr += 1
 
 new_img.plot_img_and_proj(sp, x_factor=1e15, revert_x=False)
 
-
-
-forced_time = new_img.x_axis
-forced_proj = np.interp(forced_time, final_profile.time, final_profile.current)
-#forced_proj = forced_proj[::-1]
-
-forced_img = new_img.force_projection(forced_proj)
+forced_time = final_profile.time-final_profile.time.min()
+forced_proj = final_profile.current
+forced_img = new_img.force_projection(forced_time, forced_proj)
 
 sp = subplot(sp_ctr, title='T space', xlabel='t [fs]', ylabel='y [mm]')
 sp_ctr += 1
@@ -59,7 +56,6 @@ forced_img.plot_img_and_proj(sp, x_factor=1e15, revert_x=False)
 sp = subplot(sp_ctr, title='Debug')
 sp_ctr += 1
 
-sp.plot(forced_time, forced_proj/forced_proj.max(), label='Forced proj')
 sp.plot(final_profile.time, final_profile.current/final_profile.current.max(), label='Profile')
 yy = forced_img.image.sum(axis=-2)
 sp.plot(forced_img.x_axis, yy/yy.max(), label='Forced img')
@@ -67,6 +63,22 @@ sp.plot(forced_img.x_axis, yy/yy.max(), label='Forced img')
 
 yy = new_img.image.sum(axis=-2)
 sp.plot(new_img.x_axis, yy/yy.max(), label='New img')
+#sp.plot(new_img.x_axis[::-1], yy/yy.max(), label='New img reverted')
+
+# Manual backtracking of projection
+
+proj = image2.image.sum(axis=-2)
+x_axis = image2.x_axis
+
+long_x_axis = np.linspace(x_axis[0], x_axis[-1], int(100e3))
+long_proj = np.interp(long_x_axis, x_axis, proj)
+
+t_interp0 = np.interp(long_x_axis, xx, tt)
+intensity, bins = np.histogram(t_interp0, bins=100, weights=long_proj)
+new_x_axis = (bins[1:] + bins[:-1])/2.
+
+sp.plot(new_x_axis, intensity/intensity.max(), label='Manual backtrack')
+
 
 sp.legend()
 

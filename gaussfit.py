@@ -21,15 +21,13 @@ class GaussFit:
             else:
                 const_0 = 0.
 
-            if abs(np.max(yy)) > abs(np.min(yy)):
+            if abs(np.max(yy-const_0)) > abs(np.min(yy-const_0)):
                 scale_0 = self.scale_0 = np.max(yy)-const_0
                 mean_0 = self.mean_0 = np.squeeze(xx[np.argmax(yy)])
             else:
                 scale_0 = self.scale_0 = np.min(yy)-const_0
                 mean_0 = self.mean_0 = np.squeeze(xx[np.argmin(yy)])
 
-
-            # Third instead of half for better stability
             mask_above_half = yy-const_0 > scale_0/2
 
             if np.sum(mask_above_half) > 1:
@@ -45,6 +43,15 @@ class GaussFit:
                 p0 = self.p0 = [scale_0, mean_0, sigma_0]
         else:
             self.p0 = p0
+
+            #import matplotlib.pyplot as plt
+            #plt.figure()
+            #gf = self
+            #plt.plot(gf.xx, gf.yy)
+            ##plt.plot(gf.xx, gf.reconstruction)
+            #plt.plot(gf.xx, gf.fit_func(gf.xx, *gf.p0))
+            #plt.show()
+            #import pdb; pdb.set_trace()
 
         try:
             self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi)

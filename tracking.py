@@ -461,10 +461,10 @@ class Tracker:
             for n_x, (x, rx) in enumerate(zip(screen.x, randx)):
                 t_interp0[n_x] = np.interp(x, wake_x+rx*q_wake_x, wake_time)
 
-            charge_interp, hist_edges2 = np.histogram(t_interp0, bins=self.n_particles//100, weights=screen.intensity, density=True)
+            charge_interp, hist_edges = np.histogram(t_interp0, bins=self.n_particles//100, weights=screen.intensity, density=True)
             charge_interp[0] = 0
             charge_interp[-1] = 0
-            t_interp = hist_edges2[1:]
+            t_interp = (hist_edges[1:] + hist_edges[:-1])/2.
 
         else:
             screen.reshape(self.n_particles)
@@ -472,7 +472,8 @@ class Tracker:
             charge_interp, hist_edges = np.histogram(t_interp0, bins=self.n_particles//100, weights=screen.intensity, density=True)
             charge_interp[0] = 0
             charge_interp[-1] = 0
-            t_interp = np.linspace(t_interp0[0], t_interp0[-1], len(charge_interp))
+            #t_interp = np.linspace(t_interp0.min(), t_interp0.max(), len(charge_interp))
+            t_interp = (hist_edges[1:] + hist_edges[:-1])/2.
 
         try:
             if np.any(np.diff(t_interp) < 0):

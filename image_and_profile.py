@@ -432,12 +432,22 @@ def get_average_profile(p_list):
     return xx_interp, yy_mean
 
 class Image:
-    def __init__(self, image, x_axis, y_axis, x_unit='m', y_unit='m'):
+    def __init__(self, image, x_axis, y_axis, x_unit='m', y_unit='m', subtract_median=False, x_offset=0):
 
-        assert np.all(np.diff(x_axis) > 0)
+        if x_axis[1] < x_axis[0]:
+            x_axis = x_axis[::-1]
+            image = image[:,::-1]
+
+        if y_axis[1] < y_axis[0]:
+            y_axis = y_axis[::-1]
+            image = image[::-1,:]
+
+        if subtract_median:
+            image = image - np.median(image)
+            np.clip(image, 0, None, out=image)
 
         self.image = image
-        self.x_axis = x_axis
+        self.x_axis = x_axis - x_offset
         self.y_axis = y_axis
         self.x_unit = x_unit
         self.y_unit = y_unit
@@ -448,12 +458,10 @@ class Image:
         return Image(new_i, new_x, new_y, x_unit, y_unit)
 
     def cut(self, x_min, x_max):
-
         x_axis = self.x_axis
         x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)
         new_image = self.image[:,x_mask]
         new_x_axis = x_axis[x_mask]
-
         return self.child(new_image, new_x_axis, self.y_axis)
 
     def reshape_x(self, new_length):
@@ -508,7 +516,7 @@ class Image:
                 p0 = None
             gf = GaussFit(y_axis, intensity, fit_const=False, p0=p0)
             slice_mean.append(gf.mean)
-            slice_sigma.append(gf.sigma)
+            slice_sigma.append(abs(gf.sigma))
             slice_gf.append(gf)
 
         proj = np.sum(self.image, axis=-2)

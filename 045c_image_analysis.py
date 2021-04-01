@@ -1,9 +1,7 @@
 import numpy as np
 import pickle
-#from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 
-#import gaussfit
 import myplotstyle as ms
 
 plt.close('all')
@@ -22,7 +20,7 @@ ms.figure('Image analysis')
 subplot = ms.subplot_factory(2, 2)
 sp_ctr = 1
 
-sp = subplot(sp_ctr, title='Original image', xlabel='t [fs]', ylabel='y [mm]')
+sp = sp0 = subplot(sp_ctr, title='Original image', xlabel='t [fs]', ylabel='y [mm]')
 sp_ctr += 1
 image_obj.plot_img_and_proj(sp, x_factor=1e15)
 
@@ -53,7 +51,8 @@ if plot_gaussfits:
 
 slice_mean = slice_dict['slice_mean']
 slice_std = slice_dict['slice_sigma']
-sp_re.errorbar(new_img.x_axis*1e15, slice_mean*1e3, yerr=slice_std*1e3, ls='None', marker='+', color='red')
+for sp_ in sp_re, sp0:
+    sp_.errorbar(new_img.x_axis*1e15, slice_mean*1e3, yerr=slice_std*1e3, ls='None', marker='_', color='red')
 
 plt.show()
 

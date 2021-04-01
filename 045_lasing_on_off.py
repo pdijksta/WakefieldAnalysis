@@ -278,17 +278,20 @@ for image, label in [(image_on, 'Lasing on'), (image_off, 'Lasing off')]:
     sp.plot((time*1e15)[::-1], curr_plot, color='orange')
 
 
-import pickle
-with open('./backtrack_image_no_compensate.pkl', 'wb') as f:
-    pickle.dump({
-        'image': image_off,
-        'x_axis': x_axis,
-        'y_axis': y_axis,
-        'final_profile': final_profile,
-        'tt': tt,
-        'xx': xx,
-        'meas_screen': meas_screen,
-        }, f)
+#import pickle
+#filename = './backtrack_image_no_compensate.pkl'
+#with open(filename, 'wb') as f:
+#    pickle.dump({
+#        'image': image_off,
+#        'x_axis': x_axis,
+#        'y_axis': y_axis,
+#        'final_profile': final_profile,
+#        'tt': tt,
+#        'xx': xx,
+#        'meas_screen': meas_screen,
+#        }, f)
+#print('Saved %s' % filename)
+
 
 ms.plt.show()
 

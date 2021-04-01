@@ -9,6 +9,7 @@ import tracking
 import gaussfit
 import misc
 from h5_storage import loadH5Recursive
+import image_and_profile as iap
 
 import myplotstyle as ms
 
@@ -92,7 +93,7 @@ def get_screen_from_proj(projX, x_axis, invert_x):
         xx, yy = x_axis.copy(), projX.copy()
     if subtract_min:
         yy -= yy.min()
-    screen = tracking.ScreenDistribution(xx, yy)
+    screen = iap.ScreenDistribution(xx, yy)
     screen.normalize()
     screen.cutoff(screen_cutoff)
     screen.reshape(len_profile)
@@ -167,7 +168,7 @@ for main_label in ['Long',]:
         timestamp0 = misc.get_timestamp(os.path.basename(p_dict['filename0']))
         tracker0 = tracking.Tracker(magnet_file, timestamp0, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
 
-        bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
+        bp_test = iap.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
         screen_sim = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
         all_emittances = []
         all_beamsizes = []
@@ -235,9 +236,9 @@ for main_label in ['Long',]:
 
     blmeas = p_dict['blmeas']
     flip_measured = p_dict['flipx']
-    profile_meas = tracking.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, subtract_min=True)
+    profile_meas = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, subtract_min=True)
     profile_meas.reshape(len_profile)
-    profile_meas2 = tracking.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, subtract_min=True, zero_crossing=2)
+    profile_meas2 = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, subtract_min=True, zero_crossing=2)
     profile_meas2.reshape(len_profile)
     if flip_measured:
         profile_meas.flipx()

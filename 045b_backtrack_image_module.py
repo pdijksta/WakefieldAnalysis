@@ -14,6 +14,7 @@ with open('./backtrack_image_no_compensate.pkl', 'rb') as f:
     final_profile = d['final_profile']
     xx = d['xx']
     tt = d['tt']
+    meas_screen = d['meas_screen']
 
 if xx[1] < xx[0]:
     xx = xx[::-1]
@@ -53,7 +54,7 @@ sp = subplot(sp_ctr, title='T space', xlabel='t [fs]', ylabel='y [mm]')
 sp_ctr += 1
 forced_img.plot_img_and_proj(sp, x_factor=1e15, revert_x=False)
 
-sp = subplot(sp_ctr, title='Debug')
+sp = subplot(sp_ctr, title='Debug profile')
 sp_ctr += 1
 
 sp.plot(final_profile.time, final_profile.current/final_profile.current.max(), label='Profile')
@@ -79,14 +80,21 @@ new_x_axis = (bins[1:] + bins[:-1])/2.
 
 sp.plot(new_x_axis, intensity/intensity.max(), label='Manual backtrack')
 
+sp.legend()
+
+sp = subplot(sp_ctr, title='Debug projection')
+sp_ctr += 1
+
+sp.plot(meas_screen.x, meas_screen.intensity, label='Meas screen')
+sp.plot(x_axis, proj, label='Image 2')
 
 sp.legend()
 
-#import pickle
-#filename = './image_obj.pkl'
-#with open(filename, 'wb') as f:
-#    pickle.dump(forced_img, f)
-#print('Saved %s' % filename)
+import pickle
+filename = './image_obj.pkl'
+with open(filename, 'wb') as f:
+    pickle.dump(forced_img, f)
+print('Saved %s' % filename)
 
 ms.plt.show()
 

@@ -57,9 +57,18 @@ class Tracker:
     def calcR12(self):
         outp = {}
         for n_streaker in (0, 1):
-            mat_dict, _ = self.simulator.get_elegant_matrix(int(n_streaker), int(self.timestamp))
+            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), int(self.timestamp))
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
+
+    @functools.lru_cache(1)
+    def calcDisp(self):
+        outp = {}
+        for n_streaker in (0, 1):
+            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), int(self.timestamp))
+            outp[n_streaker] = disp_dict['SARBD02.DSCR050']
+        return outp
+
 
     def fit_emittance(self, target_beamsize, assumed_screen_res, tt_halfrange):
         if target_beamsize <= assumed_screen_res:
@@ -365,7 +374,7 @@ class Tracker:
         tt, cc = beamProfile.time, beamProfile.current
         mask = cc != 0
 
-        sim, mat_dict, wf_dicts, disp_dict = self.simulator.simulate_streaker(tt[mask], cc[mask], self.timestamp, 'file', None, self.energy_eV, wf_files=filenames, n_particles=self.n_particles, n_emittances=self.n_emittances, optics0=self.optics0)
+        sim, mat_dict, wf_dicts, self.disp_dict = self.simulator.simulate_streaker(tt[mask], cc[mask], self.timestamp, 'file', None, self.energy_eV, wf_files=filenames, n_particles=self.n_particles, n_emittances=self.n_emittances, optics0=self.optics0)
 
         r12_dict = {}
         for n_streaker in (0, 1):
@@ -389,6 +398,7 @@ class Tracker:
                 'screen': screen,
                 'beam_profile': beamProfile,
                 'sdds_wakes': sdds_wakes,
+                'disp_dict': self.disp_dict,
                 }
 
         #output = {
@@ -465,14 +475,12 @@ class Tracker:
             charge_interp[0] = 0
             charge_interp[-1] = 0
             t_interp = (hist_edges[1:] + hist_edges[:-1])/2.
-
         else:
             screen.reshape(self.n_particles)
             t_interp0 = np.interp(screen.x, wake_x, wake_time)
             charge_interp, hist_edges = np.histogram(t_interp0, bins=self.n_particles//100, weights=screen.intensity, density=True)
             charge_interp[0] = 0
             charge_interp[-1] = 0
-            #t_interp = np.linspace(t_interp0.min(), t_interp0.max(), len(charge_interp))
             t_interp = (hist_edges[1:] + hist_edges[:-1])/2.
 
         try:
@@ -738,7 +746,6 @@ class Tracker:
                'all_profiles': opt_func_profiles,
                'all_screens': opt_func_screens,
                }
-
 
 # Backward compatibility
 BeamProfile = iap.BeamProfile

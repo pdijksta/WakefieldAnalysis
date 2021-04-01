@@ -488,7 +488,7 @@ class Image:
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1):
+    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -511,19 +511,14 @@ class Image:
             slice_sigma.append(gf.sigma)
             slice_gf.append(gf)
 
-        proj = np.sum(self.image, axis=-2)
-        proj = proj / np.sum(proj) * charge
-        current = proj / (self.x_axis[1] - self.x_axis[0])
-
         output = {
                 'slice_x': self.x_axis,
                 'slice_mean': np.array(slice_mean),
                 'slice_sigma': np.array(slice_sigma),
                 'slice_gf': np.array(slice_gf),
-                'slice_intensity': proj,
-                'slice_current': current,
                 }
         if intensity_cutoff:
+            proj = np.sum(self.image, axis=-2)
             mask = proj > proj.max()*intensity_cutoff
             for key, value in output.items():
                 if hasattr(value, 'shape') and value.shape == mask.shape:
@@ -599,7 +594,7 @@ class Image:
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=True, revert_x=False, plot_gauss=True):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=True, revert_x=False):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -631,21 +626,10 @@ class Image:
             proj = image.sum(axis=-2)
             proj_plot = (y_axis.min() +(y_axis.max()-y_axis.min()) * proj/proj.max()*0.3)*y_factor
             sp.plot(x_axis*x_factor, proj_plot, color='red')
-            gf = GaussFit(x_axis, proj_plot-proj_plot.min(), fit_const=False)
-            sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color='orange')
-
-            #import matplotlib.pyplot as plt
-            #plt.figure()
-            #sp = plt.subplot(1,1,1)
-            #gf.plot_data_and_fit(sp)
-            #plt.show()
-            #import pdb; pdb.set_trace()
 
             proj = image.sum(axis=-1)
             proj_plot = (x_axis.min() +(x_axis.max()-x_axis.min()) * proj/proj.max()*0.3)*x_factor
             sp.plot(proj_plot, y_axis*y_factor, color='red')
-            gf = GaussFit(y_axis, proj_plot-proj_plot.min(), fit_const=False)
-            sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color='orange')
 
         if revert_x:
             xlim = sp.get_xlim()

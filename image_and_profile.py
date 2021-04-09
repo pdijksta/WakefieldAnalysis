@@ -519,6 +519,20 @@ class Image:
             slice_sigma.append(abs(gf.sigma))
             slice_gf.append(gf)
 
+            # Debug bad gaussfits
+            #if 101e-15 < self.x_axis[n_slice] < 104e-15:
+            #if abs(gf.sigma) < 1e5:
+            #    import matplotlib.pyplot as plt
+            #    num = plt.gcf().number
+            #    plt.figure()
+            #    plt.suptitle('Debug 38 fs')
+            #    sp = plt.subplot(1,1,1)
+            #    gf.plot_data_and_fit(sp)
+            #    sp.legend()
+            #    plt.figure(num)
+            #    plt.show()
+            #    import pdb; pdb.set_trace()
+
         proj = np.sum(self.image, axis=-2)
         proj = proj / np.sum(proj) * charge
         current = proj / (self.x_axis[1] - self.x_axis[0])

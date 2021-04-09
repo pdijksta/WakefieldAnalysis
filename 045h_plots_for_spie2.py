@@ -6,10 +6,14 @@ import matplotlib.pyplot as plt
 from h5_storage import loadH5Recursive
 import image_and_profile as iap
 import tracking
+import elegant_matrix
+import misc
 
 import myplotstyle as ms
 
 plt.close('all')
+
+elegant_matrix.set_tmp_dir('~/tmp_elegant/')
 
 data_dir = '/mnt/data/data_2021-03-16/'
 x0 = 0.0005552048387736093
@@ -29,7 +33,7 @@ lasing_off = loadH5Recursive(lasing_off_file)
 image_on = lasing_on['camera1']['image'].astype(float)
 image_off = lasing_off['camera1']['image'].astype(float)
 
-x_axis = lasing_on['camera1']['x_axis'].astype(float)*1e-6 - x0
+x_axis = lasing_on['camera1']['x_axis'].astype(float)*1e-6
 y_axis = lasing_on['camera1']['y_axis'].astype(float)*1e-6
 
 if x_axis[1] < x_axis[0]:
@@ -48,8 +52,8 @@ image_off -= np.median(image_off)
 np.clip(image_on, 0, None, out=image_on)
 np.clip(image_off, 0, None, out=image_off)
 
-image_on = iap.Image(image_on, x_axis, y_axis)
-image_off = iap.Image(image_off, x_axis, y_axis)
+image_on = iap.Image(image_on, x_axis, y_axis, x_offset=x0)
+image_off = iap.Image(image_off, x_axis, y_axis, x_offset=x0)
 
 ms.figure('')
 subplot = ms.subplot_factory(2,2, grid=False)
@@ -134,22 +138,8 @@ ms.figure('Reconstruction')
 subplot = ms.subplot_factory(2, 2)
 sp_ctr = 1
 
-blmeas38 = '/home/work/data_2020-10-03/129833611_bunch_length_meas.h5'
-energy_eV = 4491892915.7690735
 charge = 200e-12
 len_profile = int(2e3)
-
-with open('./median_screen.pkl', 'rb') as f:
-    median_screen = pickle.load(f)
-
-
-profile_meas = iap.profile_from_blmeas(blmeas38, 200e-15, charge, energy_eV)
-profile_meas.cutoff(5e-2)
-profile_meas.reshape(len_profile)
-profile_meas.crop()
-tt_range = (profile_meas.time.max() - profile_meas.time.min())
-
-profile_gauss = iap.get_gaussian_profile(38e-15, tt_range, len_profile, charge, energy_eV)
 
 sp_profile = subplot(sp_ctr, title='Current profiles', xlabel='t [fs]', ylabel='Current [kA]')
 sp_ctr += 1
@@ -185,11 +175,29 @@ gaps = [10e-3, 10e-3]
 subtract_min = True
 fit_emittance = True
 archiver_dir = '/home/work/'
-magnet_file = archiver_dir + 'archiver_api_data/2020-10-03.h5'
-timestamp = 1601759998
-beam_offsets = [-0.0, 0.004716-5e-6]
+magnet_file = archiver_dir + 'archiver_api_data/2021-03-16.h5'
+timestamp = elegant_matrix.get_timestamp(2021, 3, 16, 20, 41, 39)
+beam_offsets = [-0.0, -0.004724]
+
+median_screen = misc.image_to_screen(image_on.image, x_axis, False, x0)
+median_screen.cutoff2(3e-2)
+median_screen.crop()
+median_screen.reshape(len_profile)
 
 tracker = tracking.Tracker(magnet_file=magnet_file, timestamp=timestamp, n_particles=n_particles, n_emittances=n_emittances, screen_bins=screen_bins, screen_cutoff=screen_cutoff, smoothen=smoothen, profile_cutoff=profile_cutoff, len_screen=len_profile, bp_smoothen=bp_smoothen, quad_wake=False)
+
+energy_eV = tracker.energy_eV
+blmeas = data_dir+'113876237_bunch_length_meas.h5'
+
+profile_meas = iap.profile_from_blmeas(blmeas, 200e-15, charge, energy_eV)
+profile_meas.cutoff(5e-2)
+profile_meas.reshape(len_profile)
+profile_meas.crop()
+tt_range = (profile_meas.time.max() - profile_meas.time.min())
+
+profile_gauss = iap.get_gaussian_profile(38e-15, tt_range, len_profile, charge, energy_eV)
+
+
 
 bp_back = tracker.track_backward2(median_screen, profile_gauss, gaps, beam_offsets, 1)
 
@@ -243,6 +251,8 @@ for profile, label in [
 
 sp_profile.legend()
 sp_screen.legend()
+
+sp_screen.set_xlim(-2.2, 0.3)
 
 ms.saveall('/tmp/for_spie', hspace=0.35, ending='.pdf', trim=False)
 

@@ -6,6 +6,7 @@ import gaussfit
 
 import tracking
 import elegant_matrix
+import image_and_profile as iap
 
 
 import myplotstyle as ms
@@ -90,17 +91,21 @@ for proj in projx0:
 mean0 = np.mean(all_mean)
 
 
-profile_meas = tracking.profile_from_blmeas(blmeas38, tt_halfrange, charge, energy_eV)
+profile_meas = iap.profile_from_blmeas(blmeas38, tt_halfrange, charge, energy_eV)
 profile_meas.cutoff(profile_cutoff)
+profile_meas.crop()
+profile_meas.reshape(len_profile)
 
 offset_arr = dict0['value']*1e-3 - mean_offset
 if invert_offset:
     offset_arr *= -1
 
 
-ms.figure('Summary')
-subplot = ms.subplot_factory(1, 1)
-sp_summary = subplot(1, xlabel='x [mm]', ylabel='Intensity (arb. units)')
+ms.figure('Summary', figsize=(8,6))
+subplot = ms.subplot_factory(2, 2)
+sp_summary_current = subplot(1, xlabel='time [fs]', ylabel='Current [kA]', title='Deflector measurement')
+profile_meas.plot_standard(sp_summary_current, color='black')
+sp_summary = subplot(2, xlabel='x [mm]', ylabel='Intensity (arb. units)', title='Screen profiles')
 
 ms.figure('Centroid')
 sp_centroid = subplot(1, xlabel='Offset [mm]', ylabel='Centroid')
@@ -146,7 +151,7 @@ for n_offset, offset in enumerate(offset_arr[:-1]):
     sp_ctr += 1
 
     avg_screen.plot_standard(sp_forward, label='Measured', lw=3, color='black')
-    color = avg_screen.plot_standard(sp_summary, label='%i $\mu$m' % ((5e-3 - offset)*1e6))[0].get_color()
+    color = avg_screen.plot_standard(sp_summary, label='%i' % ((5e-3 - offset)*1e6))[0].get_color()
 
     tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, bp_smoothen=bp_smoothen, quad_wake=quad_wake)
 
@@ -168,9 +173,12 @@ for n_offset, offset in enumerate(offset_arr[:-1]):
     for f_dict, label, ls, c_list in [(forward_dict, '2d', 'dotted', c_list_sim), (forward_dict_old, '1d', '--', c_list_sim_old)]:
         screen = f_dict['screen']
         screen.crop()
+        c_list.append(np.sum(screen.x * screen.intensity) / np.sum(screen.intensity))
+
+        if label =='1d':
+            continue
         screen.plot_standard(sp_forward, label=label)
         screen.plot_standard(sp_summary, color=color, ls=ls)
-        c_list.append(np.sum(screen.x * screen.intensity) / np.sum(screen.intensity))
     sp_forward.legend()
 
     #sp_forward.legend(title='RMS beamsize at streaker')
@@ -190,10 +198,10 @@ for centroid_arr, err, label in [(centroids, centroids_sig*1e3, 'Measured'), (ce
     color = sp_centroid.errorbar(offsets*1e3, centroid_arr*1e3, label=label, yerr=err)[0].get_color()
 sp_centroid.legend()
 
-sp_summary.legend(title='Measured')
-sp_summary.set_xlim(-0.3, 1.5)
+sp_summary.legend(title='d [$\mu$m]')
+sp_summary.set_xlim(-0.2, 1.2)
 
-ms.saveall('/tmp/032d', empty_suptitle=False)
+ms.saveall('/tmp/032d', empty_suptitle=True, ending='.pdf', trim=False)
 
 plt.show()
 

@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import numpy as np
 
 from h5_storage import loadH5Recursive
@@ -41,18 +40,11 @@ lasing_off = loadH5Recursive(lasing_off_file)
 image_on = lasing_on['camera1']['image'].astype(float)
 image_off = lasing_off['camera1']['image'].astype(float)
 
-x_axis = lasing_on['camera1']['x_axis'].astype(float)*1e-6 - x0
+x_axis = lasing_on['camera1']['x_axis'].astype(float)*1e-6
 y_axis = lasing_on['camera1']['y_axis'].astype(float)*1e-6
 
-if x_axis[1] < x_axis[0]:
-    x_axis = x_axis[::-1]
-    image_on = image_on[:,::-1]
-    image_off = image_off[:,::-1]
-
-if y_axis[1] < y_axis[0]:
-    y_axis = y_axis[::-1]
-    image_on = image_on[::-1,:]
-    image_off = image_off[::-1,:]
+image_obj_on = iap.Image(image_on, x_axis, y_axis, subtract_median=True, x_offset=x0)
+image_obj_off = iap.Image(image_off, x_axis, y_axis, subtract_median=True, x_offset=x0)
 
 tt_halfrange = 200e-15
 charge = 200e-12
@@ -79,7 +71,7 @@ tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, n_particles, 
 
 streaker_offset = 0.00037758839957521145
 
-meas_screen = misc.image_to_screen(image_off, x_axis, True, x_offset=0)
+meas_screen = misc.image_to_screen(image_off, x_axis, True, x_offset=x0)
 meas_screen.cutoff2(5e-2)
 meas_screen.crop()
 meas_screen.reshape(len_profile)
@@ -119,65 +111,31 @@ t_axis = np.interp(x_axis, wake_x, wake_t)
 
 sp_tx.plot((wake_t-wake_t.min())*1e15, wake_x*1e3)
 
-fig0 = ms.figure('Backtracked images', figsize=(9, 7))
+dispersion = tracker.calcDisp()[1]
+
+lasing_dict = lasing.obtain_lasing(image_obj_off, image_obj_on, n_slices, wake_x, wake_t, len_profile, dispersion, tracker.energy_eV, charge)
+all_slice_dict = lasing_dict['all_slice_dict']
+all_image_dict = lasing_dict['all_images']
+
+fig = ms.figure('Backtracked images')
 ms.plt.subplots_adjust(hspace=0.3)
 subplot = ms.subplot_factory(2,2, grid=False)
 sp_ctr = 1
+for label, subdict in all_image_dict.items():
+    image_cut = subdict['image_cut']
+    image_tE = subdict['image_tE']
 
-
-fig1 = ms.figure('Backtracked images 2', figsize=(9, 7))
-ms.plt.subplots_adjust(hspace=0.3)
-sp_ctr1 = 1
-
-dispersion = tracker.calcDisp()[1]
-
-all_slice_dict = OrderedDict()
-
-for ctr, (image, label) in enumerate([(image_off, 'Lasing_off'), (image_on, 'Lasing_on')]):
-
-    image_reduced = image - np.median(image)
-    np.clip(image_reduced, 0, None, out=image_reduced)
-
-    image_obj = iap.Image(image_reduced, x_axis, y_axis)
-    image_cut = image_obj.cut(wake_x.min(), wake_x.max())
-    image_reshaped = image_cut.reshape_x(len_profile)
-    image_t = image_reshaped.x_to_t(wake_x, wake_t, debug=False)
-    if ctr == 0:
-        ref_y = None
-    image_tE, ref_y = image_t.y_to_eV(dispersion, tracker.energy_eV, ref_y)
-    if ctr == 1:
-        image_tE.y_axis -= 250e3
-    image_t_reduced = image_tE.slice_x(n_slices)
-    slice_dict = image_t_reduced.fit_slice(intensity_cutoff=None, smoothen_first=True, smoothen=1e6)
-    all_slice_dict[label] = slice_dict
-    #ms.plt.figure(fig.number)
-
-    label2 = label.replace('_', ' ')
-    ms.plt.figure(fig0.number)
-    sp = subplot(sp_ctr, title=label2, xlabel='x [mm]', ylabel='y [mm]')
+    sp = subplot(sp_ctr, title=label, xlabel='x [mm]', ylabel='y [mm]')
     sp_ctr += 1
     image_cut.plot_img_and_proj(sp, revert_x=True)
 
-    sp0 = subplot(sp_ctr, title=label2, xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
+    sp = subplot(sp_ctr, title=label, xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
     sp_ctr += 1
-    image_tE.plot_img_and_proj(sp0)
-
-    ms.plt.figure(fig1.number)
-    sp1 = subplot(sp_ctr1, title=label2, xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
-    sp_ctr1 += 1
-    image_tE.plot_img_and_proj(sp1)
+    image_tE.plot_img_and_proj(sp)
 
 
 
-    slice_x = slice_dict['slice_x']
-    slice_mean = slice_dict['slice_mean']
-    slice_sigma = slice_dict['slice_sigma']
-
-    for sp in sp0, sp1:
-        sp.errorbar(slice_x*1e15, slice_mean*1e-6, yerr=slice_sigma*1e-6, ls='None', marker='_', color='red')
-
-
-ms.figure('Lasing reconstruction', figsize=(12, 8))
+ms.figure('Lasing reconstruction')
 ms.plt.subplots_adjust(hspace=.35)
 subplot = ms.subplot_factory(2,2)
 sp_ctr = 1
@@ -191,54 +149,43 @@ sp_ctr += 1
 sp_sigma = subplot(sp_ctr, title='Slice $\sigma$', xlabel='t [fs]', ylabel='Slice width [MeV]')
 sp_ctr += 1
 
-currents = []
-
 for label, slice_dict in all_slice_dict.items():
     slice_time = slice_dict['slice_x']
     slice_proj = slice_dict['slice_intensity']
-    slice_proj = slice_proj / np.sum(slice_proj) * 200e-12
-    slice_current = slice_proj / (slice_time[1] - slice_time[0])
+    slice_current = slice_dict['slice_current']
     sp_current.plot(slice_time*1e15, slice_current/1e3, marker='.', label=label)
-    currents.append(slice_current)
 
-    mask = slice_time > 40e-15
-
-    sp_mean.plot(slice_dict['slice_x'][mask]*1e15, slice_dict['slice_mean'][mask]*1e-6, label=label, marker='.')
-    sp_sigma.plot(slice_dict['slice_x'][mask]*1e15, slice_dict['slice_sigma'][mask]*1e-6, label=label, marker='.')
+    sp_mean.plot(slice_dict['slice_x']*1e15, slice_dict['slice_mean']*1e-6, label=label, marker='.')
+    sp_sigma.plot(slice_dict['slice_x']*1e15, slice_dict['slice_sigma']*1e-6, label=label, marker='.')
 
 sp_lasing = subplot(sp_ctr, title='Lasing', xlabel='t [fs]', ylabel='P (GW)')
 sp_ctr += 1
 
-current_cutoff = 1e3
-#sp_current.axhline(current_cutoff/1e3, color='black', ls='--', label='Cutoff')
-
-mean_current = (currents[0] + currents[1])/2.
-mask_current = mean_current > current_cutoff
+mean_current = (all_slice_dict['Lasing_off']['slice_current'] + all_slice_dict['Lasing_on']['slice_current'])/2.
+mask_current = mean_current > mean_current.max()*0.1
 mean_current[~mask_current] = 0
 
-delta_E = (all_slice_dict['Lasing_off']['slice_mean'] - all_slice_dict['Lasing_on']['slice_mean'])[mask_current]
-delta_std_sq = (all_slice_dict['Lasing_on']['slice_sigma']**2 - all_slice_dict['Lasing_off']['slice_sigma']**2)[mask_current]
+delta_E = all_slice_dict['Lasing_off']['slice_mean'] - all_slice_dict['Lasing_on']['slice_mean']
+delta_std_sq = all_slice_dict['Lasing_on']['slice_sigma']**2 - all_slice_dict['Lasing_off']['slice_sigma']**2
 
 np.clip(delta_E, 0, None, out=delta_E)
 np.clip(delta_std_sq, 0, None, out=delta_std_sq)
 
-slice_time = all_slice_dict['Lasing_off']['slice_x'][mask_current]
+slice_time = all_slice_dict['Lasing_off']['slice_x']
 
-power_from_Eloss = lasing.power_Eloss(mean_current[mask_current], delta_E)
+power_from_Eloss = lasing.power_Eloss(mean_current, delta_E)
 E_total = np.trapz(power_from_Eloss, slice_time)
-power_from_Espread = lasing.power_Espread(slice_time, mean_current[mask_current], delta_std_sq, E_total)
+power_from_Espread = lasing.power_Espread(slice_time, mean_current, delta_std_sq, E_total)
 E_total2 = np.trapz(power_from_Espread, slice_time)
 
-sp_lasing.plot(slice_time*1e15, power_from_Eloss/1e9, marker='.', label='$P_m$', color='blue')
-sp_lasing.plot(slice_time*1e15, power_from_Espread/1e9, marker='.', label='$P_\sigma$', color='green')
+sp_lasing.plot(slice_time*1e15, power_from_Eloss/1e9, label='Eloss', marker='.')
+sp_lasing.plot(slice_time*1e15, power_from_Espread/1e9, label='Espread', marker='.')
 
 print('Energy from Eloss: %i [uJ]' % (E_total*1e6))
 print('Energy from Espread: %i [uJ]' % (E_total2*1e6))
 
-for sp_ in sp_current, sp_mean, sp_sigma, sp_lasing:
+for sp_ in sp_current, sp_mean, sp_sigma:
     sp_.legend()
-
-ms.saveall('/tmp/045f_complete', hspace=.35, ending='.pdf', wspace=.35)
 
 ms.plt.show()
 

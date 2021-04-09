@@ -7,6 +7,7 @@ from scipy.optimize import curve_fit
 
 import tracking
 import elegant_matrix
+import image_and_profile as iap
 
 
 import myplotstyle as ms
@@ -93,7 +94,10 @@ for proj in projx0:
 mean0 = np.mean(all_mean)
 
 
-profile_meas = tracking.profile_from_blmeas(blmeas38, tt_halfrange, charge, energy_eV)
+profile_meas = iap.profile_from_blmeas(blmeas38, tt_halfrange, charge, energy_eV)
+profile_meas.cutoff(2e-2)
+profile_meas.crop()
+profile_meas.reshape(len_profile)
 
 offset_arr = dict0['value']*1e-3 - mean_offset
 if invert_offset:
@@ -101,8 +105,10 @@ if invert_offset:
 
 
 ms.figure('Summary')
-subplot = ms.subplot_factory(1, 1)
-sp_summary = subplot(1, xlabel='x [mm]', ylabel='Intensity (arb. units)')
+subplot = ms.subplot_factory(1, 2)
+sp_summary_current = subplot(1, xlabel='time [fs]', ylabel='Current [kA]', title='Current profile')
+profile_meas.plot_standard(sp_summary_current, color='black')
+sp_summary = subplot(2, xlabel='x [mm]', ylabel='Intensity (arb. units)', title='Screen profile')
 
 ms.figure('Centroid')
 sp_centroid = subplot(1, xlabel='Offset [mm]', ylabel='Centroid')
@@ -112,7 +118,7 @@ centroid_list_sim = []
 
 
 offsets = []
-for n_offset, offset in enumerate(offset_arr[:1]):
+for n_offset, offset in enumerate(offset_arr[:-1]):
     offsets.append(offset)
 
     all_sigma = []
@@ -200,7 +206,7 @@ sp_centroid.legend()
 sp_summary.legend(title='Measured')
 sp_summary.set_xlim(-0.3, 1.5)
 
-ms.saveall('/tmp/032c')
+ms.saveall('/tmp/032c', ending='.pdf', trim=False)
 
 plt.show()
 

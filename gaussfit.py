@@ -19,7 +19,7 @@ class GaussFit:
             if fit_const:
                 const_0 = self.const_0 = min(yy[0], yy[-1])
             else:
-                const_0 = 0.
+                const_0 = self.const_0 = 0.
 
             if abs(np.max(yy-const_0)) > abs(np.min(yy-const_0)):
                 scale_0 = self.scale_0 = np.max(yy)-const_0
@@ -43,6 +43,11 @@ class GaussFit:
                 p0 = self.p0 = [scale_0, mean_0, sigma_0]
         else:
             self.p0 = p0
+            if fit_const:
+                self.scale_0, self.mean_0, self.sigma_0, self.const_0 = p0
+            else:
+                self.scale_0, self.mean_0, self.sigma_0 = p0
+                self.const_0 = 0
 
             #import matplotlib.pyplot as plt
             #plt.figure()

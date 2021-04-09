@@ -95,7 +95,7 @@ def drift(L):
         [0, 0, 0, 0, 1, 0],
         [0, 0, 0, 0, 0, 1],], float)
 
-def get_median(projx, method='gf_mean'):
+def get_median(projx, method='gf_mean', output='proj'):
     """
     From list of projections, return the median one
     Methods: gf_mean, gf_sigma, mean, rms
@@ -103,7 +103,7 @@ def get_median(projx, method='gf_mean'):
     x_axis = np.arange(len(projx[0]))
     all_mean = []
     for proj in projx:
-        if method == 'gf_meaan':
+        if method == 'gf_mean':
             gf = gaussfit.GaussFit(x_axis, proj)
             all_mean.append(gf.mean)
         elif method == 'gf_sigma':
@@ -116,7 +116,8 @@ def get_median(projx, method='gf_mean'):
             mean = np.sum(x_axis*proj) / np.sum(proj)
             rms = np.sqrt(np.sum((x_axis-mean)**2 * proj) / np.sum(proj))
             all_mean.append(rms)
-
+        else:
+            raise ValueError(method)
 
     index_median = np.argsort(all_mean)[len(all_mean)//2]
     projx_median = projx[index_median]
@@ -129,7 +130,10 @@ def get_median(projx, method='gf_mean'):
     #plt.show()
     #import pdb; pdb.set_trace()
 
-    return projx_median
+    if output == 'proj':
+        return projx_median
+    elif output == 'index':
+        return index_median
 
 def image_to_screen(image, x_axis, subtract_min, x_offset=0):
     proj = image.sum(axis=-2)

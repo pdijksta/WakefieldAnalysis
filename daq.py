@@ -6,7 +6,7 @@ import datetime
 import pyscan
 from cam_server import PipelineClient
 from cam_server.utils import get_host_port_from_stream_address
-from epics import caget; caget
+from epics import caget
 
 import config
 import elegant_matrix
@@ -99,7 +99,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
 
-    current_val = daq.caget(offset_pv)
+    current_val = caget(offset_pv)
 
     # Start from closer edge of scan
     if abs(current_val - offset_range[0]) > abs(current_val - offset_range[-1]):
@@ -184,7 +184,6 @@ def get_aramis_quad_strengths():
     k1l_dict[energy_pv] = caget(energy_pv)
     return k1l_dict
 
-
 def get_meta_data():
     all_streakers = config.all_streakers
     meta_dict = {}
@@ -195,7 +194,4 @@ def get_meta_data():
     meta_dict.update(k1l_dict)
     meta_dict['time'] = str(datetime.datetime.now())
     return meta_dict
-
-
-
 

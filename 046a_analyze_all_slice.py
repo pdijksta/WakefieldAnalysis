@@ -20,9 +20,9 @@ figsize=(9, 7)
 
 if compensate_jitter:
     index80 = np.argmin((full_slice_dict['Lasing On'][0,0] - 72.5e-15)**2)
+    mean_ene = full_slice_dict['Lasing Off'][:,1,index80].mean()
 
     for label, arr in full_slice_dict.items():
-        mean_ene = arr[:,1,index80].mean()
         for n_image in range(len(arr)):
             arr[n_image,1] = arr[n_image,1] - arr[n_image,1,index80] + mean_ene
 

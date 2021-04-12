@@ -8,7 +8,7 @@ try:
     from . import elegant_matrix
     from . import wf_model
     from . import misc
-    from . import iap
+    from . import image_and_profile as iap
     from . import myplotstyle as ms
 except ImportError:
     import elegant_matrix

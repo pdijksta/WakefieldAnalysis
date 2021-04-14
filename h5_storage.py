@@ -35,7 +35,10 @@ def add_dataset(group, name, data, system=None, dtype=None):
 
 def saveH5Recursive(h5_filename, data_dict):
     # import here to prevent circular import
-    import tracking
+    try:
+        import tracking
+    except ImportError:
+        from . import tracking
 
     def recurse_save(group, dict_or_data, dict_or_data_name, new_group=None):
         if dict_or_data is None:

@@ -7,14 +7,14 @@ try:
     from .gaussfit import GaussFit
     from . import doublehornfit
     from . import wf_model
-    from . import misc
+    from . import misc2 as misc
     from . import myplotstyle as ms
 except ImportError:
     import data_loader
     from gaussfit import GaussFit
     import doublehornfit
     import wf_model
-    import misc
+    import misc2 as misc
     import myplotstyle as ms
 
 class Profile:

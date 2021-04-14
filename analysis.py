@@ -10,11 +10,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-import tracking
-import myplotstyle as ms
-import h5_storage
-import elegant_matrix
-import gaussfit
+try:
+    import tracking
+    import myplotstyle as ms
+    import h5_storage
+    import elegant_matrix
+    import gaussfit
+except ImportError:
+    from . import tracking
+    from . import myplotstyle as ms
+    from . import h5_storage
+    from . import elegant_matrix
+    from . import gaussfit
 
 class Reconstruction:
     def __init__(self):

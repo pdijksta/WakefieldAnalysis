@@ -7,13 +7,13 @@ from scipy.constants import c, m_e, e
 try:
     from . import elegant_matrix
     from . import wf_model
-    from . import misc
+    from . import misc2 as misc
     from . import image_and_profile as iap
     from . import myplotstyle as ms
 except ImportError:
     import elegant_matrix
     import wf_model
-    import misc
+    import misc2 as misc
     import image_and_profile as iap
     import myplotstyle as ms
 
@@ -117,7 +117,7 @@ class Tracker:
         # wake_dict is needed in output for diagnostics
         wake_dict = {}
 
-        def calc_wake(n_streaker, beam_before):
+        def calc_wake(n_streaker, beam_before, tt_arr):
             """
             Calculate changes in xp for every particle.
             Optionally calculate quadrupole wake.
@@ -133,10 +133,10 @@ class Tracker:
                 quad_wake = 0
             else:
                 wake_tt, dipole_wake, quad_wake = self.get_wake_potential_from_profile(beamProfile, gap, beam_offset, n_streaker)
-                wake_energy = np.interp(beam_before[4,:], wake_tt, dipole_wake)
+                wake_energy = np.interp(tt_arr, wake_tt, dipole_wake)
                 dipole = wake_energy/self.energy_eV*np.sign(beamProfile.charge)
                 if self.quad_wake:
-                    quad_energy = np.interp(beam_before[4,:], wake_tt, quad_wake)
+                    quad_energy = np.interp(tt_arr, wake_tt, quad_wake)
                     quad0 = quad_energy/self.energy_eV*np.sign(beamProfile.charge)
 
                     if self.override_quad_beamsize:
@@ -159,7 +159,7 @@ class Tracker:
             #print('1d Dipole quad mean', np.abs(dipole).mean(), np.abs(quad).mean())
             return dipole, quad
 
-        def calc_wake2d(n_streaker, beam_before):
+        def calc_wake2d(n_streaker, beam_before, tt_arr):
             """
             Calculate changes in xp for every particle using a 2d histogram of particles.
             Equations are evaluated based on the x of every histogram point, instead of assuming the same x for every particle.
@@ -180,11 +180,11 @@ class Tracker:
             else:
                 x_coords = beam_before[0,:]+beam_offset
 
-            dict_dipole_2d = wf_model.wf2d(beam_before[4,:]*c, x_coords, gap/2., beamProfile.charge, wf_model.wxd, self.hist_bins_2d)
+            dict_dipole_2d = wf_model.wf2d(tt_arr*c, x_coords, gap/2., beamProfile.charge, wf_model.wxd, self.hist_bins_2d)
             dipole = dict_dipole_2d['wake_on_particles']/self.energy_eV
 
             if self.quad_wake:
-                dict_quad_2d = wf_model.wf2d_quad(beam_before[4,:]*c, beam_before[0,:]+beam_offset, gap/2., beamProfile.charge, wf_model.wxq, self.hist_bins_2d)
+                dict_quad_2d = wf_model.wf2d_quad(tt_arr*c, beam_before[0,:]+beam_offset, gap/2., beamProfile.charge, wf_model.wxq, self.hist_bins_2d)
 
                 quad = dict_quad_2d['wake_on_particles']/self.energy_eV
                 quad_wake = dict_quad_2d['wake']
@@ -203,29 +203,29 @@ class Tracker:
             #print('2d Dipole quad mean', np.abs(dipole).mean(), np.abs(quad).mean())
             return dipole, quad
 
-        def split_streaker(n_streaker, beam_before):
+        def split_streaker(n_streaker, beam_before, tt_arr):
             if self.split_streaker in (0, 1):
                 beam_after = np.copy(beam_before)
                 if self.wake2d:
-                    dipole, quad = calc_wake2d(n_streaker, beam_before)
+                    dipole, quad = calc_wake2d(n_streaker, beam_before, tt_arr)
                 else:
-                    dipole, quad = calc_wake(n_streaker, beam_before)
+                    dipole, quad = calc_wake(n_streaker, beam_before, tt_arr)
                 beam_after[1,:] += dipole + quad
                 #print('Comb Dipole quad mean', np.abs(dipole+quad).mean())
             else:
-                drift_minus = misc.drift(-self.struct_lengths[n_streaker]/2)
+                drift_minus = misc.drift(-self.struct_lengths[n_streaker]/2)[:4,:4]
                 beam_after = beam_after = np.matmul(drift_minus, beam_before)
                 delta_l = self.struct_lengths[n_streaker]/self.split_streaker/2
-                drift = misc.drift(delta_l)
+                drift = misc.drift(delta_l)[:4,:4]
                 comb_effect = 0
 
                 for n_split in range(self.split_streaker):
                     np.matmul(drift, beam_after, out=beam_after)
 
                     if self.wake2d:
-                        dipole, quad = calc_wake2d(n_streaker, beam_after)
+                        dipole, quad = calc_wake2d(n_streaker, beam_after, tt_arr)
                     else:
-                        dipole, quad = calc_wake(n_streaker, beam_after)
+                        dipole, quad = calc_wake(n_streaker, beam_after, tt_arr)
                     beam_after[1,:] += (dipole + quad)/self.split_streaker
                     comb_effect += (dipole + quad)/self.split_streaker
 
@@ -243,6 +243,10 @@ class Tracker:
         ## Obtain first order matrices from elegant
 
         streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
+        streaker_matrices2 = {}
+        for key, arr in streaker_matrices.items():
+            if key != 'mat_dict':
+                streaker_matrices2[key] = arr[:4,:4]
         mat_dict = streaker_matrices['mat_dict']
 
         ## Generate beam
@@ -269,19 +273,19 @@ class Tracker:
         interp_tt -= interp_tt.min()
 
         p_arr = np.ones_like(watch['x'])*self.energy_eV/e0_eV
-        beam_start = np.array([watch['x'], watch['xp'], watch['y'], watch['yp'], interp_tt, p_arr])
+        beam_start = np.array([watch['x'], watch['xp'], watch['y'], watch['yp']])
 
         if manipulate_beam is not None:
             beam_start = manipulate_beam(beam_start)
 
         ## Propagation of initial beam
 
-        s1 = streaker_matrices['start_to_s1']
+        s1 = streaker_matrices2['start_to_s1']
         beam_before_s1 = np.matmul(s1, beam_start)
-        beam_after_s1 = split_streaker(0, beam_before_s1)
+        beam_after_s1 = split_streaker(0, beam_before_s1, interp_tt)
 
-        beam_before_s2 = np.matmul(streaker_matrices['s1_to_s2'], beam_after_s1)
-        beam_after_s2 = split_streaker(1, beam_before_s2)
+        beam_before_s2 = np.matmul(streaker_matrices2['s1_to_s2'], beam_after_s1)
+        beam_after_s2 = split_streaker(1, beam_before_s2, interp_tt)
 
         #if beam_offsets[1] != 0:
         #    import pickle
@@ -298,8 +302,11 @@ class Tracker:
         #    import sys; sys.exit()
 
 
-        beam_at_screen = np.matmul(streaker_matrices['s2_to_screen'], beam_after_s2)
-        beam0_at_screen = streaker_matrices['s2_to_screen'] @ streaker_matrices['s1_to_s2'] @ beam_before_s1
+        beam_at_screen4 = np.matmul(streaker_matrices2['s2_to_screen'], beam_after_s2)
+        beam_at_screen = np.array([beam_at_screen4[0], beam_at_screen4[1], beam_at_screen4[2], beam_at_screen4[3], interp_tt, p_arr])
+
+        beam0_at_screen4 = streaker_matrices2['s2_to_screen'] @ streaker_matrices2['s1_to_s2'] @ beam_before_s1
+        beam0_at_screen = np.array([beam0_at_screen4[0], beam0_at_screen4[1], beam0_at_screen4[2], beam0_at_screen4[3], interp_tt, p_arr])
         beam_at_screen[0] -= beam0_at_screen[0].mean()
 
         #if not any(beam_offsets):
@@ -354,8 +361,10 @@ class Tracker:
                 'beam_profile': beamProfile,
                 'r12_dict': r12_dict,
                 'initial_beam': watch,
+                'beam_start': beam_start,
                 'wake_dict': wake_dict,
                 'bs_at_streaker': [beam_before_s1[0,:].std(), beam_before_s2[0,:].std()],
+                'streaker_matrices': streaker_matrices,
                 }
 
         return output

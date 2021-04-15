@@ -99,6 +99,7 @@ def get_median(projx, method='gf_mean', output='proj'):
     """
     From list of projections, return the median one
     Methods: gf_mean, gf_sigma, mean, rms
+    Output: proj, index
     """
     x_axis = np.arange(len(projx[0]))
     all_mean = []

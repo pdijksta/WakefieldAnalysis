@@ -21,7 +21,7 @@ tmp_folder = './'
 e0_eV = m_e*c**2/e
 
 class Tracker:
-    def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.)):
+    def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.), quad_wake_back=False):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
@@ -39,6 +39,7 @@ class Tracker:
         self.compensate_negative_screen = compensate_negative_screen
         self.optics0 = optics0
         self.quad_wake = quad_wake
+        self.quad_wake_back = quad_wake_back
         self.bs_at_streaker = None
         self.bp_smoothen = bp_smoothen
         self.override_quad_beamsize = override_quad_beamsize
@@ -463,7 +464,7 @@ class Tracker:
             screen_intensity[mask_negative] = 0
             screen._yy = screen_intensity
 
-        if self.quad_wake:
+        if self.quad_wake_back:
             if self.override_quad_beamsize:
                 bs_at_streaker = self.quad_x_beamsize[n_streaker]
             else:

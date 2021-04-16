@@ -32,6 +32,7 @@ import myplotstyle as ms
 # - pedestal?
 # - lasing
 # - add tilt option
+# - pulse energy from gas detector
 
 
 try:

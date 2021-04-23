@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+import socket
 from datetime import datetime
 import numpy as np
 import PyQt5.Qt
@@ -14,8 +15,9 @@ import config
 import tracking
 import elegant_matrix
 import data_loader
-import misc
+import misc2 as misc
 import analysis
+import lasing
 #import gaussfit
 import h5_storage
 import myplotstyle as ms
@@ -74,14 +76,41 @@ class StartMain(QtWidgets.QMainWindow):
         self.SetXEmittance.clicked.connect(self.set_x_emittance)
         self.LoadScreenCalibration.clicked.connect(self.load_screen_calibration)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
+        self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
+        self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
+        self.ReconstructLasing.clicked.connect(self.reconstruct_lasing)
 
         self.StreakerSelect.activated.connect(self.update_streaker)
         self.BeamlineSelect.activated.connect(self.update_streaker)
+
         self.update_streaker()
 
         self.analysis_obj = analysis.Reconstruction()
         self.other_input = {}
         self.tracker_initialized = False
+
+        # Default strings in gui fields
+        hostname = socket.gethostname()
+        if 'psi' in hostname:
+            default_dir = '/sf/data/measurements/2020/10/03/'
+        elif hostname == 'desktop':
+            default_dir = '/storage/data_2021-03-16/'
+            archiver_dir = '/home/work/archiver_api_data/'
+
+        screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
+        recon_data_file = default_dir+'2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
+        lattice_file = archiver_dir+'2021-03-16.h5'
+        time_str = '2021-03-16:20-22-26'
+        save_dir = '/tmp/'
+        lasing_file = default_dir+'2021_03_16-20_41_05_Screen_data_SARBD02-DSCR050.h5'
+
+        self.ImportCalibration.setText(screen_calib_file)
+        self.ImportFile.setText(lattice_file)
+        self.ImportFileTime.setText(time_str)
+        self.ReconstructionDataLoad.setText(recon_data_file)
+        self.SaveDir.setText(save_dir)
+        self.LasingOnDataLoad.setText(lasing_file)
+        self.LasingOffDataLoad.setText(lasing_file)
 
 
         if qt5_plot:
@@ -110,6 +139,7 @@ class StartMain(QtWidgets.QMainWindow):
             self.reconstruction_plot_handles = None
             self.streaker_calib_plot_handles = None
             self.screen_calib_plot_handles = None
+
 
 
         #meas_screen = self.obtain_reconstruction_data()
@@ -514,6 +544,61 @@ class StartMain(QtWidgets.QMainWindow):
     @property
     def screen(self):
         return self.ScreenSelect.currentText()
+
+    def obtainLasing(self, lasing_on_off):
+        if lasing_on_off:
+            n_images = int(self.LasingOnNumberImages.text())
+        else:
+            n_images = int(self.LasingOffNumberImages.text())
+
+        image_dict = daq.get_images(self.screen, n_images)
+        date = datetime.now()
+        screen_str = self.screen.replace('.','_')
+        lasing_str = str(lasing)
+        basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_%s_%s.h5' % (lasing_str, screen_str)
+        filename = os.path.join(self.save_dir, basename)
+        h5_storage.saveH5Recursive(filename, image_dict)
+        if lasing_on_off:
+            self.LasingOnDataLoad.setText(filename)
+            print('Saved lasing ON %s' % filename)
+        else:
+            self.LasingOffDataLoad.setText(filename)
+            print('Saved lasing OFF %s' % filename)
+
+    def obtainLasingOn(self):
+        return self.obtainLasing(True)
+
+    def obtainLasingOff(self):
+        return self.obtainLasing(False)
+
+    def reconstruct_lasing(self):
+        file_on = self.LasingOnDataLoad.text()
+        file_off = self.LasingOffDataLoad.text()
+        key_on = self.LasingOnDataLoadKey.text()
+        key_off = self.LasingOffDataLoadKey.text()
+        assert os.path.isfile(file_on)
+        assert os.path.isfile(file_off)
+
+        dict_on = h5_storage.loadH5Recursive(file_on)
+        if key_on is not None:
+            dict_on = dict_on[key_on]
+
+        dict_off = h5_storage.loadH5Recursive(file_off)
+        if key_off is not None:
+            dict_off = dict_off[key_off]
+
+        images0 = dict_off['image'].astype(np.float64)
+        if 'x_axis_m' in dict_off:
+            x_axis0 = dict_off['x_axis_m'].astype(np.float64)
+        else:
+            x_axis0 = dict_off['x_axis'][0].astype(np.float64)*1e-6
+        projx0 = images0.sum(axis=-2)
+        proj_median_screen = misc.get_median(projx0, output='proj')
+        median_screen_off = misc.proj_to_screen(proj_median_screen, x_axis0, True, screen_center)
+
+
+
+
 
 if __name__ == '__main__':
     def my_excepthook(type, value, tback):

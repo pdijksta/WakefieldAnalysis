@@ -1,6 +1,13 @@
 from collections import OrderedDict
 import numpy as np
 
+try:
+    from h5_storage import loadH5Recursive
+    import misc2 as misc
+except ImportError:
+    from WakefieldAnalysis.h5_storage import loadH5Recursive
+    import WakefieldAnalysis.misc2 as misc
+
 def power_Eloss(slice_current, slice_Eloss_eV):
     power = slice_current * slice_Eloss_eV
     return power
@@ -50,6 +57,9 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on, slice_Espread_of
             'power_err': power_err,
             'energy': energy,
             }
+
+    
+
 
 
 def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, dispersion, energy_eV, charge, debug=False):

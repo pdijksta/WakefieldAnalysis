@@ -16,12 +16,14 @@ try:
     import h5_storage
     import elegant_matrix
     import gaussfit
+    import misc2 as misc
 except ImportError:
     from . import tracking
     from . import myplotstyle as ms
     from . import h5_storage
     from . import elegant_matrix
     from . import gaussfit
+    from . import misc2 as misc
 
 class Reconstruction:
     def __init__(self):
@@ -127,12 +129,19 @@ class Reconstruction:
             os.makedirs(save_path)
         date = datetime.now()
         filename = os.path.join(save_path, date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5'))
+        #gauss_dict = self.gauss_dict
+        #gauss_dict2 = copy.deepcopy(gauss_dict)
+        #gauss_dict2['reconstructed_screen_x'] = gauss_dict['reconstructed_screen'].x
+        #gauss_dict2['reconstructed_screen_intensity'] = gauss_dict['reconstructed_screen'].intensity
         save_dict = {
                 'input': self.input_data,
                 'gaussian_reconstruction': self.gauss_dict,
                 }
+        #import pdb; pdb.set_trace()
         h5_storage.saveH5Recursive(filename, save_dict)
         return filename
+
+
 
 def load_reconstruction(filename, tmp_dir, plot_handles=None):
     elegant_matrix.set_tmp_dir(tmp_dir)
@@ -367,6 +376,48 @@ def clear_streaker_calibration(sp_center):
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
         sp.grid(True)
+
+def reconstruct_lasing(file_on, file_off, key_on, key_off, screen_center, file_current, r12, gap, beam_offset, struct_length):
+    input_dict = {
+            'file_on': file_on,
+            'file_off': file_off,
+            'key_on': key_on,
+            'key_off': key_off,
+            'file_current': file_current,
+            'r12': r12,
+            'gap': gap,
+            'beam_offset': beam_offset,
+            'struct_length': struct_length,
+            }
+
+    dict_on0 = h5_storage.loadH5Recursive(file_on)
+    if key_on is not None:
+        dict_on = dict_on0[key_on]
+    else:
+        dict_on = dict_on0
+
+    dict_off0 = h5_storage.loadH5Recursive(file_off)
+    if key_off is not None:
+        dict_off = dict_off0[key_off]
+    else:
+        dict_off = dict_off0
+
+    images0 = dict_off['image'].astype(np.float64)
+    if 'x_axis_m' in dict_off:
+        x_axis0 = dict_off['x_axis_m'].astype(np.float64)
+    else:
+        x_axis0 = dict_off['x_axis'].astype(np.float64)*1e-6
+    projx0 = images0.sum(axis=-2)
+    proj_median_screen = misc.get_median(projx0, output='proj')
+    median_screen_off = misc.proj_to_screen(proj_median_screen, x_axis0, True, screen_center)
+
+    current_dict = h5_storage.loadH5Recursive(file_current)
+    wake_profile = current_dict['gaussian_reconstruction']['reconstructed_profile']
+    tt, xx = wake_profile.get_x_t(gap, beam_offset, struct_length, r12)
+
+    import pdb; pdb.set_trace()
+
+
 
 if __name__ == '__main__':
     plt.close('all')

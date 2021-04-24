@@ -28,10 +28,9 @@ import myplotstyle as ms
 # - non blocking daq
 # - sort out daq pyscan_result_to_dict
 # - add info of beamsize with / without assumed screen resolution
-# - debug delay after using BsreadPositioner
+# - debug delay after using BsreadPositioner -> not important
 # - noise reduction from the image
 # - add these options to GUI
-# - pedestal?
 # - lasing
 # - add tilt option
 # - pulse energy from gas detector
@@ -79,6 +78,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.ReconstructLasing.clicked.connect(self.reconstruct_lasing)
+        self.ObtainR12.clicked.connect(self.obtain_r12)
 
         self.StreakerSelect.activated.connect(self.update_streaker)
         self.BeamlineSelect.activated.connect(self.update_streaker)
@@ -93,15 +93,18 @@ class StartMain(QtWidgets.QMainWindow):
         hostname = socket.gethostname()
         if 'psi' in hostname:
             default_dir = '/sf/data/measurements/2020/10/03/'
+            archiver_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/'
+            date = datetime.now()
+            save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
         elif hostname == 'desktop':
             default_dir = '/storage/data_2021-03-16/'
-            archiver_dir = '/home/work/archiver_api_data/'
+            archiver_dir = '/storage/Philipp_data_folder/archiver_api_data/'
+            save_dir = '/storage/tmp_reconstruction/'
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
         recon_data_file = default_dir+'2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
         lattice_file = archiver_dir+'2021-03-16.h5'
         time_str = '2021-03-16:20-22-26'
-        save_dir = '/tmp/'
         lasing_file = default_dir+'2021_03_16-20_41_05_Screen_data_SARBD02-DSCR050.h5'
 
         self.ImportCalibration.setText(screen_calib_file)
@@ -111,6 +114,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.SaveDir.setText(save_dir)
         self.LasingOnDataLoad.setText(lasing_file)
         self.LasingOffDataLoad.setText(lasing_file)
+        self.SaveDir.setText(save_dir)
 
 
         if qt5_plot:
@@ -139,6 +143,7 @@ class StartMain(QtWidgets.QMainWindow):
             self.reconstruction_plot_handles = None
             self.streaker_calib_plot_handles = None
             self.screen_calib_plot_handles = None
+            self.rec_canvas = self.streaker_calib_canvas = self.screen_calib_canvas = None
 
 
 
@@ -163,7 +168,8 @@ class StartMain(QtWidgets.QMainWindow):
         analysis.clear_screen_calibration(*self.screen_calib_plot_handles)
         self.screen_calib_canvas.draw()
 
-    def init_tracker(self):
+    def obtain_lattice(self):
+
 
         widgets = [self.LatticeFromFileCheck, self.LatticeFromLiveCheck]
         self._check_check(widgets, 'Check lattice checkmarks')
@@ -180,6 +186,18 @@ class StartMain(QtWidgets.QMainWindow):
                     'method': magnet_file,
                     'filename_or_dict': magnet_file,
                     }
+        return magnet_file, other_input
+
+    def obtain_r12(self):
+        self.init_tracker()
+        r12 = self.analysis_obj.calcR12()[self.n_streaker]
+        print(r12)
+        return r12
+
+
+    def init_tracker(self):
+
+        magnet_file, other_input = self.obtain_lattice()
 
         tmp_dir = os.path.expanduser(self.TmpDir.text())
         assert os.path.isdir(tmp_dir)
@@ -438,8 +456,9 @@ class StartMain(QtWidgets.QMainWindow):
         #    print('Saved %s' % p_file)
 
         self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles)
-        self.rec_canvas.draw()
-        self.reconstruction_plot_handles[2].set_ylim(0, None)
+        if self.rec_canvas is not None:
+            self.rec_canvas.draw()
+            self.reconstruction_plot_handles[2].set_ylim(0, None)
 
     def save_data(self):
         filename = self.analysis_obj.save_data(self.save_dir)
@@ -576,27 +595,12 @@ class StartMain(QtWidgets.QMainWindow):
         file_off = self.LasingOffDataLoad.text()
         key_on = self.LasingOnDataLoadKey.text()
         key_off = self.LasingOffDataLoadKey.text()
+        file_current = self.LasingCurrentProfileDataLoad.text()
+        screen_center = float(self.DirectCalibration.text())*1e-6
         assert os.path.isfile(file_on)
         assert os.path.isfile(file_off)
 
-        dict_on = h5_storage.loadH5Recursive(file_on)
-        if key_on is not None:
-            dict_on = dict_on[key_on]
-
-        dict_off = h5_storage.loadH5Recursive(file_off)
-        if key_off is not None:
-            dict_off = dict_off[key_off]
-
-        images0 = dict_off['image'].astype(np.float64)
-        if 'x_axis_m' in dict_off:
-            x_axis0 = dict_off['x_axis_m'].astype(np.float64)
-        else:
-            x_axis0 = dict_off['x_axis'][0].astype(np.float64)*1e-6
-        projx0 = images0.sum(axis=-2)
-        proj_median_screen = misc.get_median(projx0, output='proj')
-        median_screen_off = misc.proj_to_screen(proj_median_screen, x_axis0, True, screen_center)
-
-
+        analysis.reconstruct_lasing(file_on, file_off, key_on, key_off, screen_center, file_current)
 
 
 

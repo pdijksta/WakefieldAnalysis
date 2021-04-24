@@ -46,11 +46,18 @@ def saveH5Recursive(h5_filename, data_dict):
         if group is None:
             print("'recurse_save' has been called with None")
             raise ValueError
+
+        if type(dict_or_data) is tracking.BeamProfile or type(dict_or_data) is tracking.ScreenDistribution:
+            dict_or_data = dict_or_data.to_dict()
+
         if type(dict_or_data) is dict:
 
+            if type(dict_or_data_name) is int:
+                inner_key = str(dict_or_data_name)
             try:
                 new_group = group.create_group(dict_or_data_name)
-            except:
+            except Exception as e:
+                print(e)
                 print(dict_or_data_name, 'error')
                 #raise
             if new_group is None:
@@ -66,14 +73,9 @@ def saveH5Recursive(h5_filename, data_dict):
             inner_key = dict_or_data_name
             if type(mydata) is str:
                 add_dataset(group, inner_key, mydata.encode('utf-8'), 'unknown')
-            elif type(mydata) is tracking.BeamProfile:
-                #raise NotImplementedError
-                print('BeamProfile save not implemented')
-                pass
-            elif type(mydata) is tracking.ScreenDistribution:
-                #raise NotImplementedError
-                print('ScreenDistribution save not implemented')
-                pass
+            #elif type(mydata) is tuple:
+            #    mydata2 = np.array(mydata)
+            #    add_dataset(group, inner_key, mydata2, 'unknown')
             elif (type(mydata) is list and type(mydata[0]) is str) or (hasattr(mydata, 'dtype') and mydata.dtype.type is np.str_):
                 # For list of strings, we need this procedure
                 try:
@@ -94,7 +96,7 @@ def saveH5Recursive(h5_filename, data_dict):
                     dset.attrs.create('system', 'unknown', (1,), dtype=dt)
 
                 except:
-                    print('Error', inner_key)
+                    print('Error for key', inner_key)
                     print(type(mydata))
                     if type(mydata) is list:
                         print('type(mydata[0])')
@@ -113,7 +115,7 @@ def saveH5Recursive(h5_filename, data_dict):
                             try:
                                 add_dataset(group, inner_key+'_%i_%i' % (i,j), mydata[i,j], 'unknown')
                             except:
-                                print('Error')
+                                print('Error for key', inner_key)
                                 print(group, inner_key, i, j)
             else:
                 try:
@@ -186,7 +188,7 @@ def loadH5Recursive(h5_file):
             print('Could not store key %s with type %s in dict (3)' % (key, type_))
 
     saved_dict = {}
-    with h5py.File(h5_file, 'r') as f:
+    with h5py.File(h5_file.strip(), 'r') as f:
         if 'none' in f:
             recurse_load(f['none'], 'key', saved_dict)
             saved_dict = saved_dict['key']

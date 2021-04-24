@@ -682,16 +682,6 @@ class Tracker:
         best_gauss = gauss_profiles[index_min]
         best_wake = gauss_wakes[index_min]
 
-        # Final step
-        if not self_consistent:
-            baf = self.back_and_forward(meas_screen, best_profile, gaps, beam_offsets, n_streaker)
-            final_screen = baf['screen']
-            final_profile = baf['beam_profile']
-            final_wake = baf['wake_dict']
-        else:
-            final_screen, final_profile = best_screen, best_profile
-            final_wake = best_wake
-
         output = {
                'gauss_sigma': best_sig_t,
                'reconstructed_screen': best_screen,
@@ -699,11 +689,23 @@ class Tracker:
                'reconstructed_profile': best_profile,
                'best_gauss': best_gauss,
                'best_gauss_wake': gauss_wakes[index_min],
-               'final_screen': final_screen,
-               'final_profile': final_profile,
-               'final_wake': final_wake,
+               ## Removed because ambiguous names
+               #'final_screen': final_screen,
+               #'final_profile': final_profile,
+               'final_wake': best_wake,
                'meas_screen': meas_screen,
                }
+        # Final step
+        if not self_consistent:
+            baf = self.back_and_forward(meas_screen, best_profile, gaps, beam_offsets, n_streaker)
+            final_screen = baf['screen']
+            final_profile = baf['beam_profile']
+            final_wake = baf['wake_dict']
+            output['final_self_consistent_screen'] = final_screen
+            output['final_self_consistent_profile'] = final_profile
+            output['final_self_consistent_wake'] = final_wake
+
+
         if details:
             output.update({
                    'opt_func_values': opt_func_values,

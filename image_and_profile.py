@@ -207,6 +207,17 @@ class ScreenDistribution(Profile):
 
         return sp.plot(x*1e3, y/self.integral/1e3, **kwargs)
 
+    def to_dict(self):
+        return {'x': self.x,
+                'intensity': self.intensity,
+                'real_x': self.real_x,
+                }
+
+    @staticmethod
+    def from_dict(dict_):
+        return ScreenDistribution(dict_['x'], dict_['intensity'], dict_['real_x'])
+
+
 def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
     """
     Smoothening by applying changes to coordinate.
@@ -369,6 +380,18 @@ class BeamProfile(Profile):
             y = np.concatenate([y, [0.]])
 
         return sp.plot(x, y*factor/1e3, **kwargs)
+
+    def to_dict(self):
+        return {'time': self.time,
+                'current': self.current,
+                'energy_eV': self.energy_eV,
+                'charge': self.charge,
+                }
+
+    @staticmethod
+    def from_dict(dict_):
+        return BeamProfile(dict_['time'], dict_['current'], dict_['energy_eV'], dict_['charge'])
+
 
 
 def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False, zero_crossing=1):

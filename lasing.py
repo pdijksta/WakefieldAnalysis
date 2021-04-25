@@ -2,11 +2,13 @@ from collections import OrderedDict
 import numpy as np
 
 try:
-    from h5_storage import loadH5Recursive
-    import misc2 as misc
+    #from h5_storage import loadH5Recursive
+    #import misc2 as misc
+    pass
 except ImportError:
-    from WakefieldAnalysis.h5_storage import loadH5Recursive
-    import WakefieldAnalysis.misc2 as misc
+    pass
+    #from WakefieldAnalysis.h5_storage import loadH5Recursive
+    #import WakefieldAnalysis.misc2 as misc
 
 def power_Eloss(slice_current, slice_Eloss_eV):
     power = slice_current * slice_Eloss_eV
@@ -58,18 +60,18 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on, slice_Espread_of
             'energy': energy,
             }
 
-    
-
-
-
-def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, dispersion, energy_eV, charge, debug=False):
+def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, dispersion, energy_eV, charge, pulse_energy, debug=False):
 
     all_slice_dict = OrderedDict()
     all_images = OrderedDict()
 
     for ctr, (image_obj, label) in enumerate([(image_off, 'Lasing_off'), (image_on, 'Lasing_on')]):
 
-        image_cut = image_obj.cut(wake_x.min(), wake_x.max())
+        try:
+            image_cut = image_obj.cut(wake_x.min(), wake_x.max())
+        except Exception as e:
+            print(e)
+            import pdb; pdb.set_trace()
         image_reshaped = image_cut.reshape_x(len_profile)
         image_t = image_reshaped.x_to_t(wake_x, wake_t, debug=False)
         if ctr == 0:
@@ -95,7 +97,7 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
 
     power_from_Eloss = power_Eloss(mean_current, delta_E)
     E_total = np.trapz(power_from_Eloss, slice_time)
-    power_from_Espread = power_Espread(slice_time, mean_current, delta_std_sq, E_total)
+    power_from_Espread = power_Espread(slice_time, mean_current, delta_std_sq, pulse_energy)
 
     if debug:
         import matplotlib.pyplot as plt
@@ -115,7 +117,7 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
         sp_power.plot(slice_time, power_from_Eloss)
         sp_power.plot(slice_time, power_from_Espread)
         plt.show()
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
 
     output = {

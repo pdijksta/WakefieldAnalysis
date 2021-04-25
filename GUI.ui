@@ -1952,22 +1952,6 @@
        </property>
       </item>
      </widget>
-     <widget class="QLabel" name="label_56">
-      <property name="geometry">
-       <rect>
-        <x>230</x>
-        <y>100</y>
-        <width>71</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Key</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QLabel" name="label_57">
       <property name="geometry">
        <rect>
@@ -1995,22 +1979,6 @@
       </property>
       <property name="text">
        <string>/mnt/data/data/2021-03-16/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="LasingOnDataLoadKey">
-      <property name="geometry">
-       <rect>
-        <x>300</x>
-        <y>280</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>pyscan_result</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2152,22 +2120,6 @@
        <string>Obtain lasing OFF data</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_66">
-      <property name="geometry">
-       <rect>
-        <x>230</x>
-        <y>290</y>
-        <width>71</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Key</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QLineEdit" name="LasingOnDataLoadIndex">
       <property name="geometry">
        <rect>
@@ -2287,22 +2239,6 @@
        </property>
       </item>
      </widget>
-     <widget class="QLineEdit" name="LasingOffDataLoadKey">
-      <property name="geometry">
-       <rect>
-        <x>300</x>
-        <y>90</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>pyscan_result</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QPushButton" name="ReconstructLasing">
       <property name="geometry">
        <rect>
@@ -2385,7 +2321,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>/storage/tmp_reconstruction/2021_04_24-20_50_06_PassiveReconstruction.h5</string>
+       <string>/home/work/tmp_reconstruction/2021_04_25-00_18_02_PassiveReconstruction.h5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

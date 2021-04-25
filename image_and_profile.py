@@ -266,7 +266,7 @@ class BeamProfile(Profile):
     def calc_wake(self, gap, beam_offset, struct_length):
 
         if abs(beam_offset) > gap/2.:
-            raise ValueError('Beam offset is too large!')
+            raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_offset))
 
         if (gap, beam_offset, struct_length) in self.wake_dict:
             return self.wake_dict[(gap, beam_offset, struct_length)]
@@ -456,6 +456,9 @@ def get_average_profile(p_list):
 
 class Image:
     def __init__(self, image, x_axis, y_axis, x_unit='m', y_unit='m', subtract_median=False, x_offset=0):
+
+        if x_axis.size <=1:
+            raise ValueError('Size of x_axis is %i' % x_axis.size)
 
         if x_axis[1] < x_axis[0]:
             x_axis = x_axis[::-1]

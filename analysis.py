@@ -17,6 +17,9 @@ try:
     import elegant_matrix
     import gaussfit
     import misc2 as misc
+    import image_and_profile as iap
+    import lasing
+    import config
 except ImportError:
     from . import tracking
     from . import myplotstyle as ms
@@ -24,6 +27,9 @@ except ImportError:
     from . import elegant_matrix
     from . import gaussfit
     from . import misc2 as misc
+    from . import image_and_profile as iap
+    from . import lasing
+    from . import config
 
 class Reconstruction:
     def __init__(self):
@@ -377,47 +383,153 @@ def clear_streaker_calibration(sp_center):
         sp.set_ylabel(ylabel)
         sp.grid(True)
 
-def reconstruct_lasing(file_on, file_off, key_on, key_off, screen_center, file_current, r12, gap, beam_offset, struct_length):
+def reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles=None):
     input_dict = {
             'file_on': file_on,
             'file_off': file_off,
-            'key_on': key_on,
-            'key_off': key_off,
+            'screen_center': screen_center,
+            'structure_center': structure_center,
+            'structure_length': structure_length,
             'file_current': file_current,
             'r12': r12,
-            'gap': gap,
-            'beam_offset': beam_offset,
-            'struct_length': struct_length,
+            'disp': disp,
+            'energy_eV': energy_eV,
+            'charge': charge,
+            'streaker': streaker,
+            #'gap': gap,
+            #'beam_offset': beam_offset,
+            #'struct_length': struct_length,
             }
 
-    dict_on0 = h5_storage.loadH5Recursive(file_on)
-    if key_on is not None:
-        dict_on = dict_on0[key_on]
-    else:
-        dict_on = dict_on0
+    dict_on = h5_storage.loadH5Recursive(file_on)
+    dict_on_p = dict_on['pyscan_result']
+    dict_on_m = dict_on['meta_data']
 
-    dict_off0 = h5_storage.loadH5Recursive(file_off)
-    if key_off is not None:
-        dict_off = dict_off0[key_off]
-    else:
-        dict_off = dict_off0
+    dict_off = h5_storage.loadH5Recursive(file_off)
+    dict_off_p = dict_off['pyscan_result']
+    dict_off_m = dict_off['meta_data']
 
-    images0 = dict_off['image'].astype(np.float64)
-    if 'x_axis_m' in dict_off:
-        x_axis0 = dict_off['x_axis_m'].astype(np.float64)
+    gaps, beam_offsets = [], []
+    for dict_ in dict_off_m, dict_on_m:
+        gaps.append(dict_[streaker+':GAP']*1e-3)
+        beam_offsets.append(-(dict_[streaker+':CENTER']*1e-3-structure_center))
+
+    assert gaps[0] == gaps[1]
+    assert beam_offsets[0] == beam_offsets[1]
+    gap = gaps[0]
+    beam_offset = beam_offsets[0]
+
+    # TODO
+    try:
+        pulse_energy = dict_on_m[config.gas_monitor_pvs['Aramis']]
+    except KeyError:
+        print('No pulse energy found! Use 100 uJ')
+        pulse_energy = 100e-6
+
+    images0 = dict_off_p['image'].astype(np.float64)
+    images0_on = dict_on_p['image'].astype(np.float64)
+    if 'x_axis_m' in dict_off_p:
+        x_axis0 = dict_off_p['x_axis_m'].astype(np.float64)
+        y_axis0 = dict_off_p['y_axis_m'].astype(np.float64)
     else:
-        x_axis0 = dict_off['x_axis'].astype(np.float64)*1e-6
+        x_axis0 = dict_off_p['x_axis'].astype(np.float64)
+        y_axis0 = dict_off_p['y_axis'].astype(np.float64)
+
     projx0 = images0.sum(axis=-2)
-    proj_median_screen = misc.get_median(projx0, output='proj')
-    median_screen_off = misc.proj_to_screen(proj_median_screen, x_axis0, True, screen_center)
+    median_index = misc.get_median(projx0, output='index')
+    median_image_off = iap.Image(images0[median_index], x_axis0, y_axis0, x_offset=screen_center)
+
+
+    projx0_on = images0_on.sum(axis=-2)
+    median_index = misc.get_median(projx0_on, output='index')
+    median_image_on = iap.Image(images0_on[median_index], x_axis0, y_axis0, x_offset=screen_center)
+
+    # TODO
+    n_slices = 50
+    len_profile = 2000
 
     current_dict = h5_storage.loadH5Recursive(file_current)
-    wake_profile = current_dict['gaussian_reconstruction']['reconstructed_profile']
-    tt, xx = wake_profile.get_x_t(gap, beam_offset, struct_length, r12)
+    wake_profile_dict = current_dict['gaussian_reconstruction']['reconstructed_profile']
+    wake_profile = iap.BeamProfile.from_dict(wake_profile_dict)
+    wake_profile.cutoff2(0.2)
+    wake_profile.crop()
+    wake_profile.reshape(len_profile)
 
+    wake_t, wake_x = wake_profile.get_x_t(gap, beam_offset, structure_length, r12)
+
+    lasing_dict = lasing.obtain_lasing(median_image_off, median_image_on, n_slices, wake_x, wake_t, len_profile, disp, energy_eV, charge, pulse_energy=pulse_energy, debug=False)
+
+    if plot_handles is None:
+        ms.figure('Lasing debug')
+        subplot = ms.subplot_factory(3,3)
+        sp_ctr = 1
+
+        sp_profile = subplot(sp_ctr, title='Current profile', xlabel='t [fs]', ylabel='I [kA]')
+        sp_ctr += 1
+
+        sp_wake = subplot(sp_ctr, title='Wake', xlabel='t [fs]', ylabel='x [mm]')
+        sp_ctr += 1
+
+        sp_off = subplot(sp_ctr, title='Lasing off', xlabel='x [mm]', ylabel='y [mm]')
+        sp_ctr += 1
+
+        sp_on = subplot(sp_ctr, title='Lasing on', xlabel='x [mm]', ylabel='y [mm]')
+        sp_ctr += 1
+
+        sp_off_cut = subplot(sp_ctr, title='Lasing off', xlabel='x [mm]', ylabel='y [mm]')
+        sp_ctr += 1
+
+        sp_on_cut = subplot(sp_ctr, title='Lasing on', xlabel='x [mm]', ylabel='y [mm]')
+        sp_ctr += 1
+
+
+        sp_off_tE = subplot(sp_ctr, title='Lasing off', xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
+        sp_ctr += 1
+
+        sp_on_tE = subplot(sp_ctr, title='Lasing off', xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
+        sp_ctr += 1
+
+        ms.figure('Lasing reconstruction')
+        subplot = ms.subplot_factory(3,3)
+        sp_ctr = 1
+
+        sp_power = subplot(sp_ctr, title='Power')
+        sp_ctr += 1
+        sp_current = subplot(sp_ctr, title='Current')
+        sp_ctr += 1
+
+    slice_time = lasing_dict['slice_time']
+    all_slice_dict = lasing_dict['all_slice_dict']
+    power_from_Eloss = lasing_dict['power_Eloss']
+    power_from_Espread = lasing_dict['power_Espread']
+
+    sp_current.plot(slice_time, all_slice_dict['Lasing_off']['slice_current'], label='Off')
+    sp_current.plot(slice_time, all_slice_dict['Lasing_on']['slice_current'], label='On')
+
+    sp_power.plot(slice_time, power_from_Eloss)
+    sp_power.plot(slice_time, power_from_Espread)
+
+    median_image_off.plot_img_and_proj(sp_off)
+    median_image_on.plot_img_and_proj(sp_on)
+
+    lasing_dict['all_images']['Lasing_off']['image_tE'].plot_img_and_proj(sp_off_tE)
+    lasing_dict['all_images']['Lasing_on']['image_tE'].plot_img_and_proj(sp_on_tE)
+
+    lasing_dict['all_images']['Lasing_off']['image_cut'].plot_img_and_proj(sp_off_cut)
+    lasing_dict['all_images']['Lasing_on']['image_cut'].plot_img_and_proj(sp_on_cut)
+
+    sp_wake.plot(wake_t*1e15, wake_x*1e3)
+    wake_profile.plot_standard(sp_profile)
+
+    if plot_handles is None:
+        plt.show()
+
+    output = {
+            'input': input_dict,
+            'lasing_dict': lasing_dict,
+            }
     import pdb; pdb.set_trace()
-
-
+    return output
 
 if __name__ == '__main__':
     plt.close('all')

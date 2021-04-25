@@ -53,6 +53,8 @@ if qt5_plot:
     matplotlib.use('Qt5Agg')
 else:
     plt.ion() # Interactive mode
+    pass
+
 pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
 
@@ -100,20 +102,25 @@ class StartMain(QtWidgets.QMainWindow):
             default_dir = '/storage/data_2021-03-16/'
             archiver_dir = '/storage/Philipp_data_folder/archiver_api_data/'
             save_dir = '/storage/tmp_reconstruction/'
+        elif hostname == 'pubuntu':
+            default_dir = '/home/work/data_2021-03-16/'
+            archiver_dir = '/home/work/archiver_api_data/'
+            save_dir = '/home/work/tmp_reconstruction/'
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
         recon_data_file = default_dir+'2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
         lattice_file = archiver_dir+'2021-03-16.h5'
         time_str = '2021-03-16:20-22-26'
-        lasing_file = default_dir+'2021_03_16-20_41_05_Screen_data_SARBD02-DSCR050.h5'
+        lasing_file_off = default_dir+'2021_03_16-20_42_57_Screen_data_SARBD02-DSCR050.h5'
+        lasing_file_on = default_dir+'2021_03_16-20_41_05_Screen_data_SARBD02-DSCR050.h5'
 
         self.ImportCalibration.setText(screen_calib_file)
         self.ImportFile.setText(lattice_file)
         self.ImportFileTime.setText(time_str)
         self.ReconstructionDataLoad.setText(recon_data_file)
         self.SaveDir.setText(save_dir)
-        self.LasingOnDataLoad.setText(lasing_file)
-        self.LasingOffDataLoad.setText(lasing_file)
+        self.LasingOnDataLoad.setText(lasing_file_on)
+        self.LasingOffDataLoad.setText(lasing_file_off)
         self.SaveDir.setText(save_dir)
 
 
@@ -190,9 +197,11 @@ class StartMain(QtWidgets.QMainWindow):
 
     def obtain_r12(self):
         self.init_tracker()
-        r12 = self.analysis_obj.calcR12()[self.n_streaker]
-        print(r12)
-        return r12
+        r12 = self.analysis_obj.tracker.calcR12()[self.n_streaker]
+        disp = self.analysis_obj.tracker.calcDisp()[self.n_streaker]
+        print('R12:', r12)
+        print('Dispersion:', disp)
+        return r12, disp
 
 
     def init_tracker(self):
@@ -593,14 +602,23 @@ class StartMain(QtWidgets.QMainWindow):
     def reconstruct_lasing(self):
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
-        key_on = self.LasingOnDataLoadKey.text()
-        key_off = self.LasingOffDataLoadKey.text()
         file_current = self.LasingCurrentProfileDataLoad.text()
         screen_center = float(self.DirectCalibration.text())*1e-6
+
+        if self.n_streaker == 0:
+            structure_center = float(self.StreakerDirect0.text())*1e-6
+        elif self.n_streaker == 1:
+            structure_center = float(self.StreakerDirect1.text())*1e-6
+        streaker_name = config.streaker_names[self.beamline][self.n_streaker]
+        structure_length = [float(self.StructLength1.text()), float(self.StructLength1.text())][self.n_streaker]
+
         assert os.path.isfile(file_on)
         assert os.path.isfile(file_off)
+        r12, disp = self.obtain_r12()
+        energy_eV = self.analysis_obj.tracker.energy_eV
+        charge = float(self.Charge.text())*1e-12
 
-        analysis.reconstruct_lasing(file_on, file_off, key_on, key_off, screen_center, file_current)
+        analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name)
 
 
 

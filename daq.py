@@ -193,7 +193,7 @@ def get_meta_data():
     k1l_dict = get_aramis_quad_strengths()
     meta_dict.update(k1l_dict)
     meta_dict['time'] = str(datetime.datetime.now())
-    gas_monitor_energy_pv = 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG'
-    meta_dict[gas_monitor_energy_pv] = caget(gas_monitor_energy_pv)
+    for gas_monitor_energy_pv in config.gas_monitor_pvs.values():
+        meta_dict[gas_monitor_energy_pv] = caget(gas_monitor_energy_pv)
     return meta_dict
 

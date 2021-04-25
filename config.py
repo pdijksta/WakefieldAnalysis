@@ -6,6 +6,10 @@ streaker_names = {
             },
         }
 
+gas_monitor_pvs = {
+        'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
+        }
+
 all_streakers = []
 for beamline, beamline_dict in streaker_names.items():
     all_streakers.extend([x for x in beamline_dict.values()])

@@ -490,12 +490,12 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
         sp_ctr += 1
 
         ms.figure('Lasing reconstruction')
-        subplot = ms.subplot_factory(3,3)
+        subplot = ms.subplot_factory(2,2)
         sp_ctr = 1
 
-        sp_power = subplot(sp_ctr, title='Power')
+        sp_power = subplot(sp_ctr, title='Power', xlabel='t [fs]', ylabel='P [GW]')
         sp_ctr += 1
-        sp_current = subplot(sp_ctr, title='Current')
+        sp_current = subplot(sp_ctr, title='Current', xlabel='t [fs]', ylabel='I [arb. units]')
         sp_ctr += 1
 
     slice_time = lasing_dict['slice_time']
@@ -503,11 +503,14 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     power_from_Eloss = lasing_dict['power_Eloss']
     power_from_Espread = lasing_dict['power_Espread']
 
-    sp_current.plot(slice_time, all_slice_dict['Lasing_off']['slice_current'], label='Off')
-    sp_current.plot(slice_time, all_slice_dict['Lasing_on']['slice_current'], label='On')
+    sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_off']['slice_current'], label='Off')
+    sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_on']['slice_current'], label='On')
 
-    sp_power.plot(slice_time, power_from_Eloss)
-    sp_power.plot(slice_time, power_from_Espread)
+    sp_power.plot(slice_time*1e15, power_from_Eloss/1e9, label='$\Delta$E')
+    sp_power.plot(slice_time*1e15, power_from_Espread/1e9, label='$\Delta\sigma_E$')
+
+    sp_current.legend()
+    sp_power.legend()
 
     median_image_off.plot_img_and_proj(sp_off)
     median_image_on.plot_img_and_proj(sp_on)

@@ -33,7 +33,10 @@ import myplotstyle as ms
 # - add these options to GUI
 # - lasing
 # - add tilt option
-# - pulse energy from gas detector
+# - pulse energy from gas detector in pyscan
+# - charge from pyscan
+# - restructure analysis
+# - what is the correct beam energy pv?
 
 
 try:

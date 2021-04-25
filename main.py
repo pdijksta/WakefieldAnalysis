@@ -1,3 +1,15 @@
+qt5_plot = False
+
+if qt5_plot:
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
+    import matplotlib
+    import matplotlib.pyplot as plt
+    matplotlib.use('Qt5Agg')
+else:
+    import matplotlib.pyplot as plt
+    plt.ion() # Interactive mode
+    pass
+
 import sys
 import os
 import re
@@ -7,9 +19,6 @@ import numpy as np
 import PyQt5.Qt
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtRemoveInputHook
-import matplotlib
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
-import matplotlib.pyplot as plt
 
 import config
 import tracking
@@ -17,7 +26,6 @@ import elegant_matrix
 import data_loader
 import misc2 as misc
 import analysis
-import lasing
 #import gaussfit
 import h5_storage
 import myplotstyle as ms
@@ -37,6 +45,16 @@ import myplotstyle as ms
 # - charge from pyscan
 # - restructure analysis
 # - what is the correct beam energy pv?
+# - yum install libhdf5
+# - handle feedback in user interface
+# - streaker calibration fit guess
+# - delay at begin of pyscan
+# - meta data at begin and end of pyscan
+# - simplify lattice
+# - uJ instead of True, False
+# - detune undulator button
+# - optional provide the pulse energy calibration
+# - y scale of optimization
 
 
 try:
@@ -48,15 +66,6 @@ except ImportError:
     daq = None
 
 ms.set_fontsizes(8)
-
-# For debug purposes, set this to true
-qt5_plot = False
-
-if qt5_plot:
-    matplotlib.use('Qt5Agg')
-else:
-    plt.ion() # Interactive mode
-    pass
 
 pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
@@ -96,8 +105,8 @@ class StartMain(QtWidgets.QMainWindow):
 
         # Default strings in gui fields
         hostname = socket.gethostname()
-        if 'psi' in hostname:
-            default_dir = '/sf/data/measurements/2020/10/03/'
+        if 'psi' in hostname or 'lc6a' in hostname or 'lc7a' in hostname:
+            default_dir = '/sf/data/measurements/2021/03/16/'
             archiver_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/'
             date = datetime.now()
             save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
@@ -493,9 +502,9 @@ class StartMain(QtWidgets.QMainWindow):
         self.StreakerName.setText(self.streaker_name)
 
     def calibrate_streaker(self):
-        start, stop, step= float(self.Range1Begin.text()), float(self.Range1Stop.text()), float(self.Range1Step.text())
+        start, stop, step= float(self.Range1Begin.text()), float(self.Range1Stop.text()), int(float(self.Range1Step.text()))
         range1 = np.linspace(start, stop, step)
-        start, stop, step= float(self.Range2Begin.text()), float(self.Range2Stop.text()), float(self.Range2Step.text())
+        start, stop, step= float(self.Range2Begin.text()), float(self.Range2Stop.text()), int(float(self.Range2Step.text()))
         range2 = np.linspace(start, stop, step)
         range_ = np.concatenate([range1, [0], range2])*1e-3 # Convert mm to m
         range_.sort()
@@ -585,7 +594,7 @@ class StartMain(QtWidgets.QMainWindow):
         image_dict = daq.get_images(self.screen, n_images)
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
-        lasing_str = str(lasing)
+        lasing_str = str(lasing_on_off)
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_%s_%s.h5' % (lasing_str, screen_str)
         filename = os.path.join(self.save_dir, basename)
         h5_storage.saveH5Recursive(filename, image_dict)

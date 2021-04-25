@@ -1,4 +1,4 @@
-import itertools
+#import itertools
 import numpy as np
 import logging
 import datetime
@@ -151,10 +151,18 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    images = np.zeros([len(positions), n_images, len(result_dict['y_axis']), len(result_dict['x_axis'])], dtype=result_dict['image'][0][0].dtype)
-    images_raw = result_dict['image'].squeeze()
-    for n_p, n_i in itertools.product(range(len(positions)), range(n_images)):
-        images[n_p][n_i] = images_raw[n_p][n_i]
+    #images = np.zeros([len(positions), n_images, len(result_dict['y_axis']), len(result_dict['x_axis'])], dtype=result_dict['image'][0][0].dtype)
+    #images_raw = result_dict['image'].squeeze()
+    #try:
+    #    for n_p, n_i in itertools.product(range(len(positions)), range(n_images)):
+    #        images[n_p][n_i] = images_raw[n_p][n_i]
+    #except:
+    #    import pickle
+    #    with open('./debug_pyscan.pkl', 'wb') as f:
+    #        pickle.dump(images_raw, f)
+    #    print('Error for images_raw to images')
+    #    images = images_raw
+    #images = images_raw
 
     all_streakers = config.all_streakers
     meta_dict = {}

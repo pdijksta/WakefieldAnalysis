@@ -14,7 +14,6 @@ try:
     import tracking
     import myplotstyle as ms
     import h5_storage
-    import elegant_matrix
     import gaussfit
     import misc2 as misc
     import image_and_profile as iap
@@ -24,12 +23,16 @@ except ImportError:
     from . import tracking
     from . import myplotstyle as ms
     from . import h5_storage
-    from . import elegant_matrix
     from . import gaussfit
     from . import misc2 as misc
     from . import image_and_profile as iap
     from . import lasing
     from . import config
+
+def plt_show():
+    plt.pause(.1)
+    plt.draw()
+    plt.show(block=False)
 
 class Reconstruction:
     def __init__(self):
@@ -87,7 +90,7 @@ class Reconstruction:
             sp = subplot(1)
             meas_screen = kwargs['meas_screen']
             meas_screen.plot_standard(sp)
-            plt.show()
+            plt_show()
             import pdb; pdb.set_trace()
 
         gauss_dict = self.tracker.find_best_gauss(**kwargs)
@@ -125,9 +128,11 @@ class Reconstruction:
             sp_screen.legend()
             sp_profile.legend()
 
-            sp_opt.scatter(opt_func_sigmas*1e15, opt_func_values[:,1])
+            yy_opt = opt_func_values[:,1]
+            sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)
+            sp_opt.set_ylim(0,1.1*yy_opt.max())
             if plot_handles is None:
-                plt.show()
+                plt_show()
 
 
     def save_data(self, save_path):
@@ -146,20 +151,6 @@ class Reconstruction:
         #import pdb; pdb.set_trace()
         h5_storage.saveH5Recursive(filename, save_dict)
         return filename
-
-
-
-def load_reconstruction(filename, tmp_dir, plot_handles=None):
-    elegant_matrix.set_tmp_dir(tmp_dir)
-    saved_dict = h5_storage.loadH5Recursive(filename)
-    analysis_obj = Reconstruction()
-    analysis_obj.add_tracker(saved_dict['input']['tracker_kwargs'])
-    rec_kwargs = saved_dict['input']['gaussian_reconstruction']
-    rec_kwargs['meas_screen'] = tracking.ScreenDistribution(rec_kwargs['meas_screen_x'], rec_kwargs['meas_screen_intensity'])
-    del rec_kwargs['meas_screen_x']
-    del rec_kwargs['meas_screen_intensity']
-    analysis_obj.current_profile_rec_gauss(rec_kwargs, True, plot_handles)
-    return analysis_obj
 
 
 def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, const, semigap):
@@ -383,7 +374,7 @@ def clear_streaker_calibration(sp_center):
         sp.set_ylabel(ylabel)
         sp.grid(True)
 
-def reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles=None):
+def reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy):
     input_dict = {
             'file_on': file_on,
             'file_off': file_off,
@@ -414,17 +405,19 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
         gaps.append(dict_[streaker+':GAP']*1e-3)
         beam_offsets.append(-(dict_[streaker+':CENTER']*1e-3-structure_center))
 
-    assert gaps[0] == gaps[1]
-    assert beam_offsets[0] == beam_offsets[1]
-    gap = gaps[0]
-    beam_offset = beam_offsets[0]
+    if abs(gaps[0] - gaps[1]) > 1e-6:
+        print('Gaps not the same!', gaps)
+    if abs(beam_offsets[0] - beam_offsets[1]) > 1e-6:
+        print('Beam offsets not the same!', beam_offsets)
+    gap = np.mean(gaps)
+    beam_offset = np.mean(beam_offsets)
 
-    # TODO
-    try:
-        pulse_energy = dict_on_m[config.gas_monitor_pvs['Aramis']]
-    except KeyError:
-        print('No pulse energy found! Use 100 uJ')
-        pulse_energy = 100e-6
+    if pulse_energy is None:
+        try:
+            pulse_energy = dict_on_m[config.gas_monitor_pvs['Aramis']]*1e-6
+        except KeyError:
+            print('No pulse energy found! Use 100 uJ')
+            pulse_energy = 100e-6
 
     images0 = dict_off_p['image'].astype(np.float64)
     images0_on = dict_on_p['image'].astype(np.float64)
@@ -438,7 +431,6 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     projx0 = images0.sum(axis=-2)
     median_index = misc.get_median(projx0, output='index')
     median_image_off = iap.Image(images0[median_index], x_axis0, y_axis0, x_offset=screen_center)
-
 
     projx0_on = images0_on.sum(axis=-2)
     median_index = misc.get_median(projx0_on, output='index')
@@ -460,7 +452,7 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     lasing_dict = lasing.obtain_lasing(median_image_off, median_image_on, n_slices, wake_x, wake_t, len_profile, disp, energy_eV, charge, pulse_energy=pulse_energy, debug=False)
 
     if plot_handles is None:
-        ms.figure('Lasing debug')
+        ms.figure('Lasing details')
         subplot = ms.subplot_factory(3,3)
         sp_ctr = 1
 
@@ -482,7 +474,6 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
         sp_on_cut = subplot(sp_ctr, title='Lasing on', xlabel='x [mm]', ylabel='y [mm]')
         sp_ctr += 1
 
-
         sp_off_tE = subplot(sp_ctr, title='Lasing off', xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
         sp_ctr += 1
 
@@ -495,6 +486,7 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
         sp_power = subplot(sp_ctr, title='Power', xlabel='t [fs]', ylabel='P [GW]')
         sp_ctr += 1
+
         sp_current = subplot(sp_ctr, title='Current', xlabel='t [fs]', ylabel='I [arb. units]')
         sp_ctr += 1
 
@@ -525,20 +517,12 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     wake_profile.plot_standard(sp_profile)
 
     if plot_handles is None:
-        plt.show()
+        plt_show()
 
     output = {
             'input': input_dict,
             'lasing_dict': lasing_dict,
             }
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     return output
-
-if __name__ == '__main__':
-    plt.close('all')
-
-    filename = '/tmp/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
-    dict_ = h5_storage.loadH5Recursive(filename)
-
-    plt.show()
 

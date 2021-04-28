@@ -1,12 +1,12 @@
 qt5_plot = False
 
+import matplotlib.pyplot as plt
 if qt5_plot:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
     import matplotlib
-    import matplotlib.pyplot as plt
     matplotlib.use('Qt5Agg')
 else:
-    import matplotlib.pyplot as plt
+    # Does not consistently work ?-?-?-?
     plt.ion() # Interactive mode
     pass
 
@@ -26,35 +26,40 @@ import elegant_matrix
 import data_loader
 import misc2 as misc
 import analysis
-#import gaussfit
 import h5_storage
+import image_and_profile as iap
+
 import myplotstyle as ms
 
 #TODO
 #
 # - elog
 # - non blocking daq
-# - sort out daq pyscan_result_to_dict
 # - add info of beamsize with / without assumed screen resolution
-# - debug delay after using BsreadPositioner -> not important
-# - noise reduction from the image
-# - add these options to GUI
+# - debug delay after using BsreadPositioner or any pyscan
 # - lasing
 # - add tilt option
-# - pulse energy from gas detector in pyscan
 # - charge from pyscan
 # - restructure analysis
 # - what is the correct beam energy pv?
-# - yum install libhdf5
 # - handle feedback in user interface
-# - streaker calibration fit guess
-# - delay at begin of pyscan
+# - streaker calibration fit guess improvements
 # - meta data at begin and end of pyscan
 # - simplify lattice
 # - uJ instead of True, False
 # - detune undulator button
 # - optional provide the pulse energy calibration
 # - y scale of optimization
+
+# Probably fixed:
+# - sort out daq pyscan_result_to_dict
+
+# Not so important
+# - noise reduction from the image
+
+# Done
+# - pulse energy from gas detector in pyscan
+# - yum install libhdf5
 
 
 try:
@@ -78,7 +83,6 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.DoReconstruction.clicked.connect(self.do_reconstruction)
         self.SaveData.clicked.connect(self.save_data)
-        self.LoadData.clicked.connect(self.load_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
         self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
@@ -106,25 +110,25 @@ class StartMain(QtWidgets.QMainWindow):
         # Default strings in gui fields
         hostname = socket.gethostname()
         if 'psi' in hostname or 'lc6a' in hostname or 'lc7a' in hostname:
-            default_dir = '/sf/data/measurements/2021/03/16/'
+            default_dir = '/sf/data/measurements/2021/04/25/'
             archiver_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/'
             date = datetime.now()
             save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
         elif hostname == 'desktop':
-            default_dir = '/storage/data_2021-03-16/'
+            default_dir = '/storage/data_2021-04-25/'
             archiver_dir = '/storage/Philipp_data_folder/archiver_api_data/'
             save_dir = '/storage/tmp_reconstruction/'
         elif hostname == 'pubuntu':
-            default_dir = '/home/work/data_2021-03-16/'
+            default_dir = '/home/work/data_2021-04-25/'
             archiver_dir = '/home/work/archiver_api_data/'
             save_dir = '/home/work/tmp_reconstruction/'
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
-        recon_data_file = default_dir+'2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
-        lattice_file = archiver_dir+'2021-03-16.h5'
-        time_str = '2021-03-16:20-22-26'
-        lasing_file_off = default_dir+'2021_03_16-20_42_57_Screen_data_SARBD02-DSCR050.h5'
-        lasing_file_on = default_dir+'2021_03_16-20_41_05_Screen_data_SARBD02-DSCR050.h5'
+        recon_data_file = default_dir+'2021_04_25-17_16_30_Lasing_False_SARBD02-DSCR050.h5'
+        lattice_file = archiver_dir+'2021-04-25.h5'
+        time_str = '2021-04-25:17-22-26'
+        lasing_file_off = default_dir + '2021_04_25-17_16_30_Lasing_False_SARBD02-DSCR050.h5'
+        lasing_file_on = default_dir + '2021_04_25-17_57_34_Lasing_True_SARBD02-DSCR050.h5'
 
         self.ImportCalibration.setText(screen_calib_file)
         self.ImportFile.setText(lattice_file)
@@ -332,11 +336,11 @@ class StartMain(QtWidgets.QMainWindow):
         len_screen = tracker.len_screen
         smoothen = tracker.smoothen
 
-        bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_screen, charge, tracker.energy_eV)
+        bp_test = iap.get_gaussian_profile(40e-15, tt_halfrange, len_screen, charge, tracker.energy_eV)
         screen_sim = tracker.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
         emit0 = tracker.n_emittances[0]
         sig_real = float(self.DirectBeamsizeScreen.text())*1e-6
-        screen_sim2 = tracking.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), smoothen)
+        screen_sim2 = iap.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), smoothen)
         sig_meas = np.sqrt(sig_real**2 - smoothen**2)
         sig_sim = np.sqrt(screen_sim2.gaussfit.sigma**2 - smoothen**2)
         emittance_fit = emit0 * (sig_meas / sig_sim)**2
@@ -481,6 +485,9 @@ class StartMain(QtWidgets.QMainWindow):
             self.rec_canvas.draw()
             self.reconstruction_plot_handles[2].set_ylim(0, None)
 
+        plt.pause(.1)
+        plt.show()
+
     def save_data(self):
         filename = self.analysis_obj.save_data(self.save_dir)
         print('Saved at %s' % filename)
@@ -488,13 +495,6 @@ class StartMain(QtWidgets.QMainWindow):
     @property
     def save_dir(self):
         return os.path.expanduser(self.SaveDir.text())
-
-    def load_data(self):
-        filename = os.path.expanduser(self.LoadDataFilename.text().strip())
-        tmp_dir = os.path.expanduser(self.TmpDir.text().strip())
-        analysis.load_reconstruction(filename, tmp_dir, self.reconstruction_plot_handles)
-        print('Loaded %s' % filename)
-        #self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
 
     def update_streaker(self):
         beamline = self.beamline
@@ -614,6 +614,11 @@ class StartMain(QtWidgets.QMainWindow):
     def reconstruct_lasing(self):
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
+        lasing_energy_txt = self.LasingEnergyInput.text()
+        if lasing_energy_txt == 'None':
+            lasing_energy = None
+        else:
+            lasing_energy = float(lasing_energy_txt)*1e-6
         file_current = self.LasingCurrentProfileDataLoad.text()
         screen_center = float(self.DirectCalibration.text())*1e-6
 
@@ -630,7 +635,7 @@ class StartMain(QtWidgets.QMainWindow):
         energy_eV = self.analysis_obj.tracker.energy_eV
         charge = float(self.Charge.text())*1e-12
 
-        analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name)
+        analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, None, lasing_energy)
 
 
 

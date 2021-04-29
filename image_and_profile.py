@@ -24,7 +24,7 @@ class Profile:
         self._gf_xx = None
         self._gf_yy = None
 
-    def compare(self, other):
+    def compare(self, other, ignore_range=100e-6):
         xx_min = min(self._xx.min(), other._xx.min())
         xx_max = max(self._xx.max(), other._xx.max())
         xx = np.linspace(xx_min, xx_max, max(len(self._xx), len(other._xx)))
@@ -34,14 +34,17 @@ class Profile:
         yy2 = yy2 / np.nanmean(yy2)
 
         # modify least squares else large values dominate
-        weight = yy1 + yy2
-        np.clip(weight, weight.max()/2., None, out=weight)
+        #weight = yy1 + yy2
+        #np.clip(weight, weight.max()/2., None, out=weight)
+        weight = 1
 
         diff = ((yy1-yy2)/weight)**2
 
-        outp = np.nanmean(diff[np.nonzero(weight)])
+        diff[np.abs(xx)<ignore_range] = 0
+
+        #outp = np.nanmean(diff[np.nonzero(weight)])
         #import pdb; pdb.set_trace()
-        return outp
+        return np.mean(diff)
 
     def reshape(self, new_shape):
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))

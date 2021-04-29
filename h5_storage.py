@@ -1,7 +1,3 @@
-import getpass
-import time
-import re
-from functools import lru_cache
 import h5py
 import numpy as np
 #import tracking
@@ -49,6 +45,9 @@ def saveH5Recursive(h5_filename, data_dict):
 
         if type(dict_or_data) is tracking.BeamProfile or type(dict_or_data) is tracking.ScreenDistribution:
             dict_or_data = dict_or_data.to_dict()
+
+        if type(dict_or_data) is tuple:
+            dict_or_data = {'tuple_%i': x for i, x in enumerate(dict_or_data)}
 
         if type(dict_or_data) is dict:
 
@@ -195,125 +194,4 @@ def loadH5Recursive(h5_file):
         else:
             recurse_load(f, 'key', saved_dict)
     return saved_dict
-
-def save_h5_new(saved_dict, h5_file):
-
-    def recurse_save(dict_, group, system):
-        print('recurse', dict_.keys())
-        for key, subdict_or_data in dict_.items():
-            type_ = type(subdict_or_data)
-            print(key, type_)
-            if type_ is dict:
-                new_group = group.create_group(key)
-                recurse_save(subdict_or_data, new_group, system)
-            elif type_ is np.ndarray:
-                add_dataset(group, key, subdict_or_data, system)
-            elif type_ is str:
-                add_dataset(group, key, subdict_or_data, system, dtype=dt)
-            else:
-                raise ValueError(key, type_)
-
-    @lru_cache()
-    def re_axis(x):
-        return re.compile('gr_%s_axis_(\d+)_(\d+)' % x)
-
-    @lru_cache()
-    def re_gauss_function(x):
-        return re.compile('gr_%s_fit_gauss_function_(\d+)_(\d+)' % x)
-
-    n_measurements, n_images = saved_dict['Raw_data']['image'].shape[:2]
-
-    # Create arrays for gr / slice values, that differ in size for different n_measurements, n_images
-    gr_x_shape_max = -1
-    gr_y_shape_max = -1
-    for key, data in sorted(saved_dict['Raw_data'].items()):
-        if key.startswith('gr_x_axis'):
-            gr_x_shape_max = max(gr_x_shape_max, data.shape[0])
-        elif key.startswith('gr_y_axis'):
-            gr_y_shape_max = max(gr_y_shape_max, data.shape[0])
-
-    gr_x_axis = np.zeros([n_measurements, n_images, gr_x_shape_max])*np.nan
-    gr_y_axis = np.zeros([n_measurements, n_images, gr_y_shape_max])*np.nan
-    gr_x_fit_gauss_function = gr_x_axis.copy()
-    gr_y_fit_gauss_function = gr_y_axis.copy()
-
-    for key, data in sorted(saved_dict['Raw_data'].items()):
-        for arr, regex in [
-                (gr_x_axis, re_axis('x')),
-                (gr_y_axis, re_axis('y')),
-                (gr_x_fit_gauss_function, re_gauss_function('x')),
-                (gr_y_fit_gauss_function, re_gauss_function('y')),
-                ]:
-            match = regex.match(key)
-            if match is not None:
-                #print(key, 'matches', regex)
-                n_measurement, n_image = map(int, match.groups())
-                arr[n_measurement, n_image,:len(data)] = data
-                continue
-
-    with h5py.File(h5_file, 'w') as f:
-        general = f.create_group('general')
-        stringDataset(general, 'user', getpass.getuser())
-        stringDataset(general, 'application', 'EmittanceTool')
-        stringDataset(general, 'author', 'Philipp Dijkstal and Eduard Prat')
-        stringDataset(general, 'created', time.ctime())
-
-        experiment = f.create_group('experiment')
-        try:
-            from epics import caget
-            lrr = float(caget('SIN-TIMAST-TMA:Beam-Exp-Freq-RB'))
-        except Exception as e:
-            print('Could not obtain Laser rep rate!')
-            print(e)
-            lrr = np.nan
-        add_dataset(experiment, 'Laser rep rate', lrr, 'unknown')
-        # TBD: save snapshot here
-
-        scan1 = f.create_group('scan 1')
-
-        method = scan1.create_group('method')
-        method.create_dataset('records', data=[float(n_measurements)])
-        method.create_dataset('samples', data=[float(n_images)])
-        method.create_dataset('dimension', data=[1])
-        stringDataset(method, 'type', 'Line scan')
-        recurse_save(saved_dict['Input'], method, 'Application Input')
-
-
-        data = scan1.create_group('data')
-
-        screen = data.create_group(saved_dict['Input']['Profile monitor'])
-        recurse_save(saved_dict['Meta_data'], screen, 'Emittance data')
-
-
-        for key, data_ in sorted(saved_dict['Raw_data'].items()):
-            if not any([x.match(key) for x in [re_axis('x'), re_axis('y'), re_gauss_function('x'), re_gauss_function('y')]]):
-                add_dataset(screen, key, data_, 'Camera')
-                #print('Created %s' % key)
-
-        if not np.all(np.isnan(gr_x_axis)):
-            add_dataset(screen, 'gr_x_axis', gr_x_axis, 'Camera')
-        else:
-            print('gr_x_axis is nan')
-        if not np.all(np.isnan(gr_y_axis)):
-            add_dataset(screen, 'gr_y_axis', gr_y_axis, 'Camera')
-        else:
-            print('gr_y_axis is nan')
-        if not np.all(np.isnan(gr_x_fit_gauss_function)):
-            add_dataset(screen, 'gr_x_fit_gauss_function', gr_x_fit_gauss_function, 'Camera')
-        else:
-            print('gr_x_fit_gauss_function is nan')
-        if not np.all(np.isnan(gr_y_fit_gauss_function)):
-            add_dataset(screen, 'gr_y_fit_gauss_function', gr_y_fit_gauss_function, 'Camera')
-        else:
-            print('gr_y_fit_gauss_function is nan')
-
-        if 'Magnet_data' in saved_dict:
-            for n_magnet, magnet in enumerate(saved_dict['Magnet_data']['Magnets']):
-                mag_group = method.create_group('actuators/%s' % magnet)
-                add_dataset(mag_group, 'K', saved_dict['Magnet_data']['K'][n_magnet], 'Magnet')
-                add_dataset(mag_group, 'I-SET', saved_dict['Magnet_data']['I-SET'][n_magnet], 'Magnet')
-        elif not saved_dict['Input']['Dry run'] in (np.array(False), False):
-            raise ValueError('No magnet data')
-        else:
-            print('Magnet data not saved.')
 

@@ -1,7 +1,7 @@
-qt5_plot = False
+qt_plot = True
 
 import matplotlib.pyplot as plt
-if qt5_plot:
+if qt_plot:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
     import matplotlib
     matplotlib.use('Qt5Agg')
@@ -81,7 +81,7 @@ class StartMain(QtWidgets.QMainWindow):
         super(StartMain, self).__init__()
         uic.loadUi('GUI.ui', self)
 
-        self.DoReconstruction.clicked.connect(self.do_reconstruction)
+        self.DoReconstruction.clicked.connect(self.reconstruct_current)
         self.SaveData.clicked.connect(self.save_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
@@ -140,7 +140,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.SaveDir.setText(save_dir)
 
 
-        if qt5_plot:
+        if qt_plot:
 
             def get_new_tab(fig, title):
                 new_tab = QtWidgets.QWidget()
@@ -162,11 +162,16 @@ class StartMain(QtWidgets.QMainWindow):
             fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
             self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(fig, 'Screen plots')
 
+            self.lasing_plot_handles = analysis.lasing_figures()
+            self.lasing_plot_tab_index1, self.lasing_canvas1 = get_new_tab(self.lasing_plot_handles[0][0], 'Lasing 1')
+            self.lasing_plot_tab_index2, self.lasing_canvas2 = get_new_tab(self.lasing_plot_handles[1][0], 'Lasing 2')
         else:
             self.reconstruction_plot_handles = None
             self.streaker_calib_plot_handles = None
             self.screen_calib_plot_handles = None
+            self.lasing_plot_handles = None
             self.rec_canvas = self.streaker_calib_canvas = self.screen_calib_canvas = None
+            self.lasing_canvas1 = self.lasing_canvas2 = None
 
 
 
@@ -179,17 +184,24 @@ class StartMain(QtWidgets.QMainWindow):
 
 
     def clear_rec_plots(self):
-        analysis.clear_reconstruction(*self.reconstruction_plot_handles)
-        self.rec_canvas.draw()
-        print('Cleared reconstruction plot')
+        if self.reconstruction_plot_handles is not None:
+            analysis.clear_reconstruction(*self.reconstruction_plot_handles)
+            self.rec_canvas.draw()
+            print('Cleared reconstruction plot')
 
     def clear_calib_plots(self):
-        analysis.clear_streaker_calibration(*self.streaker_calib_plot_handles)
-        self.streaker_calib_canvas.draw()
+        if self.streaker_calib_plot_handles is not None:
+            analysis.clear_streaker_calibration(*self.streaker_calib_plot_handles)
+            self.streaker_calib_canvas.draw()
 
     def clear_screen_plots(self):
-        analysis.clear_screen_calibration(*self.screen_calib_plot_handles)
-        self.screen_calib_canvas.draw()
+        if self.screen_calib_plot_handles is not None:
+            analysis.clear_screen_calibration(*self.screen_calib_plot_handles)
+            self.screen_calib_canvas.draw()
+
+    def clear_lasing_plots(self):
+        if self.lasing_plot_handles is not None:
+            analysis.clear_lasing(self.lasing_plot_handles)
 
     def obtain_lattice(self):
 
@@ -374,7 +386,7 @@ class StartMain(QtWidgets.QMainWindow):
             offset_widget.setText('%.3f' % offset_mm)
 
     def streaker_set(self):
-        widgets = (self.SetStreakerDirectCheck, self.SetStreakerFromLiveCheck)
+        widgets = (self.SetStreakerDirectCheck, self.SetStreakerFromLiveCheck, self.SetStreakerSaveCheck)
         self._check_check(widgets, 'Check set streaker checkmarks')
 
         if self.SetStreakerDirectCheck.isChecked():
@@ -384,6 +396,9 @@ class StartMain(QtWidgets.QMainWindow):
         elif self.SetStreakerFromLiveCheck.isChecked():
             self.obtain_streaker_settings_from_live()
             other_input = {'method': 'live'}
+        elif self.SetStreakerSaveCheck:
+            self.streaker_settings = 'Saved'
+            other_input = {'method': 'saved'}
 
         gaps = [float(self.StreakerGap0.text())*1e-3, float(self.StreakerGap1.text())*1e-3]
         # beam offset is negative of streaker offset
@@ -416,20 +431,6 @@ class StartMain(QtWidgets.QMainWindow):
                 raise NotImplementedError
             meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
 
-            #import matplotlib.pyplot as plt
-            #plt.figure()
-            #plt.suptitle('Debug')
-            #sp = plt.subplot(1,1,1)
-            #sp.plot(meas_screen.x, meas_screen.intensity)
-            #meas_screen._yy -= meas_screen._yy.min()
-            #gf = meas_screen.gaussfit
-            #print(gf.sigma)
-            #meas_screen._yy = meas_screen._yy - gf.const
-            #sp.plot(meas_screen.x, meas_screen.intensity)
-            #sp.plot(gf.xx, gf.reconstruction)
-            #sp.plot(gf.xx, gf.fit_func(gf.xx, *gf.p0))
-            #plt.show()
-            #import pdb; pdb.set_trace()
         else:
             raise NotImplementedError
 
@@ -441,7 +442,7 @@ class StartMain(QtWidgets.QMainWindow):
         print('Obtained reconstruction data')
         return meas_screen
 
-    def do_reconstruction(self):
+    def reconstruct_current(self):
 
         self.init_tracker()
         self.streaker_calibration()
@@ -480,13 +481,15 @@ class StartMain(QtWidgets.QMainWindow):
         #    pickle.dump((kwargs_recon2, self.analysis_obj), f)
         #    print('Saved %s' % p_file)
 
+        self.clear_rec_plots()
         self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles)
+
         if self.rec_canvas is not None:
             self.rec_canvas.draw()
-            self.reconstruction_plot_handles[2].set_ylim(0, None)
 
-        plt.pause(.1)
-        plt.show()
+        if not qt_plot:
+            plt.pause(.1)
+            plt.show()
 
     def save_data(self):
         filename = self.analysis_obj.save_data(self.save_dir)
@@ -626,6 +629,7 @@ class StartMain(QtWidgets.QMainWindow):
             structure_center = float(self.StreakerDirect0.text())*1e-6
         elif self.n_streaker == 1:
             structure_center = float(self.StreakerDirect1.text())*1e-6
+
         streaker_name = config.streaker_names[self.beamline][self.n_streaker]
         structure_length = [float(self.StructLength1.text()), float(self.StructLength1.text())][self.n_streaker]
 
@@ -635,9 +639,13 @@ class StartMain(QtWidgets.QMainWindow):
         energy_eV = self.analysis_obj.tracker.energy_eV
         charge = float(self.Charge.text())*1e-12
 
-        analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, None, lasing_energy)
+        if self.lasing_plot_handles is not None:
+            analysis.clear_lasing(self.lasing_plot_handles)
 
+        analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
 
+        if self.lasing_plot_handles is not None:
+            self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
 
 if __name__ == '__main__':
     def my_excepthook(type, value, tback):

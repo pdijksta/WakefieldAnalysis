@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>786</width>
-    <height>757</height>
+    <width>962</width>
+    <height>856</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,16 +19,16 @@
      <rect>
       <x>10</x>
       <y>0</y>
-      <width>771</width>
-      <height>531</height>
+      <width>931</width>
+      <height>711</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
-      <string>Screen Cal</string>
+      <string>Calibration</string>
      </attribute>
      <widget class="QLineEdit" name="ImportCalibration">
       <property name="geometry">
@@ -113,8 +113,8 @@
      <widget class="QLabel" name="label_18">
       <property name="geometry">
        <rect>
-        <x>370</x>
-        <y>440</y>
+        <x>260</x>
+        <y>190</y>
         <width>111</width>
         <height>16</height>
        </rect>
@@ -129,8 +129,8 @@
      <widget class="QLineEdit" name="DirectCalibration">
       <property name="geometry">
        <rect>
-        <x>220</x>
-        <y>430</y>
+        <x>110</x>
+        <y>190</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -146,13 +146,13 @@
       <property name="geometry">
        <rect>
         <x>280</x>
-        <y>210</y>
+        <y>140</y>
         <width>81</width>
         <height>26</height>
        </rect>
       </property>
       <property name="text">
-       <string>5</string>
+       <string>20</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -162,7 +162,7 @@
       <property name="geometry">
        <rect>
         <x>170</x>
-        <y>210</y>
+        <y>140</y>
         <width>81</width>
         <height>20</height>
        </rect>
@@ -178,7 +178,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>200</y>
+        <y>130</y>
         <width>121</width>
         <height>41</height>
        </rect>
@@ -227,14 +227,14 @@
        </font>
       </property>
       <property name="text">
-       <string>Live calibration</string>
+       <string>Do calibration</string>
       </property>
      </widget>
      <widget class="QPushButton" name="ClearScreenPlots">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>370</y>
+        <x>540</x>
+        <y>130</y>
         <width>121</width>
         <height>41</height>
        </rect>
@@ -289,8 +289,8 @@
      <widget class="QLineEdit" name="DirectBeamsizeScreen">
       <property name="geometry">
        <rect>
-        <x>490</x>
-        <y>430</y>
+        <x>380</x>
+        <y>190</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -305,8 +305,8 @@
      <widget class="QLabel" name="label_53">
       <property name="geometry">
        <rect>
-        <x>130</x>
-        <y>440</y>
+        <x>20</x>
+        <y>200</y>
         <width>71</width>
         <height>16</height>
        </rect>
@@ -321,8 +321,8 @@
      <widget class="QPushButton" name="SetXEmittance">
       <property name="geometry">
        <rect>
-        <x>490</x>
-        <y>370</y>
+        <x>540</x>
+        <y>180</y>
         <width>121</width>
         <height>41</height>
        </rect>
@@ -430,32 +430,67 @@
        <string>Load calibration</string>
       </property>
      </widget>
-    </widget>
-    <widget class="QWidget" name="tab">
-     <attribute name="title">
-      <string>Streaker Cal</string>
-     </attribute>
-     <widget class="QLineEdit" name="StreakerDirect0">
+     <widget class="QPushButton" name="ClearCalibPlots">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>70</y>
+        <x>590</x>
+        <y>380</y>
         <width>121</width>
-        <height>26</height>
+        <height>41</height>
        </rect>
       </property>
-      <property name="text">
-       <string>0</string>
+      <property name="palette">
+       <palette>
+        <active>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </active>
+        <inactive>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </inactive>
+        <disabled>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </disabled>
+       </palette>
       </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
+      <property name="font">
+       <font>
+        <family>Sans Serif</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Clear plots</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_19">
       <property name="geometry">
        <rect>
-        <x>20</x>
-        <y>70</y>
+        <x>40</x>
+        <y>280</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -467,155 +502,11 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="StreakerDirect1">
-      <property name="geometry">
-       <rect>
-        <x>370</x>
-        <y>70</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>314.4</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_26">
-      <property name="geometry">
-       <rect>
-        <x>370</x>
-        <y>50</y>
-        <width>121</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Streaker 1</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_25">
-      <property name="geometry">
-       <rect>
-        <x>210</x>
-        <y>50</y>
-        <width>121</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Streaker 0</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_27">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>410</y>
-        <width>161</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Structure gap [mm]</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerGap0">
-      <property name="geometry">
-       <rect>
-        <x>210</x>
-        <y>400</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>10</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerGap1">
-      <property name="geometry">
-       <rect>
-        <x>370</x>
-        <y>400</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>10</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_28">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>450</y>
-        <width>161</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Structure offset [mm]</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerOffset0">
-      <property name="geometry">
-       <rect>
-        <x>210</x>
-        <y>440</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>0</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerOffset1">
-      <property name="geometry">
-       <rect>
-        <x>370</x>
-        <y>440</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>5.06</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QLabel" name="label_29">
       <property name="geometry">
        <rect>
-        <x>290</x>
-        <y>20</y>
+        <x>310</x>
+        <y>230</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -627,59 +518,91 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLabel" name="label_30">
+     <widget class="QLabel" name="label_44">
       <property name="geometry">
        <rect>
-        <x>290</x>
+        <x>230</x>
         <y>320</y>
-        <width>161</width>
+        <width>91</width>
         <height>16</height>
        </rect>
       </property>
       <property name="text">
-       <string>Streaker settings</string>
+       <string>Begin [mm]</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QCheckBox" name="SetStreakerDirectCheck">
+     <widget class="QLineEdit" name="Range1Stop">
       <property name="geometry">
        <rect>
-        <x>30</x>
+        <x>350</x>
         <y>350</y>
-        <width>111</width>
-        <height>20</height>
+        <width>91</width>
+        <height>26</height>
        </rect>
       </property>
       <property name="text">
-       <string>Direct input</string>
+       <string>-4.4</string>
       </property>
-      <property name="checked">
-       <bool>true</bool>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QCheckBox" name="SetStreakerFromLiveCheck">
+     <widget class="QLabel" name="label_46">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>350</y>
-        <width>111</width>
+        <x>470</x>
+        <y>320</y>
+        <width>91</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Steps</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_48">
+      <property name="geometry">
+       <rect>
+        <x>180</x>
+        <y>400</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>2</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_51">
+      <property name="geometry">
+       <rect>
+        <x>580</x>
+        <y>320</y>
+        <width>81</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
-       <string>From live</string>
+       <string>Images</string>
       </property>
-      <property name="checked">
-       <bool>false</bool>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
      <widget class="QPushButton" name="CalibrateStreaker">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>140</y>
+        <x>30</x>
+        <y>350</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -731,108 +654,28 @@
        <string>Calibrate streaker</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="Range1Begin">
+     <widget class="QLineEdit" name="StreakerDirect0">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>140</y>
-        <width>91</width>
+        <x>230</x>
+        <y>280</y>
+        <width>121</width>
         <height>26</height>
        </rect>
       </property>
       <property name="text">
-       <string>-4.2</string>
+       <string>0</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLabel" name="label_44">
+     <widget class="QLineEdit" name="CalibrateStreakerImages">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>110</y>
-        <width>91</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Begin [mm]</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="Range1Stop">
-      <property name="geometry">
-       <rect>
-        <x>330</x>
-        <y>140</y>
-        <width>91</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>-4.4</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_45">
-      <property name="geometry">
-       <rect>
-        <x>330</x>
-        <y>110</y>
-        <width>91</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Stop [mm]</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="Range1Step">
-      <property name="geometry">
-       <rect>
-        <x>450</x>
-        <y>140</y>
-        <width>91</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>7</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_46">
-      <property name="geometry">
-       <rect>
-        <x>450</x>
-        <y>110</y>
-        <width>91</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Steps</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="Range2Begin">
-      <property name="geometry">
-       <rect>
-        <x>210</x>
-        <y>180</y>
-        <width>91</width>
+        <x>580</x>
+        <y>350</y>
+        <width>81</width>
         <height>26</height>
        </rect>
       </property>
@@ -843,33 +686,17 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="Range2Stop">
+     <widget class="QLabel" name="label_26">
       <property name="geometry">
        <rect>
-        <x>330</x>
-        <y>180</y>
-        <width>91</width>
-        <height>26</height>
+        <x>390</x>
+        <y>260</y>
+        <width>121</width>
+        <height>16</height>
        </rect>
       </property>
       <property name="text">
-       <string>5.25</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="Range2Step">
-      <property name="geometry">
-       <rect>
-        <x>450</x>
-        <y>180</y>
-        <width>91</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>6</string>
+       <string>Streaker 1</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -878,8 +705,8 @@
      <widget class="QLabel" name="label_47">
       <property name="geometry">
        <rect>
-        <x>160</x>
-        <y>150</y>
+        <x>180</x>
+        <y>360</y>
         <width>51</width>
         <height>16</height>
        </rect>
@@ -891,171 +718,59 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLabel" name="label_48">
+     <widget class="QLineEdit" name="Range2Stop">
       <property name="geometry">
        <rect>
-        <x>160</x>
-        <y>190</y>
-        <width>51</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>2</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="ObtainStreakerFromLive">
-      <property name="geometry">
-       <rect>
-        <x>550</x>
-        <y>420</y>
-        <width>191</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="font">
-       <font>
-        <family>Sans Serif</family>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Update Streaker from live</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_51">
-      <property name="geometry">
-       <rect>
-        <x>560</x>
-        <y>110</y>
-        <width>81</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Images</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="CalibrateStreakerImages">
-      <property name="geometry">
-       <rect>
-        <x>560</x>
-        <y>140</y>
-        <width>81</width>
+        <x>350</x>
+        <y>390</y>
+        <width>91</width>
         <height>26</height>
        </rect>
       </property>
       <property name="text">
-       <string>5</string>
+       <string>5.25</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QPushButton" name="ClearCalibPlots">
+     <widget class="QLineEdit" name="Range1Step">
       <property name="geometry">
        <rect>
-        <x>610</x>
-        <y>180</y>
-        <width>131</width>
-        <height>31</height>
+        <x>470</x>
+        <y>350</y>
+        <width>91</width>
+        <height>26</height>
        </rect>
       </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
+      <property name="text">
+       <string>7</string>
       </property>
-      <property name="font">
-       <font>
-        <family>Sans Serif</family>
-        <pointsize>10</pointsize>
-       </font>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="Range2Step">
+      <property name="geometry">
+       <rect>
+        <x>470</x>
+        <y>390</y>
+        <width>91</width>
+        <height>26</height>
+       </rect>
       </property>
       <property name="text">
-       <string>Clear plots</string>
+       <string>6</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
      <widget class="QPushButton" name="LoadCalibration">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>220</y>
+        <x>30</x>
+        <y>430</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1110,8 +825,8 @@
      <widget class="QLabel" name="label_49">
       <property name="geometry">
        <rect>
-        <x>180</x>
-        <y>240</y>
+        <x>200</x>
+        <y>450</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -1123,17 +838,113 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
+     <widget class="QLineEdit" name="Range1Begin">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>350</y>
+        <width>91</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-4.2</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="StreakerDirect1">
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>280</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>314.4</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
      <widget class="QLineEdit" name="LoadCalibrationFilename">
       <property name="geometry">
        <rect>
-        <x>290</x>
-        <y>230</y>
+        <x>310</x>
+        <y>440</y>
         <width>451</width>
         <height>25</height>
        </rect>
       </property>
       <property name="text">
        <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="Range2Begin">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>390</y>
+        <width>91</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>5</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_25">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>260</y>
+        <width>121</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Streaker 0</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_45">
+      <property name="geometry">
+       <rect>
+        <x>350</x>
+        <y>320</y>
+        <width>91</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Stop [mm]</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_42">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>10</y>
+        <width>161</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Calibration screen</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1496,7 +1307,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>240</y>
+        <y>300</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1608,7 +1419,7 @@
       <property name="geometry">
        <rect>
         <x>190</x>
-        <y>250</y>
+        <y>310</y>
         <width>121</width>
         <height>20</height>
        </rect>
@@ -1623,8 +1434,8 @@
      <widget class="QLineEdit" name="ReconNumberImages">
       <property name="geometry">
        <rect>
-        <x>340</x>
-        <y>240</y>
+        <x>370</x>
+        <y>310</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -1748,12 +1559,76 @@
        <string>Save data</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="LoadData">
+     <widget class="QLabel" name="label_30">
+      <property name="geometry">
+       <rect>
+        <x>300</x>
+        <y>150</y>
+        <width>161</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Streaker settings</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_28">
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>360</y>
-        <width>131</width>
+        <y>260</y>
+        <width>161</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Structure offset [mm]</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="StreakerGap1">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>210</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>10</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="StreakerGap0">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>210</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>10</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="ObtainStreakerFromLive">
+      <property name="geometry">
+       <rect>
+        <x>560</x>
+        <y>300</y>
+        <width>191</width>
         <height>41</height>
        </rect>
       </property>
@@ -1801,39 +1676,103 @@
        </font>
       </property>
       <property name="text">
-       <string>Load data</string>
+       <string>Update Streaker from live</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_42">
+     <widget class="QLineEdit" name="StreakerOffset1">
       <property name="geometry">
        <rect>
-        <x>190</x>
-        <y>370</y>
-        <width>91</width>
+        <x>380</x>
+        <y>250</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>5.06</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_27">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>220</y>
+        <width>161</width>
         <height>16</height>
        </rect>
       </property>
       <property name="text">
-       <string>Filename</string>
+       <string>Structure gap [mm]</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="LoadDataFilename">
+     <widget class="QLineEdit" name="StreakerOffset0">
       <property name="geometry">
        <rect>
-        <x>300</x>
-        <y>370</y>
-        <width>451</width>
-        <height>25</height>
+        <x>220</x>
+        <y>250</y>
+        <width>121</width>
+        <height>26</height>
        </rect>
       </property>
       <property name="text">
-       <string/>
+       <string>0</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="SetStreakerFromLiveCheck">
+      <property name="geometry">
+       <rect>
+        <x>440</x>
+        <y>180</y>
+        <width>111</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>From live</string>
+      </property>
+      <property name="checked">
+       <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="SetStreakerDirectCheck">
+      <property name="geometry">
+       <rect>
+        <x>300</x>
+        <y>180</y>
+        <width>111</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Direct input</string>
+      </property>
+      <property name="checked">
+       <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="SetStreakerSaveCheck">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>180</y>
+        <width>111</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>From Saved</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>
@@ -2243,7 +2182,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>450</y>
+        <y>470</y>
         <width>161</width>
         <height>41</height>
        </rect>
@@ -2331,7 +2270,7 @@
       <property name="geometry">
        <rect>
         <x>630</x>
-        <y>470</y>
+        <y>480</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -2347,7 +2286,7 @@
       <property name="geometry">
        <rect>
         <x>290</x>
-        <y>470</y>
+        <y>480</y>
         <width>281</width>
         <height>20</height>
        </rect>
@@ -3020,7 +2959,7 @@
     <property name="geometry">
      <rect>
       <x>310</x>
-      <y>560</y>
+      <y>730</y>
       <width>91</width>
       <height>26</height>
      </rect>
@@ -3043,7 +2982,7 @@
     <property name="geometry">
      <rect>
       <x>210</x>
-      <y>560</y>
+      <y>730</y>
       <width>121</width>
       <height>16</height>
      </rect>
@@ -3059,7 +2998,7 @@
     <property name="geometry">
      <rect>
       <x>110</x>
-      <y>560</y>
+      <y>730</y>
       <width>91</width>
       <height>26</height>
      </rect>
@@ -3077,7 +3016,7 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>560</y>
+      <y>730</y>
       <width>121</width>
       <height>16</height>
      </rect>
@@ -3093,7 +3032,7 @@
     <property name="geometry">
      <rect>
       <x>470</x>
-      <y>570</y>
+      <y>740</y>
       <width>161</width>
       <height>16</height>
      </rect>
@@ -3109,7 +3048,7 @@
     <property name="geometry">
      <rect>
       <x>490</x>
-      <y>550</y>
+      <y>720</y>
       <width>121</width>
       <height>16</height>
      </rect>
@@ -3125,7 +3064,7 @@
     <property name="geometry">
      <rect>
       <x>650</x>
-      <y>560</y>
+      <y>730</y>
       <width>111</width>
       <height>20</height>
      </rect>
@@ -3141,7 +3080,7 @@
     <property name="geometry">
      <rect>
       <x>490</x>
-      <y>610</y>
+      <y>780</y>
       <width>121</width>
       <height>16</height>
      </rect>
@@ -3157,7 +3096,7 @@
     <property name="geometry">
      <rect>
       <x>590</x>
-      <y>600</y>
+      <y>770</y>
       <width>171</width>
       <height>26</height>
      </rect>
@@ -3187,7 +3126,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>786</width>
+     <width>962</width>
      <height>20</height>
     </rect>
    </property>

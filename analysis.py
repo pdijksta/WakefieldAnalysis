@@ -374,6 +374,78 @@ def clear_streaker_calibration(sp_center):
         sp.set_ylabel(ylabel)
         sp.grid(True)
 
+def lasing_figures():
+
+    output = []
+
+    fig = plt.figure()
+    subplot = ms.subplot_factory(3,3, grid=False)
+    sp_ctr = 1
+
+    sp_profile = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_wake = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_off = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_on = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_off_cut = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_on_cut = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_off_tE = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_on_tE = subplot(sp_ctr)
+    sp_ctr += 1
+
+    output.append((fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)))
+    fig.subplots_adjust(hspace=0.5, wspace=0.3)
+
+
+    fig = plt.figure()
+    subplot = ms.subplot_factory(2,2, grid=False)
+    sp_ctr = 1
+
+    sp_power = subplot(sp_ctr, title='Power', xlabel='t [fs]', ylabel='P [GW]')
+    sp_ctr += 1
+
+    sp_current = subplot(sp_ctr, title='Current', xlabel='t [fs]', ylabel='I [arb. units]')
+    sp_ctr += 1
+    output.append((fig, (sp_power, sp_current)))
+
+    clear_lasing(output)
+
+    return output
+
+def clear_lasing(plot_handles):
+    (_, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
+    (_, (sp_power, sp_current)) = plot_handles[1]
+
+    for sp, title, xlabel, ylabel in [
+            (sp_profile, 'Current profile', 't [fs]', 'I [kA]'),
+            (sp_wake, 'Wake', 't [fs]', 'x [mm]'),
+            (sp_off, 'Lasing off', 'x [mm]', 'y [mm]'),
+            (sp_on, 'Lasing on', 'x [mm]', 'y [mm]'),
+            (sp_off_cut, 'Lasing off', 'x [mm]', 'y [mm]'),
+            (sp_on_cut, 'Lasing on', 'x [mm]', 'y [mm]'),
+            (sp_off_tE, 'Lasing off', 't [fs]', '$\Delta$ E [MeV]'),
+            (sp_on_tE, 'Lasing off', 't [fs]', '$\Delta$ E [MeV]'),
+            (sp_power, 'Power', 't [fs]', 'P [GW]'),
+            (sp_current, 'Current', 't [fs]', 'I [arb. units]'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+
 def reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy):
     input_dict = {
             'file_on': file_on,
@@ -421,6 +493,7 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
     images0 = dict_off_p['image'].astype(np.float64)
     images0_on = dict_on_p['image'].astype(np.float64)
+
     if 'x_axis_m' in dict_off_p:
         x_axis0 = dict_off_p['x_axis_m'].astype(np.float64)
         y_axis0 = dict_off_p['y_axis_m'].astype(np.float64)
@@ -452,43 +525,10 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     lasing_dict = lasing.obtain_lasing(median_image_off, median_image_on, n_slices, wake_x, wake_t, len_profile, disp, energy_eV, charge, pulse_energy=pulse_energy, debug=False)
 
     if plot_handles is None:
-        ms.figure('Lasing details')
-        subplot = ms.subplot_factory(3,3)
-        sp_ctr = 1
+        plot_handles = lasing_figures()
 
-        sp_profile = subplot(sp_ctr, title='Current profile', xlabel='t [fs]', ylabel='I [kA]')
-        sp_ctr += 1
-
-        sp_wake = subplot(sp_ctr, title='Wake', xlabel='t [fs]', ylabel='x [mm]')
-        sp_ctr += 1
-
-        sp_off = subplot(sp_ctr, title='Lasing off', xlabel='x [mm]', ylabel='y [mm]')
-        sp_ctr += 1
-
-        sp_on = subplot(sp_ctr, title='Lasing on', xlabel='x [mm]', ylabel='y [mm]')
-        sp_ctr += 1
-
-        sp_off_cut = subplot(sp_ctr, title='Lasing off', xlabel='x [mm]', ylabel='y [mm]')
-        sp_ctr += 1
-
-        sp_on_cut = subplot(sp_ctr, title='Lasing on', xlabel='x [mm]', ylabel='y [mm]')
-        sp_ctr += 1
-
-        sp_off_tE = subplot(sp_ctr, title='Lasing off', xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
-        sp_ctr += 1
-
-        sp_on_tE = subplot(sp_ctr, title='Lasing off', xlabel='t [fs]', ylabel='$\Delta$ E [MeV]')
-        sp_ctr += 1
-
-        ms.figure('Lasing reconstruction')
-        subplot = ms.subplot_factory(2,2)
-        sp_ctr = 1
-
-        sp_power = subplot(sp_ctr, title='Power', xlabel='t [fs]', ylabel='P [GW]')
-        sp_ctr += 1
-
-        sp_current = subplot(sp_ctr, title='Current', xlabel='t [fs]', ylabel='I [arb. units]')
-        sp_ctr += 1
+    (fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
+    (fig, (sp_power, sp_current)) = plot_handles[1]
 
     slice_time = lasing_dict['slice_time']
     all_slice_dict = lasing_dict['all_slice_dict']

@@ -60,6 +60,12 @@ class Profile:
         _yy *= old_sum / _yy.sum()
         self._xx, self._yy = _xx, _yy
 
+    def rms(self):
+        mean = np.sum(self._xx*self._yy) / np.sum(self._yy)
+        square = (self._xx - mean)**2
+        rms = np.sqrt(np.sum(square * self._yy) / np.sum(self._yy))
+        return rms
+
     def cutoff(self, cutoff_factor):
         """
         Cutoff based on max value of the y array.
@@ -361,6 +367,10 @@ class BeamProfile(Profile):
             center_index = np.argmin((self._xx - dhf.pos_right)**2)
         elif center == 'Gauss':
             center_index = np.argmin((self._xx - self.gaussfit.mean)**2)
+        elif center == 'Mean':
+            mean = np.sum(self._xx*self._yy) / np.sum(self._yy)
+            center_index = np.argmin((self._xx - mean)**2)
+
 
         else:
             raise ValueError

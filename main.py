@@ -43,13 +43,15 @@ import myplotstyle as ms
 # - restructure analysis
 # - what is the correct beam energy pv?
 # - handle feedback in user interface
-# - streaker calibration fit guess improvements
-# - meta data at begin and end of pyscan
 # - simplify lattice
 # - uJ instead of True, False
 # - detune undulator button
 # - optional provide the pulse energy calibration
 # - y scale of optimization
+# - save BPM data also
+# - streaker center calibration: repeat with one data point removed at one side
+# - plot blmeas next to current reconstruction (optional)
+# - Offset based on centroid, offset based on sizes (?)
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -60,6 +62,8 @@ import myplotstyle as ms
 # Done
 # - pulse energy from gas detector in pyscan
 # - yum install libhdf5
+# - streaker calibration fit guess improvements
+# - meta data at begin and end of pyscan
 
 
 try:

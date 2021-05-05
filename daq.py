@@ -44,6 +44,9 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
     return output
 
 def get_images(screen, n_images):
+
+    meta_dict_1 = get_meta_data()
+
     positioner = pyscan.BsreadPositioner(n_messages=n_images)
     readables = [
             #'bs://gr_x_fit_standard_deviation',
@@ -80,22 +83,27 @@ def get_images(screen, n_images):
     for ax in ['x_axis', 'y_axis']:
         arr = result_dict[ax]*1e-6 # convert to m
         if len(arr.shape) == 3:
-            result_dict[ax] = arr[0,0,:]
+            result_dict[ax+'_m'] = arr[0,0,:]
         elif len(arr.shape) == 2:
-            result_dict[ax] = arr[0,:]
+            result_dict[ax+'_m'] = arr[0,:]
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    meta_dict = get_meta_data()
+    meta_dict_2 = get_meta_data()
 
     output_dict = {
             'pyscan_result': result_dict,
-            'meta_data': meta_dict,
+            'meta_data_1': meta_dict_1,
+            'meta_data_2': meta_dict_2,
             }
 
     return output_dict
 
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
+
+
+    meta_dict_1 = get_meta_data()
+
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
 
@@ -164,10 +172,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
     #    images = images_raw
     #images = images_raw
 
-    all_streakers = config.all_streakers
-    meta_dict = {}
-    meta_dict.update({x+':GAP': caget(x+':GAP') for x in all_streakers})
-    meta_dict.update({x+':CENTER': caget(x+':CENTER') for x in all_streakers})
+    meta_dict_2 = get_meta_data()
 
     #for key in ['x_axis', 'y_axis']:
 
@@ -178,7 +183,8 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
             'n_images': n_images,
             'dry_run': dry_run,
             'streaker': streaker,
-            'meta_data': meta_dict,
+            'meta_data_1': meta_dict_1,
+            'meta_data_2': meta_dict_2,
             }
     return output
 

@@ -1,22 +1,37 @@
+from socket import gethostname
 import numpy as np
 
 import tracking
 import analysis
 import elegant_matrix
-import misc
+import misc2 as misc
+from image_and_profile import profile_from_blmeas
 
 import myplotstyle as ms
 
 ms.plt.close('all')
 
 elegant_matrix.set_tmp_dir('~/tmp_elegant/')
+center_plot = 'Mean'
 
-basedir = '/mnt/data/data_2021-03-16/'
-archiver_dir = '/mnt/data/archiver_api_data/'
+hostname = gethostname()
+if hostname == 'desktop':
+    basedir = '/storage/data_2021-03-16/'
+    archiver_dir = '/storage/Philipp_data_folder/archiver_api_data/'
+elif hostname == 'pc11292.psi.ch':
+    basedir = '/sf/data/measurements/2021/03/16/'
+elif hostname == 'pubuntu':
+    basedir = '/mnt/data/data_2021-03-16/'
+    archiver_dir = '/mnt/data/archiver_api_data/'
+
+
 
 streaker_calib_file = basedir+'2021_03_16-20_07_45_Calibration_SARUN18-UDCP020.h5'
-streaker_calib = analysis.analyze_streaker_calibration(streaker_calib_file, False)
+streaker_calib = analysis.analyze_streaker_calibration(streaker_calib_file, True)
 streaker_offset = streaker_calib['meta_data']['streaker_offset']
+
+#print('WARNING')
+#streaker_offset -= 20e-6
 
 screen_calib_file = basedir+'2021_03_16-20_14_10_Screen_Calibration_data_SARBD02-DSCR050.h5'
 screen_calib = analysis.analyze_screen_calibration(screen_calib_file, False)
@@ -45,11 +60,15 @@ magnet_file = archiver_dir+'2021-03-16.h5'
 timestamp = elegant_matrix.get_timestamp(2021, 3, 16, 20, 14, 10)
 sig_t_range = np.arange(20, 50.01, 5)*1e-15
 n_streaker = 1
+wake2d = False
+split_streaker = 0
 
 
 tracker = tracking.Tracker(magnet_file, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake, bp_smoothen=bp_smoothen)
+tracker.wake2d = wake2d
+tracker.split_streaker = split_streaker
 
-profile_from_blmeas = tracking.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, subtract_min=True)
+profile_from_blmeas = profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, subtract_min=True)
 profile_from_blmeas.cutoff(3e-2)
 profile_from_blmeas.crop()
 profile_from_blmeas.reshape(len_profile)
@@ -74,7 +93,7 @@ sp_blmeas2 = subplot(sp_ctr, title='Bunch length measurement pos', xlabel='t [fs
 sp_ctr += 1
 
 for sp_ in (sp_blmeas1, sp_blmeas2):
-    profile_from_blmeas.plot_standard(sp_, color='black')
+    profile_from_blmeas.plot_standard(sp_, color='black', center=center_plot)
 
 
 ny, nx = 2, 2
@@ -94,7 +113,6 @@ sp_neg.set_xlim(*lims_neg)
 
 delta_offset = 0e-6
 
-center_plot = 'Right'
 
 all_xt = []
 
@@ -123,7 +141,7 @@ for n_offset, offset in enumerate(offsets[:-1]):
         sp = sp_neg
         sp_blmeas = sp_blmeas2
 
-    label = '%i um' % (distance*1e6)
+    label = '%i um' % abs(distance*1e6)
     color = screen.plot_standard(sp, label=label)[0].get_color()
     screen_forward.plot_standard(sp, color=color, ls='--')
 

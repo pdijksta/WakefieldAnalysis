@@ -104,6 +104,7 @@ def get_median(projx, method='gf_mean', output='proj'):
     x_axis = np.arange(len(projx[0]))
     all_mean = []
     for proj in projx:
+        proj = proj - proj.min()
         if method == 'gf_mean':
             gf = gaussfit.GaussFit(x_axis, proj)
             all_mean.append(gf.mean)

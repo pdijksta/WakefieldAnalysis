@@ -10,7 +10,7 @@ plt.close('all')
 screen0 = 555e-6
 streaker0 = 364e-6
 
-streaker_calib_file = '/home/work/data_2021-03-16/2021_03_16-20_07_45_Calibration_SARUN18-UDCP020.h5'
+streaker_calib_file = '/storage/data_2021-03-16/2021_03_16-20_07_45_Calibration_SARUN18-UDCP020.h5'
 
 streaker_calib = h5_storage.loadH5Recursive(streaker_calib_file)
 streaker_calib['raw_data']['streaker_offsets'] = streaker_calib['raw_data']['streaker_offsets'][:-1]
@@ -46,7 +46,7 @@ for n_offset in range(n_offsets):
         sp.plot(x_axis-screen0, projx)
 
 
-screen_data_file = '/home/work/data_2021-03-16/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
+screen_data_file = '/storage/data_2021-03-16/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5'
 screen_data = h5_storage.loadH5Recursive(screen_data_file)
 
 images = screen_data['pyscan_result']['image'].astype(float)

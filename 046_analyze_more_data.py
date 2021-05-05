@@ -1,3 +1,4 @@
+from socket import gethostname
 import pickle
 from collections import OrderedDict
 import os
@@ -7,12 +8,20 @@ import numpy as np
 from h5_storage import loadH5Recursive
 import lasing
 import image_and_profile as iap
-import misc
+import misc2 as misc
 import myplotstyle as ms
 
 plt.close('all')
 
-data_dir = '/mnt/data/data_2021-03-16/'
+hostname = gethostname()
+if hostname == 'desktop':
+    data_dir = '/storage/data_2021-03-16/'
+elif hostname == 'pc11292.psi.ch':
+    data_dir = '/sf/data/measurements/2021/03/16/'
+elif hostname == 'pubuntu':
+    data_dir = '/mnt/data/data_2021-03-16/'
+
+
 gap = 10e-3
 struct_offset = 5.120e-3
 struct_center = 377e-6

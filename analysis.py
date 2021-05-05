@@ -1,6 +1,5 @@
 """
 No SwissFEL / PSI specific imports in this file.
-Should handle analysis, saving and reloading of data.
 """
 import itertools
 import os
@@ -159,7 +158,7 @@ def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, con
     c2 = np.abs((offsets-streaker_offset-wall1))**(-order)
     return const + (c1 - c2)*strength
 
-def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None):
+def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None):
     if type(filename_or_dict) is dict:
         data_dict = filename_or_dict
     elif type(filename_or_dict) is str:
@@ -171,42 +170,70 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         data_dict = data_dict['raw_data']
     result_dict = data_dict['pyscan_result']
 
-    images = result_dict['image'].astype(float).squeeze()
-    proj_x = np.sum(images, axis=-2).squeeze()
-    x_axis = result_dict['x_axis']
+    if 'image' in result_dict:
+        images = result_dict['image'].astype(float).squeeze()
+        proj_x = np.sum(images, axis=-2).squeeze()
+    elif 'projx' in result_dict:
+        proj_x = result_dict['projx']
+
+    if 'x_axis_m' in result_dict:
+        x_axis = result_dict['x_axis_m']
+    else:
+        x_axis = result_dict['x_axis']
+
     offsets = data_dict['streaker_offsets'].squeeze()
     n_images = int(data_dict['n_images'])
 
     centroids = np.zeros([len(offsets), n_images])
+
+    plot_list = []
     if n_images > 1:
         for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
-            centroids[n_o,n_i] = np.sum(proj_x[n_o,n_i]*x_axis) / np.sum(proj_x[n_o,n_i])
+            proj = proj_x[n_o,n_i]
+            proj -= np.median(proj)
+            proj[np.abs(proj)< np.abs(proj).max()*0.02] = 0
+            if n_i == 0:
+                plot_list.append(proj)
+            centroids[n_o,n_i] = np.sum(proj*x_axis) / np.sum(proj)
         centroid_mean = np.mean(centroids, axis=1)
         centroid_std = np.std(centroids, axis=1)
     elif n_images == 1:
         for n_o in range(len(offsets)):
+            proj = proj_x[n_o]
+            proj -= np.median(proj)
+            proj[np.abs(proj)< np.abs(proj).max()*0.05] = 0
             centroids[n_o] = np.sum(proj_x[n_o]*x_axis) / np.sum(proj_x[n_o])
+            plot_list.append(proj)
         centroid_mean = centroids.squeeze()
-        centroid_std = np.ones_like(centroid_mean)*1e-10
+        centroid_std = None
 
     streaker = data_dict['streaker']
     semigap = data_dict['meta_data'][streaker+':GAP']/2.*1e-3
 
-    wall0, wall1 = -semigap, semigap
 
-    where0 = np.argwhere(offsets == 0).squeeze()
-    const0 = centroid_mean[where0]
+    if force_screen_center is None:
+        where0 = np.argwhere(offsets == 0).squeeze()
+        const0 = centroid_mean[where0]
+    else:
+        const0 = force_screen_center
     delta_offset0 = (offsets.min() + offsets.max())/2
     order0 = 3
+    wall0, wall1 = -semigap+delta_offset0, semigap+delta_offset0
 
     s01 = (centroid_mean[0] - const0) / (np.abs((offsets[0]-wall0))**(-order0) - np.abs((offsets[0]-wall1))**(-order0))
     s02 = (centroid_mean[-1] - const0) / (np.abs((offsets[-1]-wall0))**(-order0) - np.abs((offsets[-1]-wall1))**(-order0))
     strength0 = (s01 + s02) / 2
 
-    p0 = [delta_offset0, strength0, order0, const0]
+    p0 = [delta_offset0, strength0]
+    if fit_order:
+        p0.append(order0)
 
     def fit_func(*args):
-        return streaker_calibration_fit_func(*args, semigap)
+        if fit_order:
+            return streaker_calibration_fit_func(*args, const0, semigap)
+        else:
+            return streaker_calibration_fit_func(*args, order0, const0, semigap)
+
 
     try:
         p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
@@ -221,6 +248,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     meta_data = {
             'p_opt': p_opt,
             'p0': p0,
+            'centroids': centroids,
             'centroid_mean': centroid_mean,
             'centroid_std': centroid_std,
             'offsets': offsets,
@@ -234,22 +262,25 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             'meta_data': meta_data,
             }
 
-    if not do_plot:
-        return output
+    if do_plot:
 
-    if plot_handles is None:
-        fig, (sp_center, ) = streaker_calibration_figure()
-    else:
-        (sp_center, ) = plot_handles
-    screen = data_dict['screen']
-    sp_center.set_title(screen)
+        if plot_handles is None:
+            fig, (sp_center, sp_proj) = streaker_calibration_figure()
+        else:
+            (sp_center, sp_proj) = plot_handles
+        screen = data_dict['screen']
+        sp_center.set_title(screen)
 
-    xx_plot = (offsets - streaker_offset)*1e3
-    xx_plot_fit = (xx_fit - streaker_offset)*1e3
-    sp_center.errorbar(xx_plot, centroid_mean, yerr=centroid_std, label='Data')
-    sp_center.plot(xx_plot_fit, reconstruction, label='Fit')
-    sp_center.plot(xx_plot_fit, initial_guess, label='Guess')
-    sp_center.legend()
+        xx_plot = (offsets - streaker_offset)*1e3
+        xx_plot_fit = (xx_fit - streaker_offset)*1e3
+        sp_center.errorbar(xx_plot, (centroid_mean-const0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
+        sp_center.plot(xx_plot_fit, (reconstruction-const0)*1e3, label='Fit')
+        sp_center.plot(xx_plot_fit, (initial_guess-const0)*1e3, label='Guess')
+        sp_center.legend()
+
+        for proj, offset in zip(plot_list, offsets):
+            sp_proj.plot((x_axis-const0)*1e3, proj, label='%.2f mm' % (offset*1e3))
+        sp_proj.legend()
 
     return output
 
@@ -284,7 +315,11 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
     projx_median = projx[index_median]
     beamsize = np.mean(all_std)
 
+    projx_median -= projx_median.min()
     x0 = gaussfit.GaussFit(x_axis, projx_median).mean
+    #x02 = np.sum(projx_median*x_axis) / np.sum(projx_median)
+    #x0 = x02
+    #import pdb; pdb.set_trace()
     output = {
             'raw_data': data_dict,
             'x0': x0,
@@ -300,8 +335,8 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
         (sp_proj, ) = plot_handles
 
     for proj in projx:
-        sp_proj.plot(x_axis*1e3, proj)
-    sp_proj.plot(x_axis*1e3, projx_median, lw=3)
+        sp_proj.plot(x_axis*1e3, proj-proj.min())
+    sp_proj.plot(x_axis*1e3, projx_median-projx_median.min(), lw=3)
     sp_proj.axvline(x0*1e3)
 
     return output
@@ -312,14 +347,14 @@ def screen_calibration_figure():
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 1)
 
-    sp_proj = subplot(sp_ctr, xlabel='x [mm]', ylabel='Intensity (arb. units)', sciy=True)
+    sp_proj = subplot(sp_ctr, xlabel='x (mm)', ylabel='Intensity (arb. units)', sciy=True)
     sp_ctr += 1
     clear_screen_calibration(sp_proj)
     return fig, (sp_proj, )
 
 def clear_screen_calibration(sp_proj):
     for sp, title, xlabel, ylabel in [
-            (sp_proj, 'Unstreaked beam', 'x [mm]', 'Intensity (arb. units)'),
+            (sp_proj, 'Unstreaked beam', 'x (mm)', 'Intensity (arb. units)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -344,9 +379,9 @@ def reconstruction_figure():
 
 def clear_reconstruction(sp_screen, sp_profile, sp_opt):
     for sp, title, xlabel, ylabel in [
-            (sp_screen, 'Screen', 'x [mm]', 'Intensity (arb. units)'),
-            (sp_profile, 'Profile', 't [fs]', 'Current [kA]'),
-            (sp_opt, 'Optimization', 'Gaussian $\sigma$ [fs]', 'Opt value'),
+            (sp_screen, 'Screen', 'x (mm)', 'Intensity (arb. units)'),
+            (sp_profile, 'Profile', 't (fs)', 'Current (kA)'),
+            (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -357,22 +392,24 @@ def clear_reconstruction(sp_screen, sp_profile, sp_opt):
 def streaker_calibration_figure():
     fig = plt.figure()
     sp_ctr = 1
-    subplot = ms.subplot_factory(1, 1)
+    subplot = ms.subplot_factory(1, 2)
 
-    sp_center = subplot(sp_ctr, xlabel='Streaker center [mm]', ylabel='Beam X centroid [mm]')
+    sp_center = subplot(sp_ctr)
     sp_ctr += 1
-    clear_streaker_calibration(sp_center)
-    return fig, (sp_center, )
+    sp_proj = subplot(sp_ctr)
+    clear_streaker_calibration(sp_center, sp_proj)
+    return fig, (sp_center, sp_proj)
 
-def clear_streaker_calibration(sp_center):
+def clear_streaker_calibration(sp_center, sp_proj):
     for sp, title, xlabel, ylabel in [
-            (sp_center, 'Screen center', 'Streaker center [mm]', 'Beam X centroid [mm]')
+            (sp_center, 'Screen center', 'Streaker center [mm]', 'Beam X centroid [mm]'),
+            (sp_proj, 'Screen projections', 'x (mm)', 'Intensity (arb. units)'),
             ]:
         sp.clear()
         sp.set_title(title)
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
-        sp.grid(True)
+        sp.grid(False)
 
 def lasing_figures():
 
@@ -414,10 +451,10 @@ def lasing_figures():
     subplot = ms.subplot_factory(2,2, grid=False)
     sp_ctr = 1
 
-    sp_power = subplot(sp_ctr, title='Power', xlabel='t [fs]', ylabel='P [GW]')
+    sp_power = subplot(sp_ctr)
     sp_ctr += 1
 
-    sp_current = subplot(sp_ctr, title='Current', xlabel='t [fs]', ylabel='I [arb. units]')
+    sp_current = subplot(sp_ctr)
     sp_ctr += 1
     output.append((fig, (sp_power, sp_current)))
 
@@ -430,16 +467,16 @@ def clear_lasing(plot_handles):
     (_, (sp_power, sp_current)) = plot_handles[1]
 
     for sp, title, xlabel, ylabel in [
-            (sp_profile, 'Current profile', 't [fs]', 'I [kA]'),
-            (sp_wake, 'Wake', 't [fs]', 'x [mm]'),
-            (sp_off, 'Lasing off', 'x [mm]', 'y [mm]'),
-            (sp_on, 'Lasing on', 'x [mm]', 'y [mm]'),
-            (sp_off_cut, 'Lasing off', 'x [mm]', 'y [mm]'),
-            (sp_on_cut, 'Lasing on', 'x [mm]', 'y [mm]'),
-            (sp_off_tE, 'Lasing off', 't [fs]', '$\Delta$ E [MeV]'),
-            (sp_on_tE, 'Lasing off', 't [fs]', '$\Delta$ E [MeV]'),
-            (sp_power, 'Power', 't [fs]', 'P [GW]'),
-            (sp_current, 'Current', 't [fs]', 'I [arb. units]'),
+            (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
+            (sp_wake, 'Wake', 't (fs)', 'x (mm)'),
+            (sp_off, 'Lasing off', 'x (mm)', 'y (mm)'),
+            (sp_on, 'Lasing on', 'x (mm)', 'y (mm)'),
+            (sp_off_cut, 'Lasing off', 'x (mm)', 'y (mm)'),
+            (sp_on_cut, 'Lasing on', 'x (mm)', 'y (mm)'),
+            (sp_off_tE, 'Lasing off', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_on_tE, 'Lasing off', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_power, 'Power', 't (fs)', 'P (GW)'),
+            (sp_current, 'Current', 't (fs)', 'I (arb. units)'),
             ]:
         sp.clear()
         sp.set_title(title)

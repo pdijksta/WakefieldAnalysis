@@ -50,7 +50,7 @@ import myplotstyle as ms
 # - y scale of optimization
 # - save BPM data also
 # - streaker center calibration: repeat with one data point removed at one side
-# - plot blmeas next to current reconstruction (optional)
+# - plot TDC blmeas next to current reconstruction (optional)
 # - Offset based on centroid, offset based on sizes (?)
 
 # Probably fixed:

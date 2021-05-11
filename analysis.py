@@ -234,7 +234,6 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         else:
             return streaker_calibration_fit_func(*args, order0, const0, semigap)
 
-
     try:
         p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
     except RuntimeError:

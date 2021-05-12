@@ -72,7 +72,7 @@ class Reconstruction:
 
         return kwargs
 
-    def current_profile_rec_gauss(self, kwargs, do_plot, plot_handles=None, debug=False):
+    def current_profile_rec_gauss(self, kwargs, do_plot, plot_handles=None, blmeas_file=None, debug=False):
 
         kwargs_save = copy.deepcopy(kwargs)
         del kwargs_save['meas_screen']
@@ -123,6 +123,23 @@ class Reconstruction:
 
             best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
             best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Gauss')
+
+            if blmeas_file is not None:
+                blmeas_profiles = []
+                for zero_crossing in (1, 2):
+                    try:
+                        blmeas_profile = iap.profile_from_blmeas(blmeas_file, kwargs['tt_halfrange'], kwargs['charge'], self.tracker.energy_eV, True, zero_crossing)
+                        blmeas_profile.cutoff2(5e-2)
+                        blmeas_profile.crop()
+                        blmeas_profile.reshape(int(1e3))
+                        blmeas_profiles.append(blmeas_profile)
+                    except KeyError as e:
+                        print(e)
+                        print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
+
+                for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
+                    blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
+
 
             sp_screen.legend()
             sp_profile.legend()

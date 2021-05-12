@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -1162,7 +1162,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>/mnt/data/data/2021-03-16/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5</string>
+       <string>filled_by_main.py</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1214,22 +1214,6 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QCheckBox" name="ReconstructionDataLoadCheck">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>70</y>
-        <width>91</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Load data</string>
-      </property>
-      <property name="checked">
-       <bool>true</bool>
       </property>
      </widget>
      <widget class="QComboBox" name="ReconstructionDataLoadUseSelect">
@@ -1363,7 +1347,7 @@
       <property name="geometry">
        <rect>
         <x>610</x>
-        <y>440</y>
+        <y>610</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1451,7 +1435,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>440</y>
+        <y>610</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1507,7 +1491,7 @@
       <property name="geometry">
        <rect>
         <x>170</x>
-        <y>440</y>
+        <y>610</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1770,6 +1754,38 @@
       </property>
       <property name="text">
        <string>From Saved</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="BunchLengthMeasFile">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>550</y>
+        <width>611</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>filled_by_main.py</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="ShowBlmeasCheck">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>550</y>
+        <width>231</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Show bunch length measurement</string>
       </property>
       <property name="checked">
        <bool>true</bool>

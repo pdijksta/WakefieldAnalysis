@@ -128,6 +128,7 @@ class StartMain(QtWidgets.QMainWindow):
             save_dir = '/home/work/tmp_reconstruction/'
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
+        bunch_length_meas_file = default_dir + '117348568_bunch_length_meas.h5'
         recon_data_file = default_dir+'2021_04_25-17_16_30_Lasing_False_SARBD02-DSCR050.h5'
         lattice_file = archiver_dir+'2021-04-25.h5'
         time_str = '2021-04-25:17-22-26'
@@ -138,6 +139,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.ImportFile.setText(lattice_file)
         self.ImportFileTime.setText(time_str)
         self.ReconstructionDataLoad.setText(recon_data_file)
+        self.BunchLengthMeasFile.setText(bunch_length_meas_file)
         self.SaveDir.setText(save_dir)
         self.LasingOnDataLoad.setText(lasing_file_on)
         self.LasingOffDataLoad.setText(lasing_file_off)
@@ -395,14 +397,36 @@ class StartMain(QtWidgets.QMainWindow):
 
         if self.SetStreakerDirectCheck.isChecked():
             other_input = {'method': 'direct_input'}
-        #elif self.SetStreakerFromFileCheck.isChecked():
-        #    raise NotImplementedError
+            meta_dict = None
         elif self.SetStreakerFromLiveCheck.isChecked():
             self.obtain_streaker_settings_from_live()
             other_input = {'method': 'live'}
+            if daq is None:
+                raise RuntimeError('Cannot get settings from live!')
+            meta_dict = daq.get_meta_data()
+
         elif self.SetStreakerSaveCheck:
-            self.streaker_settings = 'Saved'
             other_input = {'method': 'saved'}
+            filename = self.ReconstructionDataLoad.text().strip()
+            dict_ = h5_storage.loadH5Recursive(filename)
+            if 'meta_data' in dict_:
+                meta_dict = dict_['meta_data']
+            elif 'meta_data_end' in dict_:
+                meta_dict = dict_['meta_data_end']
+
+        if meta_dict is not None:
+            streaker_dict = config.streaker_names[self.beamline]
+            for n_streaker, gap_widget, offset_widget in [
+                    (0, self.StreakerGap0, self.StreakerOffset0),
+                    (1, self.StreakerGap1, self.StreakerOffset1),
+                    ]:
+                streaker = streaker_dict[n_streaker]
+                offset_mm = meta_dict[streaker+':CENTER']
+                gap_mm = meta_dict[streaker+':GAP']
+                if offset_mm < .01*gap_mm/2:
+                    offset_mm = 0
+                gap_widget.setText('%.4f' % gap_mm)
+                offset_widget.setText('%.4f' % offset_mm)
 
         gaps = [float(self.StreakerGap0.text())*1e-3, float(self.StreakerGap1.text())*1e-3]
         # beam offset is negative of streaker offset
@@ -413,30 +437,23 @@ class StartMain(QtWidgets.QMainWindow):
         other_input['gaps'] = gaps,
         other_input['streaker_offsets'] = streaker_offsets
         self.other_input['streaker_set'] = other_input
-        self.streaker_is_set = True
-        print('Streaker is set')
+        print('Streaker is set: gaps: %s, offsets: %s' % (gaps, streaker_offsets))
         return gaps, streaker_offsets
 
     def obtain_reconstruction_data(self):
-        widgets = (self.ReconstructionDataLoadCheck,)
-        self._check_check(widgets, 'Check obtain reconstruction data checkmarks')
 
-        if self.ReconstructionDataLoadCheck.isChecked():
-            filename = self.ReconstructionDataLoad.text().strip()
-            key = self.ReconstructionDataLoadKey.text()
-            index = self.ReconstructionDataLoadIndex.text()
-            screen_data = data_loader.load_screen_data(filename, key, index)
-            x_axis, projx = screen_data['x_axis'], screen_data['projx']
-            other_input = {'method': 'data_loader.load_screen_data', 'args': (filename, key, index)}
+        filename = self.ReconstructionDataLoad.text().strip()
+        key = self.ReconstructionDataLoadKey.text()
+        index = self.ReconstructionDataLoadIndex.text()
+        screen_data = data_loader.load_screen_data(filename, key, index)
+        x_axis, projx = screen_data['x_axis'], screen_data['projx']
+        other_input = {'method': 'data_loader.load_screen_data', 'args': (filename, key, index)}
 
-            if self.ReconstructionDataLoadUseSelect.currentText() == 'Median':
-                median_projx = misc.get_median(projx)
-            elif self.ReconstructionDataLoadUseSelect.currentText() == 'All':
-                raise NotImplementedError
-            meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
-
-        else:
+        if self.ReconstructionDataLoadUseSelect.currentText() == 'Median':
+            median_projx = misc.get_median(projx)
+        elif self.ReconstructionDataLoadUseSelect.currentText() == 'All':
             raise NotImplementedError
+        meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
 
         self.reconstruction_data_obtained = True
         self.meas_screen = meas_screen
@@ -453,6 +470,11 @@ class StartMain(QtWidgets.QMainWindow):
         self.streaker_set()
         self.obtain_reconstruction_data()
         self.analysis_obj.input_data['screen_x0'] = float(self.DirectCalibration.text())*1e-6
+
+        if self.ShowBlmeasCheck.isChecked():
+            blmeas_file = self.BunchLengthMeasFile.text()
+        else:
+            blmeas_file = None
 
         start, stop, step = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), float(self.SigTfsStep.text())
         stop += 1e-3*step # assert that stop is part of array
@@ -486,7 +508,7 @@ class StartMain(QtWidgets.QMainWindow):
         #    print('Saved %s' % p_file)
 
         self.clear_rec_plots()
-        self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles)
+        self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles, blmeas_file)
 
         if self.rec_canvas is not None:
             self.rec_canvas.draw()

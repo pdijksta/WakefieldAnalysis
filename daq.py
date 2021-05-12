@@ -93,8 +93,8 @@ def get_images(screen, n_images):
 
     output_dict = {
             'pyscan_result': result_dict,
-            'meta_data_1': meta_dict_1,
-            'meta_data_2': meta_dict_2,
+            'meta_data_begin': meta_dict_1,
+            'meta_data_end': meta_dict_2,
             }
 
     return output_dict
@@ -183,8 +183,8 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
             'n_images': n_images,
             'dry_run': dry_run,
             'streaker': streaker,
-            'meta_data_1': meta_dict_1,
-            'meta_data_2': meta_dict_2,
+            'meta_data_begin': meta_dict_1,
+            'meta_data_end': meta_dict_2,
             }
     return output
 

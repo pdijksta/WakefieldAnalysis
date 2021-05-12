@@ -1,9 +1,10 @@
+from collections import OrderedDict
 
 streaker_names = {
-        'Aramis': {
-            0: 'SARUN18-UDCP010',
-            1: 'SARUN18-UDCP020',
-            },
+        'Aramis': OrderedDict([
+            (0, 'SARUN18-UDCP010'),
+            (1, 'SARUN18-UDCP020'),
+            ]),
         }
 
 gas_monitor_pvs = {

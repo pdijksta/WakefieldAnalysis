@@ -285,12 +285,15 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
     else:
         raise ValueError(type(filename_or_dict))
 
-    if 'pyscan_result' in data_dict:
-        screen_data = data_dict['pyscan_result']
+    screen_data = data_dict['pyscan_result']
+    if 'x_axis_m' in screen_data:
+        x_axis = screen_data['x_axis_m']
     else:
-        screen_data = data_dict
+        print(screen_data['x_axis'].shape)
+        x_axis = screen_data['x_axis'][0]*1e-6
 
-    x_axis = screen_data['x_axis']
+    assert len(x_axis.squeeze().shape) == 1
+
     if 'projx' in screen_data:
         projx = screen_data['projx']
     else:

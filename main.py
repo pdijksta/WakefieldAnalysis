@@ -625,7 +625,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     @property
     def streaker(self):
-        return self.StreakerName.text()
+        return config.streaker_names[self.beamline][self.n_streaker]
 
     @property
     def beamline(self):
@@ -714,6 +714,7 @@ class StartMain(QtWidgets.QMainWindow):
             fig_title = filename.replace('.h5', '_%i.png' % num)
             fig_filename = os.path.join(self.save_dir, fig_title+'.png')
             fig.savefig(fig_filename, bbox_inches='tight', pad_inches=0)
+            print('Saved %s' % fig_filename)
             attachments.append(fig_filename)
 
         text += '\nData saved in %s' % filename
@@ -728,7 +729,7 @@ class StartMain(QtWidgets.QMainWindow):
             dict_att = {'Author': 'Application: PassiveStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
             self.logbook.post(text, attributes=dict_att, attachments=attachments)
 
-            print('\nFigure was saved in ELOG')
+            print('ELOG entry saved.')
 
         return filename
 

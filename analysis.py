@@ -162,8 +162,6 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     else:
         raise ValueError(type(filename_or_dict))
 
-    if 'raw_data' in data_dict:
-        data_dict = data_dict['raw_data']
     result_dict = data_dict['pyscan_result']
 
     if 'image' in result_dict:
@@ -204,7 +202,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         centroid_std = None
 
     streaker = data_dict['streaker']
-    semigap = data_dict['meta_data'][streaker+':GAP']/2.*1e-3
+    semigap = data_dict['meta_data_end'][streaker+':GAP']/2.*1e-3
 
 
     if force_screen_center is None:

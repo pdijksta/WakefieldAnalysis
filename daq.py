@@ -112,7 +112,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
     if dry_run:
         screen = 'simulation'
         writables = None
-        positioner = pyscan.TimePositioner(time_interval=0.1, n_intervals=len(offset_range))
+        positioner = pyscan.TimePositioner(time_interval=(1.1*n_images), n_intervals=len(offset_range))
 
     else:
         positions = offset_range * 1e3 # convert to mm

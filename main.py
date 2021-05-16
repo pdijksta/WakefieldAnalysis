@@ -48,6 +48,7 @@ import myplotstyle as ms
 # - streaker center calibration: repeat with one data point removed at one side
 # - plot TDC blmeas next to current reconstruction (optional)
 # - Offset based on centroid, offset based on sizes (?)
+# - Forward propagation from TDC to screen inside tool
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -636,7 +637,10 @@ class StartMain(QtWidgets.QMainWindow):
 
     @property
     def screen(self):
-        return self.ScreenSelect.currentText()
+        if self.dry_run:
+            return 'simulation'
+        else:
+            return self.ScreenSelect.currentText()
 
     def obtainLasing(self, lasing_on_off):
         if lasing_on_off:

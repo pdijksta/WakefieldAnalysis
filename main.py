@@ -1,16 +1,6 @@
-
-# qt_plot = False does not work currently
-qt_plot = True
-
-import matplotlib.pyplot as plt
-if qt_plot:
-    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
-    import matplotlib
-    matplotlib.use('Qt5Agg')
-else:
-    # Does not consistently work ?-?-?-?
-    plt.ion() # Interactive mode
-    pass
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
+import matplotlib
+matplotlib.use('Qt5Agg')
 
 import sys
 import os
@@ -155,42 +145,30 @@ class StartMain(QtWidgets.QMainWindow):
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
 
+        def get_new_tab(fig, title):
+            new_tab = QtWidgets.QWidget()
+            layout = PyQt5.Qt.QVBoxLayout()
+            new_tab.setLayout(layout)
+            canvas = FigureCanvasQTAgg(fig)
+            toolbar = NavigationToolbar2QT(canvas, self)
+            layout.addWidget(canvas)
+            layout.addWidget(toolbar)
+            tab_index = self.tabWidget.addTab(new_tab, title)
+            return tab_index, canvas
 
-        if qt_plot:
+        self.reconstruction_fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
+        self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'Rec plots')
 
-            def get_new_tab(fig, title):
-                new_tab = QtWidgets.QWidget()
-                layout = PyQt5.Qt.QVBoxLayout()
-                new_tab.setLayout(layout)
-                canvas = FigureCanvasQTAgg(fig)
-                toolbar = NavigationToolbar2QT(canvas, self)
-                layout.addWidget(canvas)
-                layout.addWidget(toolbar)
-                tab_index = self.tabWidget.addTab(new_tab, title)
-                return tab_index, canvas
+        self.streaker_calib_fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
+        self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Cal. plots')
 
-            self.reconstruction_fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
-            self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'Rec plots')
+        self.screen_calib_fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
+        self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(self.screen_calib_fig, 'Screen plots')
 
-            self.streaker_calib_fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
-            self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Cal. plots')
-
-            self.screen_calib_fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
-            self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(self.screen_calib_fig, 'Screen plots')
-
-            self.lasing_plot_handles = analysis.lasing_figures()
-            self.lasing_figs = [x[0] for x in self.lasing_plot_handles]
-            self.lasing_plot_tab_index1, self.lasing_canvas1 = get_new_tab(self.lasing_plot_handles[0][0], 'Lasing 1')
-            self.lasing_plot_tab_index2, self.lasing_canvas2 = get_new_tab(self.lasing_plot_handles[1][0], 'Lasing 2')
-        else:
-            self.reconstruction_plot_handles = None
-            self.streaker_calib_plot_handles = None
-            self.screen_calib_plot_handles = None
-            self.lasing_plot_handles = None
-            self.rec_canvas = self.streaker_calib_canvas = self.screen_calib_canvas = None
-            self.lasing_canvas1 = self.lasing_canvas2 = None
-
-
+        self.lasing_plot_handles = analysis.lasing_figures()
+        self.lasing_figs = [x[0] for x in self.lasing_plot_handles]
+        self.lasing_plot_tab_index1, self.lasing_canvas1 = get_new_tab(self.lasing_plot_handles[0][0], 'Lasing 1')
+        self.lasing_plot_tab_index2, self.lasing_canvas2 = get_new_tab(self.lasing_plot_handles[1][0], 'Lasing 2')
 
         #meas_screen = self.obtain_reconstruction_data()
         #import matplotlib.pyplot as plt
@@ -480,16 +458,10 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.clear_rec_plots()
         analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles, blmeas_file)
+        self.current_rec_obj = analysis_obj
 
         if self.rec_canvas is not None:
             self.rec_canvas.draw()
-
-        if not qt_plot:
-            plt.pause(.1)
-            plt.show()
-
-        self.current_rec_obj = analysis_obj
-
 
     def save_data(self):
         save_path = self.save_dir

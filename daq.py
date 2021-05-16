@@ -89,8 +89,8 @@ def get_images(screen, n_images, beamline='Aramis'):
 
     output_dict = {
             'pyscan_result': result_dict,
-            'meta_data_1': meta_dict_1,
-            'meta_data_2': meta_dict_2,
+            'meta_data_begin': meta_dict_1,
+            'meta_data_end': meta_dict_2,
             }
 
     return output_dict
@@ -109,13 +109,15 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
     if abs(current_val - offset_range[0]) > abs(current_val - offset_range[-1]):
         offset_range = offset_range[::-1]
 
-    writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.005)]
     if dry_run:
         screen = 'simulation'
-        positions = np.ones_like(offset_range)*caget(offset_pv)
+        writables = None
+        positioner = pyscan.TimePositioner(time_interval=0.1, n_intervals=len(offset_range))
+
     else:
         positions = offset_range * 1e3 # convert to mm
-    positioner = pyscan.VectorPositioner(positions=positions.tolist())
+        positioner = pyscan.VectorPositioner(positions=positions.tolist())
+        writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.005)]
 
     cam_instance_name = screen + '_sp1'
     stream_address = pipeline_client.get_instance_stream(cam_instance_name)
@@ -143,22 +145,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    #images = np.zeros([len(positions), n_images, len(result_dict['y_axis']), len(result_dict['x_axis'])], dtype=result_dict['image'][0][0].dtype)
-    #images_raw = result_dict['image'].squeeze()
-    #try:
-    #    for n_p, n_i in itertools.product(range(len(positions)), range(n_images)):
-    #        images[n_p][n_i] = images_raw[n_p][n_i]
-    #except:
-    #    import pickle
-    #    with open('./debug_pyscan.pkl', 'wb') as f:
-    #        pickle.dump(images_raw, f)
-    #    print('Error for images_raw to images')
-    #    images = images_raw
-    #images = images_raw
-
     meta_dict_2 = get_meta_data()
-
-    #for key in ['x_axis', 'y_axis']:
 
     output = {
             'pyscan_result': result_dict,
@@ -167,8 +154,8 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
             'n_images': n_images,
             'dry_run': dry_run,
             'streaker': streaker,
-            'meta_data_1': meta_dict_1,
-            'meta_data_2': meta_dict_2,
+            'meta_data_begin': meta_dict_1,
+            'meta_data_end': meta_dict_2,
             }
     return output
 
@@ -178,7 +165,7 @@ def get_aramis_quad_strengths():
     k1l_dict = {}
     for quad in quads:
         k1l_dict[quad] = caget(quad.replace('.', '-')+':K1L-SET')
-    energy_pv = 'SARBD01-MBND100:P-SET'
+    energy_pv = 'SARBD01-MBND100:ENERGY-OP'
     k1l_dict[energy_pv] = caget(energy_pv)
     return k1l_dict
 

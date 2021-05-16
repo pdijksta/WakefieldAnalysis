@@ -87,6 +87,7 @@ ms.set_fontsizes(8)
 pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
 
+
 class StartMain(QtWidgets.QMainWindow):
 
     def __init__(self):

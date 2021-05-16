@@ -9,7 +9,15 @@ from cam_server.utils import get_host_port_from_stream_address
 from epics import caget
 
 import config
-import elegant_matrix
+
+def get_readables(beamline):
+    return [
+            'bs://image',
+            'bs://x_axis',
+            'bs://y_axis',
+            config.beamline_chargepv[beamline],
+            ]
+
 
 def pyscan_result_to_dict(readables, result, scrap_bs=False):
     """
@@ -43,25 +51,11 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
 
     return output
 
-def get_images(screen, n_images):
+def get_images(screen, n_images, beamline='Aramis'):
 
     meta_dict_1 = get_meta_data()
 
     positioner = pyscan.BsreadPositioner(n_messages=n_images)
-    readables = [
-            #'bs://gr_x_fit_standard_deviation',
-            #'bs://gr_y_fit_standard_deviation',
-            #'bs://gr_x_fit_mean',
-            #'bs://gr_y_fit_mean',
-            #'bs://gr_x_axis',
-            #'bs://gr_y_axis',
-            #'bs://gr_x_fit_gauss_function',
-            #'bs://gr_y_fit_gauss_function',
-            'bs://image',
-            'bs://x_axis',
-            'bs://y_axis',
-            ]
-
     settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=1)
 
     pipeline_client = PipelineClient("http://sf-daqsync-01:8889/")
@@ -74,6 +68,8 @@ def get_images(screen, n_images):
     pyscan.config.bs_default_port = stream_port
 
     logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
+
+    readables = get_readables(beamline)
 
     raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings)
     output = [[x] for x in raw_output]
@@ -93,13 +89,13 @@ def get_images(screen, n_images):
 
     output_dict = {
             'pyscan_result': result_dict,
-            'meta_data_begin': meta_dict_1,
-            'meta_data_end': meta_dict_2,
+            'meta_data_1': meta_dict_1,
+            'meta_data_2': meta_dict_2,
             }
 
     return output_dict
 
-def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
+def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
 
 
     meta_dict_1 = get_meta_data()
@@ -133,19 +129,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
 
     settings = pyscan.scan_settings(settling_time=1, n_measurements=n_images, write_timeout=60)
 
-    readables = [
-            #'bs://gr_x_fit_standard_deviation',
-            #'bs://gr_y_fit_standard_deviation',
-            #'bs://gr_x_fit_mean',
-            #'bs://gr_y_fit_mean',
-            #'bs://gr_x_axis',
-            #'bs://gr_y_axis',
-            #'bs://gr_x_fit_gauss_function',
-            #'bs://gr_y_fit_gauss_function',
-            'bs://image',
-            'bs://x_axis',
-            'bs://y_axis',
-            ]
+    readables = get_readables(beamline)
 
     raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings, writables=writables)
     result_dict = pyscan_result_to_dict(readables, raw_output, scrap_bs=True)
@@ -183,13 +167,13 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run):
             'n_images': n_images,
             'dry_run': dry_run,
             'streaker': streaker,
-            'meta_data_begin': meta_dict_1,
-            'meta_data_end': meta_dict_2,
+            'meta_data_1': meta_dict_1,
+            'meta_data_2': meta_dict_2,
             }
     return output
 
 def get_aramis_quad_strengths():
-    quads = elegant_matrix.quads
+    quads = config.beamline_quads['Aramis']
 
     k1l_dict = {}
     for quad in quads:

@@ -38,7 +38,6 @@ import myplotstyle as ms
 # - add info of beamsize with / without assumed screen resolution
 # - debug delay after using BsreadPositioner or any pyscan
 # - add tilt option
-# - charge from pyscan
 # - restructure analysis
 # - what is the correct beam energy pv?
 # - handle feedback in user interface
@@ -66,6 +65,7 @@ import myplotstyle as ms
 # - lasing
 # - y scale of optimization
 # - elog
+# - charge from pyscan
 
 
 try:

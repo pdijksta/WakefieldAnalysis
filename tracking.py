@@ -446,7 +446,7 @@ class Tracker:
         elif np.all(np.diff(wake_x) >= 0):
             pass
         else:
-            raise ValueError
+            raise ValueError('Wake x is not monotonous')
 
         if abs(wake_x.max()) > abs(wake_x.min()):
             mask_negative = screen.x < 0
@@ -514,13 +514,11 @@ class Tracker:
             sp = subplot(3, title='Current profile', xlabel='time', ylabel='Current')
             sp.plot(t_interp, charge_interp)
             plt.show()
-            import pdb; pdb.set_trace()
             raise
         bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
         bp.crop()
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
-            #import pdb; pdb.set_trace()
             raise ValueError('NaNs in beam profile')
         if self.bp_smoothen:
             #bp0 = copy.deepcopy(bp)
@@ -545,6 +543,8 @@ class Tracker:
         return bp
 
     def track_backward2(self, screen, profile, gaps, beam_offsets, n_streaker, **kwargs):
+        if beam_offsets[n_streaker] == 0:
+            raise ValueError('Beam Offset is 0')
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, self.calcR12()[n_streaker])
         return self.track_backward(screen, wake_effect, n_streaker, **kwargs)

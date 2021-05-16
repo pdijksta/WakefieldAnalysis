@@ -32,24 +32,15 @@ def plt_show():
     plt.show(block=False)
 
 class Reconstruction:
-    def __init__(self):
-        self.input_data = {}
+    def __init__(self, screen_x0, streaker_means):
+        self.input_data = {
+                'screen_x0': screen_x0,
+                'streaker_means': streaker_means,
+                }
 
     def add_tracker(self, tracker_args):
         self.tracker = tracking.Tracker(**tracker_args)
         self.input_data['tracker_kwargs'] = tracker_args
-
-    def add_streaker_means(self, streaker_means):
-        self.input_data['streaker_means'] = streaker_means
-
-    def add_screen_x0(self, screen_x0):
-        self.input_data['screen_x0'] = screen_x0
-
-        #self.init_dict = {
-        #        'tracker_args': tracker_args,
-        #        'streaker_means': streaker_means,
-        #        'screen_x0': screen_x0,
-        #        }
 
     def prepare_rec_gauss_args(self, kwargs):
         """

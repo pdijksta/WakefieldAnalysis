@@ -105,7 +105,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.CalibrateScreen.clicked.connect(self.calibrate_screen)
         self.ClearScreenPlots.clicked.connect(self.clear_screen_plots)
         self.SetXEmittance.clicked.connect(self.set_x_emittance)
-        self.LoadScreenCalibration.clicked.connect(self.load_screen_calibration)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
@@ -117,9 +116,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.update_streaker()
 
-        self.analysis_obj = analysis.Reconstruction()
         self.other_input = {}
-        self.tracker_initialized = False
 
         # Default strings in gui fields
         hostname = socket.gethostname()
@@ -244,9 +241,9 @@ class StartMain(QtWidgets.QMainWindow):
         return magnet_file, other_input
 
     def obtain_r12(self):
-        self.init_tracker()
-        r12 = self.analysis_obj.tracker.calcR12()[self.n_streaker]
-        disp = self.analysis_obj.tracker.calcDisp()[self.n_streaker]
+        analysis_obj = self.init_tracker()
+        r12 = analysis_obj.tracker.calcR12()[self.n_streaker]
+        disp = analysis_obj.tracker.calcDisp()[self.n_streaker]
         print('R12:', r12)
         print('Dispersion:', disp)
         return r12, disp
@@ -254,6 +251,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def init_tracker(self):
 
+        analysis_obj = analysis.Reconstruction(self.screen_x0, self.streaker_means)
         magnet_file, other_input = self.obtain_lattice()
 
         tmp_dir = os.path.expanduser(self.TmpDir.text())
@@ -295,39 +293,16 @@ class StartMain(QtWidgets.QMainWindow):
                 'override_quad_beamsize': override_quad_beamsize,
                 'quad_x_beamsize': quad_x_beamsize,
                 }
-        self.analysis_obj.add_tracker(self.tracker_kwargs)
-        self.tracker_initialized = True
+        analysis_obj.add_tracker(self.tracker_kwargs)
         self.other_input['lattice'] = other_input
         print('Tracker successfully initialized')
+        return analysis_obj
 
     @staticmethod
     def _check_check(widgets, errormessage):
         checks = [x.isChecked() for x in widgets]
         if sum(checks) != 1:
             raise ValueError(errormessage)
-
-
-    def load_screen_calibration(self):
-
-        filename = self.ImportCalibration.text().strip()
-        key = self.ImportCalibrationKey.text()
-        index = self.ImportCalibrationIndex.text()
-        screen_data = data_loader.load_screen_data(filename, key, index)
-
-        screen_result = analysis.analyze_screen_calibration(screen_data, True, plot_handles=self.screen_calib_plot_handles)
-
-        x0 = screen_result['x0']
-        other_input = {
-                'method': 'data_loader.load_screen_data',
-                'args': (filename, key, index),
-                }
-
-        self.screen_x0 = x0
-        self.analysis_obj.add_screen_x0(self.screen_x0)
-        other_input['x0'] = self.screen_x0
-        other_input['beamsize'] = screen_result['beamsize']
-        self.other_input['screen_calibration'] = other_input
-        self.update_screen_calibration(screen_result)
 
     def calibrate_screen(self):
         n_images = int(self.CalibrateScreenImages.text())
@@ -358,10 +333,9 @@ class StartMain(QtWidgets.QMainWindow):
         #self.tabWidget.setCurrentIndex(self.screen_calib_plot_tab_index)
 
     def set_x_emittance(self):
-        if not self.tracker_initialized:
-            self.init_tracker()
 
-        tracker = self.analysis_obj.tracker
+        analysis_obj = self.init_tracker()
+        tracker = analysis_obj.tracker
 
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
         charge = float(self.Charge.text())*1e-12
@@ -378,22 +352,6 @@ class StartMain(QtWidgets.QMainWindow):
         emittance_fit = emit0 * (sig_meas / sig_sim)**2
 
         print('Emittance fit is %.3f nm' % (emittance_fit*1e9))
-
-    def streaker_calibration(self):
-        #widgets = (self.StreakerDirectCheck,)
-        #self._check_check(widgets, 'Check streaker calibration checkmarks')
-
-        streaker0_mean = float(self.StreakerDirect0.text())*1e-6
-        streaker1_mean = float(self.StreakerDirect1.text())*1e-6
-        other_input = {'method': 'direct_input'}
-
-        self.streaker_means = [streaker0_mean, streaker1_mean]
-        self.analysis_obj.add_streaker_means(self.streaker_means)
-        other_input['streaker_means'] = self.streaker_means
-        self.other_input['streaker_calibration'] = other_input
-        self.streaker_calibrated = True
-        print('Streaker calibrated: mean = %i, %i um' % (self.streaker_means[0]*1e6, self.streaker_means[1]*1e6))
-        return self.streaker_means
 
     def obtain_streaker_settings_from_live(self):
         for n_streaker, gap_widget, offset_widget in [
@@ -444,18 +402,28 @@ class StartMain(QtWidgets.QMainWindow):
 
         gaps = [float(self.StreakerGap0.text())*1e-3, float(self.StreakerGap1.text())*1e-3]
         # beam offset is negative of streaker offset
-        streaker_offsets = [float(self.StreakerOffset0.text())*1e-3, float(self.StreakerOffset1.text())*1e-3]
+        streaker_offsets = self.streaker_offsets
 
-        self.gaps = gaps
-        self.streaker_offsets = streaker_offsets
         other_input['gaps'] = gaps,
         other_input['streaker_offsets'] = streaker_offsets
         self.other_input['streaker_set'] = other_input
         print('Streaker is set: gaps: %s, offsets: %s' % (gaps, streaker_offsets))
         return gaps, streaker_offsets
 
-    def obtain_reconstruction_data(self):
+    def reconstruct_current(self):
 
+        analysis_obj = self.init_tracker()
+        # Streaker calibration
+        streaker0_mean = float(self.StreakerDirect0.text())*1e-6
+        streaker1_mean = float(self.StreakerDirect1.text())*1e-6
+        other_input = {'method': 'direct_input'}
+
+        streaker_means = [streaker0_mean, streaker1_mean]
+        other_input['streaker_means'] = streaker_means
+        self.other_input['streaker_calibration'] = other_input
+        print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
+
+        gaps, streaker_offsets = self.streaker_set()
         filename = self.ReconstructionDataLoad.text().strip()
         key = self.ReconstructionDataLoadKey.text()
         index = self.ReconstructionDataLoadIndex.text()
@@ -469,21 +437,14 @@ class StartMain(QtWidgets.QMainWindow):
             raise NotImplementedError
         meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
 
-        self.reconstruction_data_obtained = True
         self.meas_screen = meas_screen
         other_input['screen_x'] = meas_screen.x
         other_input['screen_intensity'] = meas_screen.intensity
         self.other_input['obtain_reconstruction_data'] = other_input
         print('Obtained reconstruction data')
-        return meas_screen
 
-    def reconstruct_current(self):
-
-        self.init_tracker()
-        self.streaker_calibration()
-        self.streaker_set()
-        self.obtain_reconstruction_data()
-        self.analysis_obj.input_data['screen_x0'] = float(self.DirectCalibration.text())*1e-6
+        analysis_obj.input_data['screen_x0'] = self.screen_x0
+        analysis_obj.input_data['streaker_offsets'] = self.streaker_offsets
 
         if self.ShowBlmeasCheck.isChecked():
             blmeas_file = self.BunchLengthMeasFile.text()
@@ -495,8 +456,6 @@ class StartMain(QtWidgets.QMainWindow):
         sig_t_range = np.arange(start, stop, step)*1e-15
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
         meas_screen = self.meas_screen
-        gaps = self.gaps
-        streaker_offsets = self.streaker_offsets
         n_streaker = int(self.StreakerSelect.currentText())
         charge = float(self.Charge.text())*1e-12
         self_consistent = {'True': True, 'False': False}[self.SelfConsistentSelect.currentText()]
@@ -510,19 +469,19 @@ class StartMain(QtWidgets.QMainWindow):
                 'self_consistent': self_consistent,
                 'meas_screen': meas_screen,
                 }
-        self.analysis_obj.input_data['other'] = self.other_input
+        analysis_obj.input_data['other'] = self.other_input
 
-        kwargs_recon2 = self.analysis_obj.prepare_rec_gauss_args(kwargs_recon)
+        kwargs_recon2 = analysis_obj.prepare_rec_gauss_args(kwargs_recon)
         print('Analysing reconstruction')
 
         #import pickle
         #p_file = '/tmp/rec_args.pkl'
         #with open(p_file, 'wb') as f:
-        #    pickle.dump((kwargs_recon2, self.analysis_obj), f)
+        #    pickle.dump((kwargs_recon2, analysis_obj), f)
         #    print('Saved %s' % p_file)
 
         self.clear_rec_plots()
-        self.analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles, blmeas_file)
+        analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles, blmeas_file)
 
         if self.rec_canvas is not None:
             self.rec_canvas.draw()
@@ -530,6 +489,8 @@ class StartMain(QtWidgets.QMainWindow):
         if not qt_plot:
             plt.pause(.1)
             plt.show()
+
+        self.current_rec_obj = analysis_obj
 
 
     def save_data(self):
@@ -539,8 +500,8 @@ class StartMain(QtWidgets.QMainWindow):
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
         save_dict = {
-                'input': self.analysis_obj.input_data,
-                'gaussian_reconstruction': self.analysis_obj.gauss_dict,
+                'input': self.current_rec_obj.input_data,
+                'gaussian_reconstruction': self.current_rec_obj.gauss_dict,
                 }
         elog_text = 'Passive current reconstruction'
         self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, save_dict)
@@ -636,6 +597,14 @@ class StartMain(QtWidgets.QMainWindow):
         return (self.DryRun.isChecked() or always_dryrun)
 
     @property
+    def screen_x0(self):
+        return float(self.DirectCalibration.text())*1e-6
+
+    @property
+    def streaker_offsets(self):
+        return [float(self.StreakerOffset0.text())*1e-3, float(self.StreakerOffset1.text())*1e-3]
+
+    @property
     def screen(self):
         if self.dry_run:
             return 'simulation'
@@ -678,7 +647,7 @@ class StartMain(QtWidgets.QMainWindow):
         else:
             lasing_energy = float(lasing_energy_txt)*1e-6
         file_current = self.LasingCurrentProfileDataLoad.text()
-        screen_center = float(self.DirectCalibration.text())*1e-6
+        screen_center = self.screen_x0
 
         if self.n_streaker == 0:
             structure_center = float(self.StreakerDirect0.text())*1e-6

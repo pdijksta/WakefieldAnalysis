@@ -2,8 +2,6 @@
 No SwissFEL / PSI specific imports in this file.
 """
 import itertools
-import os
-from datetime import datetime
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
@@ -149,25 +147,6 @@ class Reconstruction:
             sp_opt.set_ylim(0,1.1*yy_opt.max())
             if plot_handles is None:
                 plt_show()
-
-
-    def save_data(self, save_path):
-        if not os.path.isdir(save_path):
-            os.makedirs(save_path)
-        date = datetime.now()
-        filename = os.path.join(save_path, date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5'))
-        #gauss_dict = self.gauss_dict
-        #gauss_dict2 = copy.deepcopy(gauss_dict)
-        #gauss_dict2['reconstructed_screen_x'] = gauss_dict['reconstructed_screen'].x
-        #gauss_dict2['reconstructed_screen_intensity'] = gauss_dict['reconstructed_screen'].intensity
-        save_dict = {
-                'input': self.input_data,
-                'gaussian_reconstruction': self.gauss_dict,
-                }
-        #import pdb; pdb.set_trace()
-        h5_storage.saveH5Recursive(filename, save_dict)
-        return filename
-
 
 def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, const, semigap):
     wall0, wall1 = -semigap, semigap
@@ -359,6 +338,7 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
 
 def screen_calibration_figure():
     fig = plt.figure()
+    fig.canvas.set_window_title('Screen center calibration')
     fig.subplots_adjust(hspace=0.35)
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 1)
@@ -380,6 +360,7 @@ def clear_screen_calibration(sp_proj):
 
 def reconstruction_figure():
     fig = plt.figure()
+    fig.canvas.set_window_title('Current reconstruction')
     fig.subplots_adjust(hspace=0.4)
     sp_ctr = 1
     subplot = ms.subplot_factory(2,2)
@@ -407,6 +388,7 @@ def clear_reconstruction(sp_screen, sp_profile, sp_opt):
 
 def streaker_calibration_figure():
     fig = plt.figure()
+    fig.canvas.set_window_title('Streaker center calibration')
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 2)
 
@@ -432,6 +414,7 @@ def lasing_figures():
     output = []
 
     fig = plt.figure()
+    fig.canvas.set_window_title('Lasing reconstruction')
     subplot = ms.subplot_factory(3,3, grid=False)
     sp_ctr = 1
 

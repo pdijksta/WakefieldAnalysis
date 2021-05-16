@@ -1,3 +1,5 @@
+
+# qt_plot = False does not work currently
 qt_plot = True
 
 import matplotlib.pyplot as plt
@@ -33,21 +35,16 @@ import myplotstyle as ms
 
 #TODO
 #
-# - elog
-# - non blocking daq
 # - add info of beamsize with / without assumed screen resolution
 # - debug delay after using BsreadPositioner or any pyscan
-# - lasing
 # - add tilt option
 # - charge from pyscan
 # - restructure analysis
 # - what is the correct beam energy pv?
 # - handle feedback in user interface
 # - simplify lattice
-# - uJ instead of True, False
 # - detune undulator button
 # - optional provide the pulse energy calibration
-# - y scale of optimization
 # - save BPM data also
 # - streaker center calibration: repeat with one data point removed at one side
 # - plot TDC blmeas next to current reconstruction (optional)
@@ -58,12 +55,17 @@ import myplotstyle as ms
 
 # Not so important
 # - noise reduction from the image
+# - uJ instead of True, False
+# - non blocking daq
 
 # Done
 # - pulse energy from gas detector in pyscan
 # - yum install libhdf5
 # - streaker calibration fit guess improvements
 # - meta data at begin and end of pyscan
+# - lasing
+# - y scale of optimization
+# - elog
 
 
 try:
@@ -73,6 +75,12 @@ except ImportError:
     print('Cannot import daq. Always dry_run True')
     always_dryrun = True
     daq = None
+
+try:
+    import elog
+except ImportError:
+    print('ELOG not available')
+    elog = None
 
 ms.set_fontsizes(8)
 
@@ -145,6 +153,9 @@ class StartMain(QtWidgets.QMainWindow):
         self.LasingOffDataLoad.setText(lasing_file_off)
         self.SaveDir.setText(save_dir)
 
+        if elog is not None:
+            self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
+
 
         if qt_plot:
 
@@ -159,16 +170,17 @@ class StartMain(QtWidgets.QMainWindow):
                 tab_index = self.tabWidget.addTab(new_tab, title)
                 return tab_index, canvas
 
-            fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
-            self.rec_plot_tab_index, self.rec_canvas = get_new_tab(fig, 'Rec plots')
+            self.reconstruction_fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
+            self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'Rec plots')
 
-            fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
-            self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(fig, 'Cal. plots')
+            self.streaker_calib_fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
+            self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Cal. plots')
 
-            fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
-            self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(fig, 'Screen plots')
+            self.screen_calib_fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
+            self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(self.screen_calib_fig, 'Screen plots')
 
             self.lasing_plot_handles = analysis.lasing_figures()
+            self.lasing_figs = [x[0] for x in self.lasing_plot_handles]
             self.lasing_plot_tab_index1, self.lasing_canvas1 = get_new_tab(self.lasing_plot_handles[0][0], 'Lasing 1')
             self.lasing_plot_tab_index2, self.lasing_canvas2 = get_new_tab(self.lasing_plot_handles[1][0], 'Lasing 2')
         else:
@@ -327,12 +339,11 @@ class StartMain(QtWidgets.QMainWindow):
             h5_storage.saveH5Recursive(filename, image_dict)
             print('Saved screen calibration data %s' % filename)
             raise
+        x0, beamsize = self.update_screen_calibration(result)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_Calibration_%s.h5' % self.screen.replace('.','_')
-        filename = os.path.join(self.save_dir, basename)
-        h5_storage.saveH5Recursive(filename, image_dict)
-        print('Saved screen calibration %s' % filename)
-        self.update_screen_calibration(result)
+        elog_text = 'Screen calibration\nScreen center at %i um\nBeamsize %i um' % (x0*1e6, beamsize*1e6)
+        self.elog_and_H5(elog_text, [self.screen_calib_fig], 'Screen center calibration', basename, image_dict)
 
     def update_screen_calibration(self, result):
         x0 = result['x0']
@@ -341,6 +352,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.DirectBeamsizeScreen.setText('%.3f' % (beamsize*1e6))
         print('X0 is %.3f um' % (x0*1e6))
         print('Beamsize is %.3f um' % (beamsize*1e6))
+        return x0, beamsize
         #self.tabWidget.setCurrentIndex(self.screen_calib_plot_tab_index)
 
     def set_x_emittance(self):
@@ -517,9 +529,19 @@ class StartMain(QtWidgets.QMainWindow):
             plt.pause(.1)
             plt.show()
 
+
     def save_data(self):
-        filename = self.analysis_obj.save_data(self.save_dir)
-        print('Saved at %s' % filename)
+        save_path = self.save_dir
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path)
+        date = datetime.now()
+        basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
+        save_dict = {
+                'input': self.analysis_obj.input_data,
+                'gaussian_reconstruction': self.analysis_obj.gauss_dict,
+                }
+        elog_text = 'Passive current reconstruction'
+        self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, save_dict)
 
     @property
     def save_dir(self):
@@ -559,13 +581,11 @@ class StartMain(QtWidgets.QMainWindow):
 
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Calibration_%s.h5' % streaker.replace('.','_')
-        filename = os.path.join(self.save_dir, basename)
-        h5_storage.saveH5Recursive(filename, full_dict)
-        print('Saved streaker calibration %s' % filename)
-
         streaker_offset = full_dict['meta_data']['streaker_offset']
         self.updateCalibration(streaker_offset)
-        #self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
+
+        elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (streaker, streaker_offset*1e6)
+        self.elog_and_H5(elog_text, [self.streaker_calib_fig], 'Streaker center calibration', basename, full_dict)
 
     def load_calibration(self):
         filename = self.LoadCalibrationFilename.text().strip()
@@ -594,13 +614,16 @@ class StartMain(QtWidgets.QMainWindow):
         screen_dict = daq.get_images(self.screen, n_images)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
-        filename = os.path.join(self.save_dir, basename)
-        h5_storage.saveH5Recursive(filename, screen_dict)
-        print('Saved screen data %s' % filename)
+        elog_text = 'Screen %s data taken' % self.screen
+        self.elog_and_H5(elog_text, [], 'Screen data', basename, screen_dict)
 
     @property
     def n_streaker(self):
         return int(self.StreakerSelect.currentText())
+
+    @property
+    def streaker(self):
+        return self.StreakerName.text()
 
     @property
     def beamline(self):
@@ -625,14 +648,15 @@ class StartMain(QtWidgets.QMainWindow):
         screen_str = self.screen.replace('.','_')
         lasing_str = str(lasing_on_off)
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_%s_%s.h5' % (lasing_str, screen_str)
-        filename = os.path.join(self.save_dir, basename)
-        h5_storage.saveH5Recursive(filename, image_dict)
+        if lasing_on_off:
+            elog_text = 'Saved lasing ON'
+        else:
+            elog_text = 'Saved lasing OFF'
+        filename = self.elog_and_H5(elog_text, [], 'Saved lasing images', basename, image_dict)
         if lasing_on_off:
             self.LasingOnDataLoad.setText(filename)
-            print('Saved lasing ON %s' % filename)
         else:
             self.LasingOffDataLoad.setText(filename)
-            print('Saved lasing OFF %s' % filename)
 
     def obtainLasingOn(self):
         return self.obtainLasing(True)
@@ -671,7 +695,38 @@ class StartMain(QtWidgets.QMainWindow):
         analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
 
         if self.lasing_plot_handles is not None:
+
             self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
+
+    def elog_and_H5(self, text, figs, title, basename, data_dict):
+
+        filename = os.path.join(self.save_dir, basename)
+        h5_storage.saveH5Recursive(filename, data_dict)
+        print('Saved %s' % filename)
+
+        attachments = []
+        for fig in figs:
+            fig_title = fig.canvas.get_window_title().replace(' ', '_')
+            fig_filename = os.path.join(self.save_dir, fig_title+'.png')
+            fig.savefig(fig_filename, bbox_inches='tight', pad_inches=0)
+            attachments.append(fig_filename)
+
+        text += '\nData saved in %s' % filename
+        text += '\nStreaker: %s' % self.streaker
+        text += '\nScreen: %s' % self.screen
+
+        if elog is None:
+            print('Cannot save to ELOG')
+            print('I would post:')
+            print(text)
+        else:
+            dict_att = {'Author': 'Application: PassiveStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
+            self.logbook.post(text, attributes=dict_att, attachments=attachments)
+
+            print('\nFigure was saved in ELOG')
+
+        return filename
+
 
 if __name__ == '__main__':
     def my_excepthook(type, value, tback):

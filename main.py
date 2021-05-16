@@ -710,8 +710,8 @@ class StartMain(QtWidgets.QMainWindow):
         print('Saved %s' % filename)
 
         attachments = []
-        for fig in figs:
-            fig_title = fig.canvas.get_window_title().replace(' ', '_')
+        for num, fig in enumerate(figs):
+            fig_title = filename.replace('.h5', '_%i.png' % num)
             fig_filename = os.path.join(self.save_dir, fig_title+'.png')
             fig.savefig(fig_filename, bbox_inches='tight', pad_inches=0)
             attachments.append(fig_filename)

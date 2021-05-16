@@ -53,6 +53,8 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
 
 def get_images(screen, n_images, beamline='Aramis'):
 
+    print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
+
     meta_dict_1 = get_meta_data()
 
     positioner = pyscan.BsreadPositioner(n_messages=n_images)
@@ -93,11 +95,13 @@ def get_images(screen, n_images, beamline='Aramis'):
             'meta_data_end': meta_dict_2,
             }
 
+    print('End get_images')
+
     return output_dict
 
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
 
-
+    print('Start data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
     meta_dict_1 = get_meta_data()
 
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
@@ -157,6 +161,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
             'meta_data_begin': meta_dict_1,
             'meta_data_end': meta_dict_2,
             }
+    print('End data_streaker_offset')
     return output
 
 def get_aramis_quad_strengths():

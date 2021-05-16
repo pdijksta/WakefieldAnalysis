@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -179,7 +179,7 @@
        <rect>
         <x>10</x>
         <y>130</y>
-        <width>121</width>
+        <width>131</width>
         <height>41</height>
        </rect>
       </property>
@@ -227,7 +227,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Do calibration</string>
+       <string>Screen calibration</string>
       </property>
      </widget>
      <widget class="QPushButton" name="ClearScreenPlots">
@@ -379,7 +379,7 @@
        <rect>
         <x>10</x>
         <y>50</y>
-        <width>121</width>
+        <width>131</width>
         <height>41</height>
        </rect>
       </property>
@@ -434,7 +434,7 @@
       <property name="geometry">
        <rect>
         <x>590</x>
-        <y>380</y>
+        <y>430</y>
         <width>121</width>
         <height>41</height>
        </rect>
@@ -490,7 +490,7 @@
       <property name="geometry">
        <rect>
         <x>40</x>
-        <y>280</y>
+        <y>330</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -506,10 +506,15 @@
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>230</y>
-        <width>161</width>
+        <y>280</y>
+        <width>191</width>
         <height>16</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Calibration of streaker</string>
@@ -522,7 +527,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>320</y>
+        <y>370</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -538,7 +543,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>350</y>
+        <y>400</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -554,7 +559,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>320</y>
+        <y>370</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -570,7 +575,7 @@
       <property name="geometry">
        <rect>
         <x>180</x>
-        <y>400</y>
+        <y>450</y>
         <width>51</width>
         <height>16</height>
        </rect>
@@ -586,7 +591,7 @@
       <property name="geometry">
        <rect>
         <x>580</x>
-        <y>320</y>
+        <y>370</y>
         <width>81</width>
         <height>20</height>
        </rect>
@@ -602,7 +607,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>350</y>
+        <y>400</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -658,7 +663,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>280</y>
+        <y>330</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -674,7 +679,7 @@
       <property name="geometry">
        <rect>
         <x>580</x>
-        <y>350</y>
+        <y>400</y>
         <width>81</width>
         <height>26</height>
        </rect>
@@ -690,7 +695,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>260</y>
+        <y>310</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -706,7 +711,7 @@
       <property name="geometry">
        <rect>
         <x>180</x>
-        <y>360</y>
+        <y>410</y>
         <width>51</width>
         <height>16</height>
        </rect>
@@ -722,7 +727,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>390</y>
+        <y>440</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -738,7 +743,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>350</y>
+        <y>400</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -754,7 +759,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>390</y>
+        <y>440</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -770,7 +775,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>430</y>
+        <y>480</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -826,7 +831,7 @@
       <property name="geometry">
        <rect>
         <x>200</x>
-        <y>450</y>
+        <y>500</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -842,7 +847,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>350</y>
+        <y>400</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -858,7 +863,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>280</y>
+        <y>330</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -874,7 +879,7 @@
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>440</y>
+        <y>490</y>
         <width>451</width>
         <height>25</height>
        </rect>
@@ -890,7 +895,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>390</y>
+        <y>440</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -906,7 +911,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>260</y>
+        <y>310</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -922,7 +927,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>320</y>
+        <y>370</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -937,11 +942,16 @@
      <widget class="QLabel" name="label_42">
       <property name="geometry">
        <rect>
-        <x>280</x>
-        <y>10</y>
+        <x>310</x>
+        <y>20</y>
         <width>161</width>
         <height>16</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Calibration screen</string>

@@ -726,7 +726,7 @@ class StartMain(QtWidgets.QMainWindow):
             print('I would post:')
             print(text)
         else:
-            dict_att = {'Author': 'Application: PassiveStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
+            dict_att = {'Application': 'PostUndulatorStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
             self.logbook.post(text, attributes=dict_att, attachments=attachments)
 
             print('ELOG entry saved.')

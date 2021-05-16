@@ -251,7 +251,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def init_tracker(self):
 
-        analysis_obj = analysis.Reconstruction(self.screen_x0, self.streaker_centers)
+        analysis_obj = analysis.Reconstruction(self.screen_x0, self.streaker_means)
         magnet_file, other_input = self.obtain_lattice()
 
         tmp_dir = os.path.expanduser(self.TmpDir.text())
@@ -402,13 +402,13 @@ class StartMain(QtWidgets.QMainWindow):
 
         gaps = [float(self.StreakerGap0.text())*1e-3, float(self.StreakerGap1.text())*1e-3]
         # beam offset is negative of streaker offset
-        streaker_centers = self.streaker_centers
+        streaker_offsets = self.streaker_offsets
 
         other_input['gaps'] = gaps,
-        other_input['streaker_centers'] = streaker_centers
+        other_input['streaker_offsets'] = streaker_offsets
         self.other_input['streaker_set'] = other_input
-        print('Streaker is set: gaps: %s, offsets: %s' % (gaps, streaker_centers))
-        return gaps, streaker_centers
+        print('Streaker is set: gaps: %s, offsets: %s' % (gaps, streaker_offsets))
+        return gaps, streaker_offsets
 
     def reconstruct_current(self):
 
@@ -418,12 +418,12 @@ class StartMain(QtWidgets.QMainWindow):
         streaker1_mean = float(self.StreakerDirect1.text())*1e-6
         other_input = {'method': 'direct_input'}
 
-        streaker_centers = [streaker0_mean, streaker1_mean]
-        other_input['streaker_centers'] = streaker_centers
+        streaker_means = [streaker0_mean, streaker1_mean]
+        other_input['streaker_means'] = streaker_means
         self.other_input['streaker_calibration'] = other_input
-        print('Streaker calibrated: mean = %i, %i um' % (streaker_centers[0]*1e6, streaker_centers[1]*1e6))
+        print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
 
-        gaps, streaker_centers = self.streaker_set()
+        gaps, streaker_offsets = self.streaker_set()
         filename = self.ReconstructionDataLoad.text().strip()
         key = self.ReconstructionDataLoadKey.text()
         index = self.ReconstructionDataLoadIndex.text()
@@ -444,7 +444,7 @@ class StartMain(QtWidgets.QMainWindow):
         print('Obtained reconstruction data')
 
         analysis_obj.input_data['screen_x0'] = self.screen_x0
-        analysis_obj.input_data['streaker_centers'] = self.streaker_centers
+        analysis_obj.input_data['streaker_offsets'] = self.streaker_offsets
 
         if self.ShowBlmeasCheck.isChecked():
             blmeas_file = self.BunchLengthMeasFile.text()
@@ -463,7 +463,7 @@ class StartMain(QtWidgets.QMainWindow):
                 'sig_t_range': sig_t_range,
                 'tt_halfrange': tt_halfrange,
                 'gaps': gaps,
-                'streaker_centers': streaker_centers,
+                'streaker_offsets': streaker_offsets,
                 'n_streaker': n_streaker,
                 'charge': charge,
                 'self_consistent': self_consistent,
@@ -601,7 +601,7 @@ class StartMain(QtWidgets.QMainWindow):
         return float(self.DirectCalibration.text())*1e-6
 
     @property
-    def streaker_centers(self):
+    def streaker_offsets(self):
         return [float(self.StreakerOffset0.text())*1e-3, float(self.StreakerOffset1.text())*1e-3]
 
     @property

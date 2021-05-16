@@ -32,10 +32,10 @@ def plt_show():
     plt.show(block=False)
 
 class Reconstruction:
-    def __init__(self, screen_x0, streaker_centers):
+    def __init__(self, screen_x0, streaker_means):
         self.input_data = {
                 'screen_x0': screen_x0,
-                'streaker_centers': streaker_centers,
+                'streaker_means': streaker_means,
                 }
 
     def add_tracker(self, tracker_args):
@@ -48,9 +48,9 @@ class Reconstruction:
         """
         kwargs = copy.deepcopy(kwargs)
         kwargs['meas_screen']._xx = kwargs['meas_screen']._xx - self.input_data['screen_x0']
-        streaker_centers = np.array(kwargs['streaker_centers'])
-        kwargs['beam_offsets'] = -(streaker_centers - np.array(self.input_data['streaker_centers']))
-        del kwargs['streaker_centers']
+        streaker_offsets = np.array(kwargs['streaker_offsets'])
+        kwargs['beam_offsets'] = -(streaker_offsets - np.array(self.input_data['streaker_means']))
+        del kwargs['streaker_offsets']
         kwargs['meas_screen'].cutoff(self.input_data['tracker_kwargs']['screen_cutoff'])
         kwargs['meas_screen'].crop()
 
@@ -166,7 +166,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     else:
         x_axis = result_dict['x_axis']
 
-    offsets = data_dict['streaker_centers'].squeeze()
+    offsets = data_dict['streaker_offsets'].squeeze()
     n_images = int(data_dict['n_images'])
 
     centroids = np.zeros([len(offsets), n_images])

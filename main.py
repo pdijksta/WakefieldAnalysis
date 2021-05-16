@@ -414,11 +414,9 @@ class StartMain(QtWidgets.QMainWindow):
 
         analysis_obj = self.init_tracker()
         # Streaker calibration
-        streaker0_mean = float(self.StreakerDirect0.text())*1e-6
-        streaker1_mean = float(self.StreakerDirect1.text())*1e-6
         other_input = {'method': 'direct_input'}
 
-        streaker_means = [streaker0_mean, streaker1_mean]
+        streaker_means = self.streaker_means
         other_input['streaker_means'] = streaker_means
         self.other_input['streaker_calibration'] = other_input
         print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
@@ -603,6 +601,12 @@ class StartMain(QtWidgets.QMainWindow):
     @property
     def streaker_offsets(self):
         return [float(self.StreakerOffset0.text())*1e-3, float(self.StreakerOffset1.text())*1e-3]
+
+    @property
+    def streaker_means(self):
+        streaker0_mean = float(self.StreakerDirect0.text())*1e-6
+        streaker1_mean = float(self.StreakerDirect1.text())*1e-6
+        return [streaker0_mean, streaker1_mean]
 
     @property
     def screen(self):

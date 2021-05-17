@@ -284,7 +284,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def calibrate_screen(self):
         n_images = int(self.CalibrateScreenImages.text())
-        image_dict = daq.get_images(self.screen, n_images)
+        image_dict = daq.get_images_and_bpm(self.screen, n_images)
         try:
             result = analysis.analyze_screen_calibration(image_dict, True, self.screen_calib_plot_handles)
         except:
@@ -500,7 +500,7 @@ class StartMain(QtWidgets.QMainWindow):
         if daq is None:
             raise ImportError('Daq not available')
 
-        result_dict = daq.data_streaker_offset(streaker, range_, self.screen, n_images, self.dry_run)
+        result_dict = daq.bpm_data_streaker_offset(streaker, range_, self.screen, n_images, self.dry_run)
 
         try:
             full_dict = analysis.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles)
@@ -544,7 +544,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def obtain_reconstruction(self):
         n_images = int(self.ReconNumberImages.text())
-        screen_dict = daq.get_images(self.screen, n_images)
+        screen_dict = daq.get_images_and_bpm(self.screen, n_images)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
         elog_text = 'Screen %s data taken' % self.screen
@@ -593,7 +593,7 @@ class StartMain(QtWidgets.QMainWindow):
         else:
             n_images = int(self.LasingOffNumberImages.text())
 
-        image_dict = daq.get_images(self.screen, n_images)
+        image_dict = daq.get_images_and_bpm(self.screen, n_images)
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
         lasing_str = str(lasing_on_off)

@@ -1,3 +1,4 @@
+import itertools
 
 streaker_names = {
         'Aramis': {
@@ -16,9 +17,16 @@ beamline_chargepv = {
         'Athos': 'SINEG01-DICT215:B2_CHARGE-OP',
         }
 
-
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
+        }
+
+_aramis_pvs = ['SARUN%02i-DBPM070:%s1' % (i, dim) for i, dim in itertools.product(range(1, 21), ('X', 'Y'))]
+_aramis_pvs += ['SARBD01-DBPM040:%s1' for dim in ('X', 'Y')]
+_aramis_pvs += ['SARBD02-DBPM010:%s1' for dim in ('X', 'Y')]
+
+beamline_bpm_pvs = {
+        'Aramis': _aramis_pvs,
         }
 
 all_streakers = []

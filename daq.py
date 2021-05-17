@@ -214,7 +214,7 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
             time.sleep(1)
         else:
             move_pv(offset_pv, offset_mm, 60, 1e-3)
-        image_dict = get_images_and_bpm(screen, n_images, beamline, False, False, False, dry_run)['pyscan_result']
+        image_dict = get_images_and_bpm(screen, n_images, beamline, False, False, False, x_axis, y_axis, dry_run)['pyscan_result']
         for key in channels:
             result_dict[key][n_offset] = image_dict[key]
 
@@ -248,7 +248,7 @@ def get_axis(screen):
     return x_axis, y_axis
 
 
-def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=True, include_meta_data=True, dry_run=False):
+def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=True, include_meta_data=True, x_axis=None, y_axis=None, dry_run=False):
 
     if print_:
         print('Start get_images_and_bpm for screen %s, %i images, beamline %s' % (screen, n_images, beamline))

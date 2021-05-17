@@ -35,11 +35,8 @@ import myplotstyle as ms
 # - simplify lattice
 # - detune undulator button
 # - optional provide the pulse energy calibration
-# - save BPM data also
 # - streaker center calibration: repeat with one data point removed at one side
-# - plot TDC blmeas next to current reconstruction (optional)
 # - Offset based on centroid, offset based on sizes (?)
-# - Forward propagation from TDC to screen inside tool
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -58,6 +55,9 @@ import myplotstyle as ms
 # - y scale of optimization
 # - elog
 # - charge from pyscan
+# - Forward propagation from TDC to screen inside tool
+# - plot TDC blmeas next to current reconstruction (optional)
+# - save BPM data also
 
 
 try:
@@ -106,7 +106,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.BeamlineSelect.activated.connect(self.update_streaker)
 
         self.update_streaker()
-
         self.other_input = {}
 
         # Default strings in gui fields
@@ -132,6 +131,7 @@ class StartMain(QtWidgets.QMainWindow):
         time_str = '2021-04-25:17-22-26'
         lasing_file_off = default_dir + '2021_04_25-17_16_30_Lasing_False_SARBD02-DSCR050.h5'
         lasing_file_on = default_dir + '2021_04_25-17_57_34_Lasing_True_SARBD02-DSCR050.h5'
+        streaker_calib_file = default_dir + '2021_04_25-16_55_25_Calibration_SARUN18-UDCP020.h5'
 
         self.ImportCalibration.setText(screen_calib_file)
         self.ImportFile.setText(lattice_file)
@@ -142,6 +142,8 @@ class StartMain(QtWidgets.QMainWindow):
         self.LasingOnDataLoad.setText(lasing_file_on)
         self.LasingOffDataLoad.setText(lasing_file_off)
         self.SaveDir.setText(save_dir)
+        self.LoadCalibrationFilename.setText(streaker_calib_file)
+        self.ForwardBlmeasFilename.setText(bunch_length_meas_file)
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
@@ -170,14 +172,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.lasing_figs = [x[0] for x in self.lasing_plot_handles]
         self.lasing_plot_tab_index1, self.lasing_canvas1 = get_new_tab(self.lasing_plot_handles[0][0], 'Lasing 1')
         self.lasing_plot_tab_index2, self.lasing_canvas2 = get_new_tab(self.lasing_plot_handles[1][0], 'Lasing 2')
-
-        #meas_screen = self.obtain_reconstruction_data()
-        #import matplotlib.pyplot as plt
-        #plt.figure()
-        #sp = plt.subplot(1,1,1)
-        #meas_screen.plot_standard(sp)
-        #plt.show()
-
 
     def clear_rec_plots(self):
         if self.reconstruction_plot_handles is not None:
@@ -504,7 +498,7 @@ class StartMain(QtWidgets.QMainWindow):
         result_dict = daq.bpm_data_streaker_offset(streaker, range_, self.screen, n_images, self.dry_run)
 
         try:
-            full_dict = analysis.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles)
+            full_dict = self._analyze_streaker_calib(result_dict)
         except:
             date = datetime.now()
             basename = date.strftime('%Y_%m_%d-%H_%M_%S_') +'Calibration_data_%s.h5' % streaker.replace('.','_')
@@ -521,13 +515,25 @@ class StartMain(QtWidgets.QMainWindow):
         elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (streaker, streaker_offset*1e6)
         self.elog_and_H5(elog_text, [self.streaker_calib_fig], 'Streaker center calibration', basename, full_dict)
 
+    def _analyze_streaker_calib(self, result_dict):
+        forward_blmeas = self.ForwardBlmeasCheck.isChecked()
+        if forward_blmeas:
+            tracker = self.init_tracker().tracker
+            blmeasfile = self.ForwardBlmeasFilename.text()
+        else:
+            tracker = None
+            blmeasfile = None
+
+        full_dict = analysis.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=self.beamline)
+        return full_dict
+
     def load_calibration(self):
         filename = self.LoadCalibrationFilename.text().strip()
         saved_dict = h5_storage.loadH5Recursive(filename)
 
         if 'raw_data' in saved_dict:
             saved_dict = saved_dict['raw_data']
-        full_dict = analysis.analyze_streaker_calibration(saved_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles)
+        full_dict = self._analyze_streaker_calib(saved_dict)
 
         streaker_offset = full_dict['meta_data']['streaker_offset']
         self.updateCalibration(streaker_offset)

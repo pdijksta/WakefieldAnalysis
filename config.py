@@ -1,10 +1,11 @@
 import itertools
+import collections
 
 streaker_names = {
-        'Aramis': {
-            0: 'SARUN18-UDCP010',
-            1: 'SARUN18-UDCP020',
-            },
+        'Aramis': collections.OrderedDict([
+            (0, 'SARUN18-UDCP010'),
+            (1, 'SARUN18-UDCP020'),
+            ]),
         }
 
 beamline_quads = {
@@ -32,3 +33,4 @@ beamline_bpm_pvs = {
 all_streakers = []
 for beamline, beamline_dict in streaker_names.items():
     all_streakers.extend([x for x in beamline_dict.values()])
+

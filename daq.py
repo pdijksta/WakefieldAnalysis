@@ -57,7 +57,7 @@ def get_images(screen, n_images, beamline='Aramis'):
 
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
-    meta_dict_1 = get_meta_data()
+    meta_dict_1 = get_meta_data(screen)
 
     positioner = pyscan.BsreadPositioner(n_messages=n_images)
     settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=1)
@@ -89,7 +89,7 @@ def get_images(screen, n_images, beamline='Aramis'):
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    meta_dict_2 = get_meta_data()
+    meta_dict_2 = get_meta_data(screen)
 
     output_dict = {
             'pyscan_result': result_dict,
@@ -104,7 +104,7 @@ def get_images(screen, n_images, beamline='Aramis'):
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
 
     print('Start data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
-    meta_dict_1 = get_meta_data()
+    meta_dict_1 = get_meta_data(screen)
 
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
@@ -151,7 +151,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    meta_dict_2 = get_meta_data()
+    meta_dict_2 = get_meta_data(screen)
 
     output = {
             'pyscan_result': result_dict,
@@ -184,7 +184,7 @@ def move_pv(pv, value, timeout, tolerance):
 
 def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
     print('Start bpm_data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
-    meta_dict_1 = get_meta_data()
+    meta_dict_1 = get_meta_data(screen)
 
     x_axis, y_axis = get_axis(screen)
 
@@ -218,7 +218,7 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
                 result_dict[key][n_offset] = image_dict[key]
 
 
-    meta_dict_2 = get_meta_data()
+    meta_dict_2 = get_meta_data(screen)
     output = {
             'pyscan_result': result_dict,
             'streaker_offsets': offset_range,
@@ -238,12 +238,23 @@ def get_axis(screen):
     camera_stream_adress = camera_client.get_instance_stream(screen)
     host, port = get_host_port_from_stream_address(camera_stream_adress)
 
-    with source(host=host, port=port, mode=SUB) as stream:
-        data = stream.receive()
-        print('Received image')
+    max_tries = 3
+    for _try in range(max_tries):
+        try:
+            with source(host=host, port=port, mode=SUB) as stream:
+                data = stream.receive()
+                print('Received image')
 
-        x_axis = np.array(data.data.data['x_axis'].value)*1e-6
-        y_axis = np.array(data.data.data['y_axis'].value)*1e-6
+                x_axis = np.array(data.data.data['x_axis'].value)*1e-6
+                y_axis = np.array(data.data.data['y_axis'].value)*1e-6
+        except Exception as e:
+            print('Try %i' % _try, e)
+            pass
+        else:
+            break
+    else:
+        raise
+
     return x_axis, y_axis
 
 
@@ -253,7 +264,7 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
         print('Start get_images_and_bpm for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
     if include_meta_data:
-        meta_dict_1 = get_meta_data()
+        meta_dict_1 = get_meta_data(screen)
     else:
         meta_dict_1 = None
 
@@ -272,27 +283,32 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
     bpm_values = np.zeros([len(bpm_channels), n_images])
     pulse_ids = np.zeros(n_images)
 
-    with source(channels=channels) as stream:
-        for n_image in range(n_images):
-            msg = stream.receive()
-            pulse_ids[n_image] = msg.data.pulse_id
+    max_tries = 3
+    for _try in range(max_tries):
+        try:
+            with source(channels=channels) as stream:
+                for n_image in range(n_images):
+                    msg = stream.receive()
+                    pulse_ids[n_image] = msg.data.pulse_id
+                    for n_bpm, bpm_channel in enumerate(bpm_channels):
+                        bpm_values[n_bpm, n_image] = msg.data.data[bpm_channel].value
+                    if not dry_run:
+                        images[n_image] = msg.data.data[image_pv].value
+
+            result_dict['image'] = images
+            result_dict['pulse_id'] = pulse_ids
             for n_bpm, bpm_channel in enumerate(bpm_channels):
-                try:
-                    bpm_values[n_bpm, n_image] = msg.data.data[bpm_channel].value
-                except KeyError:
-                    print(msg.data.data.keys())
-                    raise
-            if not dry_run:
-                images[n_image] = msg.data.data[image_pv].value
+                result_dict[bpm_channel] = bpm_values[n_bpm]
+        except Exception as e:
+            print('Try %i' % _try, e)
+            pass
+        else:
+            break
+    else:
+        raise
 
-    result_dict['image'] = images
-    result_dict['pulse_id'] = pulse_ids
-    for n_bpm, bpm_channel in enumerate(bpm_channels):
-        result_dict[bpm_channel] = bpm_values[n_bpm]
-
-    # Configure bsread
     if include_meta_data:
-        meta_dict_2 = get_meta_data()
+        meta_dict_2 = get_meta_data(screen)
     else:
         meta_dict_2 = None
 
@@ -307,8 +323,6 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
 
     return output_dict
 
-
-
 def get_aramis_quad_strengths():
     quads = config.beamline_quads['Aramis']
 
@@ -319,11 +333,15 @@ def get_aramis_quad_strengths():
     k1l_dict[energy_pv] = caget(energy_pv)
     return k1l_dict
 
-def get_meta_data():
+def get_meta_data(screen):
     all_streakers = config.all_streakers
     meta_dict = {}
     meta_dict.update({x+':GAP': caget(x+':GAP.RBV') for x in all_streakers})
     meta_dict.update({x+':CENTER': caget(x+':CENTER.RBV') for x in all_streakers})
+    meta_dict.update({x: caget(x) for x in config.beamline_chargepv.values()})
+
+    energy_pv = screen+':ENERGY-OP'
+    meta_dict[energy_pv] = caget(energy_pv)
 
     k1l_dict = get_aramis_quad_strengths()
     meta_dict.update(k1l_dict)

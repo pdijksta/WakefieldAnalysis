@@ -145,7 +145,7 @@ def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, con
     c2 = np.abs((offsets-streaker_offset-wall1))**(-order)
     return const + (c1 - c2)*strength
 
-def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None):
+def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis'):
     if type(filename_or_dict) is dict:
         data_dict = filename_or_dict
     elif type(filename_or_dict) is str:
@@ -193,7 +193,12 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         centroid_std = None
 
     streaker = data_dict['streaker']
-    semigap = data_dict['meta_data_end'][streaker+':GAP']/2.*1e-3
+    if 'meta_data_end' in data_dict:
+        key = 'meta_data_end'
+    else:
+        key = 'meta_data'
+    meta_data0 = data_dict[key]
+    semigap = meta_data0[streaker+':GAP']/2.*1e-3
 
 
     if force_screen_center is None:
@@ -229,6 +234,15 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     initial_guess = fit_func(xx_fit, *p0)
     streaker_offset = p_opt[0]
 
+    meas_screens = []
+    for n_proj, (proj, offset) in enumerate(zip(plot_list, offsets)):
+        meas_screen = misc.proj_to_screen(proj, x_axis, False, const0)
+        len_screen = len(meas_screen.x)
+        meas_screen.cutoff2(3e-2)
+        meas_screen.crop()
+        meas_screen.reshape(len_screen)
+        meas_screens.append(meas_screen)
+
     meta_data = {
             'p_opt': p_opt,
             'p0': p0,
@@ -241,17 +255,45 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             'reconstruction': reconstruction,
             }
 
-    output = {
-            'raw_data': data_dict,
-            'meta_data': meta_data,
-            }
+
+    if forward_propagate_blmeas:
+        blmeas_profile = iap.profile_from_blmeas(blmeas, 200e-15, 200e-12, tracker.energy_eV)
+        blmeas_profile.cutoff2(5e-2)
+        blmeas_profile.crop()
+        blmeas_profile.reshape(len_screen)
+
+        streaker_names = config.streaker_names[beamline]
+        gaps = [meta_data0[x+':GAP']*1e-3 for x in streaker_names.values()]
+        streaker_offsets0 = []
+        n_streaker_var = None
+        for n_streaker, streaker in streaker_names.items():
+            if streaker == data_dict['streaker']:
+                n_streaker_var = n_streaker
+                streaker_offsets0.append(None)
+            else:
+                streaker_offsets0.append(meta_data0[streaker+':CENTER']*1e-3)
+        assert n_streaker_var is not None
+
+        sim_screens = []
+        for s_offset in offsets:
+            streaker_offsets = streaker_offsets0[:]
+            streaker_offsets[n_streaker_var] = -(s_offset-streaker_offset)
+            forward_dict = tracker.matrix_forward(blmeas_profile, gaps, streaker_offsets)
+            sim_screen = forward_dict['screen']
+            sim_screen.cutoff2(3e-2)
+            sim_screen.crop()
+            sim_screen.reshape(len_screen)
+            sim_screens.append(sim_screen)
+        meta_data['sim_screens'] = sim_screens
+    else:
+        sim_screens = None
 
     if do_plot:
 
         if plot_handles is None:
-            fig, (sp_center, sp_proj) = streaker_calibration_figure()
+            fig, (sp_center, sp_proj, sp_current) = streaker_calibration_figure()
         else:
-            (sp_center, sp_proj) = plot_handles
+            (sp_center, sp_proj, sp_current) = plot_handles
         screen = data_dict['screen']
         sp_center.set_title(screen)
 
@@ -262,9 +304,22 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         sp_center.plot(xx_plot_fit, (initial_guess-const0)*1e3, label='Guess')
         sp_center.legend()
 
-        for proj, offset in zip(plot_list, offsets):
-            sp_proj.plot((x_axis-const0)*1e3, proj, label='%.2f mm' % (offset*1e3))
+        for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
+            color = ms.colorprog(n_proj, offsets)
+            meas_screen.plot_standard(sp_proj, label='%.2f mm' % (offset*1e3), color=color)
+            if sim_screens is not None:
+                sim_screen = sim_screens[n_proj]
+                sim_screen.plot_standard(sp_proj, color=color, ls='--')
+
         sp_proj.legend()
+
+        if forward_propagate_blmeas:
+            blmeas_profile.plot_standard(sp_current, color='black')
+
+    output = {
+            'raw_data': data_dict,
+            'meta_data': meta_data,
+            }
 
     return output
 
@@ -382,18 +437,20 @@ def streaker_calibration_figure():
     fig = plt.figure()
     fig.canvas.set_window_title('Streaker center calibration')
     sp_ctr = 1
-    subplot = ms.subplot_factory(1, 2)
-
+    subplot = ms.subplot_factory(2, 2)
     sp_center = subplot(sp_ctr)
     sp_ctr += 1
     sp_proj = subplot(sp_ctr)
-    clear_streaker_calibration(sp_center, sp_proj)
-    return fig, (sp_center, sp_proj)
+    sp_ctr += 1
+    sp_current = subplot(sp_ctr)
+    clear_streaker_calibration(sp_center, sp_proj, sp_current)
+    return fig, (sp_center, sp_proj, sp_current)
 
-def clear_streaker_calibration(sp_center, sp_proj):
+def clear_streaker_calibration(sp_center, sp_proj, sp_current):
     for sp, title, xlabel, ylabel in [
             (sp_center, 'Screen center', 'Streaker center [mm]', 'Beam X centroid [mm]'),
             (sp_proj, 'Screen projections', 'x (mm)', 'Intensity (arb. units)'),
+            (sp_current, 'Beam current', 't (fs)', 'Current (kA)'),
             ]:
         sp.clear()
         sp.set_title(title)

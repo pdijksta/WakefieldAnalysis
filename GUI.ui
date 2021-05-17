@@ -35,7 +35,7 @@
        <rect>
         <x>160</x>
         <y>50</y>
-        <width>571</width>
+        <width>641</width>
         <height>26</height>
        </rect>
       </property>
@@ -719,7 +719,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>480</y>
+        <y>500</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -774,8 +774,8 @@
      <widget class="QLabel" name="label_49">
       <property name="geometry">
        <rect>
-        <x>200</x>
-        <y>500</y>
+        <x>360</x>
+        <y>480</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -822,9 +822,9 @@
      <widget class="QLineEdit" name="LoadCalibrationFilename">
       <property name="geometry">
        <rect>
-        <x>310</x>
-        <y>490</y>
-        <width>451</width>
+        <x>190</x>
+        <y>510</y>
+        <width>601</width>
         <height>25</height>
        </rect>
       </property>
@@ -899,6 +899,54 @@
       </property>
       <property name="text">
        <string>Calibration screen</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="ForwardBlmeasCheck">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>560</y>
+        <width>321</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Forward propagate Bunch length measurement </string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="ForwardBlmeasFilename">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>590</y>
+        <width>601</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_56">
+      <property name="geometry">
+       <rect>
+        <x>360</x>
+        <y>560</y>
+        <width>91</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Filename</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

@@ -202,6 +202,9 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
     result_dict['image'] = np.zeros([len(offset_range), n_images, len(y_axis), len(x_axis)], dtype=np.uint16)
 
     bpm_channels = config.beamline_bpm_pvs[beamline]
+    image_pv = screen+':FPICTURE'
+    channels = bpm_channels + [image_pv]
+
     for bpm_channel in bpm_channels:
         result_dict[bpm_channel] = np.zeros([len(offset_range), n_images])
 
@@ -211,9 +214,9 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
             time.sleep(1)
         else:
             move_pv(offset_pv, offset_mm, 60, 1e-3)
-        image_dict = get_images_and_bpm(screen, n_images, beamline, False, False, False)['pyscan_result']
-        for key, val in image_dict.items():
-            result_dict[key][n_offset] = val
+        image_dict = get_images_and_bpm(screen, n_images, beamline, False, False, False, dry_run)['pyscan_result']
+        for key in channels:
+            result_dict[key][n_offset] = image_dict[key]
 
 
     meta_dict_2 = get_meta_data()
@@ -245,7 +248,7 @@ def get_axis(screen):
     return x_axis, y_axis
 
 
-def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=True, include_meta_data=True):
+def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=True, include_meta_data=True, dry_run=False):
 
     if print_:
         print('Start get_images_and_bpm for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
@@ -275,8 +278,13 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
             msg = stream.receive()
             pulse_ids[n_image] = msg.data.pulse_id
             for n_bpm, bpm_channel in enumerate(bpm_channels):
-                bpm_values[n_bpm, n_image] = msg.data.data[bpm_channel].value
-            images[n_image] = msg.data.data[image_pv].value
+                try:
+                    bpm_values[n_bpm, n_image] = msg.data.data[bpm_channel].value
+                except KeyError:
+                    print(msg.data.data.keys())
+                    raise
+            if not dry_run:
+                images[n_image] = msg.data.data[image_pv].value
 
     result_dict['image'] = images
     result_dict['pulse_id'] = pulse_ids

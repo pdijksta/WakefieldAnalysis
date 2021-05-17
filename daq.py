@@ -202,8 +202,6 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
     result_dict['image'] = np.zeros([len(offset_range), n_images, len(y_axis), len(x_axis)], dtype=np.uint16)
 
     bpm_channels = config.beamline_bpm_pvs[beamline]
-    image_pv = screen+':FPICTURE'
-    channels = bpm_channels + [image_pv]
 
     for bpm_channel in bpm_channels:
         result_dict[bpm_channel] = np.zeros([len(offset_range), n_images])
@@ -215,8 +213,9 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
         else:
             move_pv(offset_pv, offset_mm, 60, 1e-3)
         image_dict = get_images_and_bpm(screen, n_images, beamline, False, False, False, x_axis, y_axis, dry_run)['pyscan_result']
-        for key in channels:
-            result_dict[key][n_offset] = image_dict[key]
+        for key in image_dict.keys():
+            if key in result_dict:
+                result_dict[key][n_offset] = image_dict[key]
 
 
     meta_dict_2 = get_meta_data()

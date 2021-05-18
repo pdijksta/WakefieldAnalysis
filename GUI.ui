@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -179,7 +179,7 @@
        <rect>
         <x>10</x>
         <y>130</y>
-        <width>131</width>
+        <width>121</width>
         <height>41</height>
        </rect>
       </property>
@@ -227,7 +227,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Screen calibration</string>
+       <string>Do calibration</string>
       </property>
      </widget>
      <widget class="QPushButton" name="ClearScreenPlots">
@@ -374,11 +374,67 @@
        <string>Set X emittance</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="LoadScreenCalibration">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>50</y>
+        <width>121</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="palette">
+       <palette>
+        <active>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </active>
+        <inactive>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </inactive>
+        <disabled>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </disabled>
+       </palette>
+      </property>
+      <property name="font">
+       <font>
+        <family>Sans Serif</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Load calibration</string>
+      </property>
+     </widget>
      <widget class="QPushButton" name="ClearCalibPlots">
       <property name="geometry">
        <rect>
         <x>590</x>
-        <y>430</y>
+        <y>380</y>
         <width>121</width>
         <height>41</height>
        </rect>
@@ -434,7 +490,7 @@
       <property name="geometry">
        <rect>
         <x>40</x>
-        <y>330</y>
+        <y>280</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -450,15 +506,10 @@
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>280</y>
-        <width>191</width>
+        <y>230</y>
+        <width>161</width>
         <height>16</height>
        </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>11</pointsize>
-       </font>
       </property>
       <property name="text">
        <string>Calibration of streaker</string>
@@ -471,7 +522,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>370</y>
+        <y>320</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -487,7 +538,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>400</y>
+        <y>350</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -503,7 +554,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>370</y>
+        <y>320</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -519,7 +570,7 @@
       <property name="geometry">
        <rect>
         <x>180</x>
-        <y>450</y>
+        <y>400</y>
         <width>51</width>
         <height>16</height>
        </rect>
@@ -535,7 +586,7 @@
       <property name="geometry">
        <rect>
         <x>580</x>
-        <y>370</y>
+        <y>320</y>
         <width>81</width>
         <height>20</height>
        </rect>
@@ -551,7 +602,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>400</y>
+        <y>350</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -607,7 +658,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>330</y>
+        <y>280</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -623,7 +674,7 @@
       <property name="geometry">
        <rect>
         <x>580</x>
-        <y>400</y>
+        <y>350</y>
         <width>81</width>
         <height>26</height>
        </rect>
@@ -639,7 +690,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>310</y>
+        <y>260</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -655,7 +706,7 @@
       <property name="geometry">
        <rect>
         <x>180</x>
-        <y>410</y>
+        <y>360</y>
         <width>51</width>
         <height>16</height>
        </rect>
@@ -671,7 +722,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>440</y>
+        <y>390</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -687,7 +738,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>400</y>
+        <y>350</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -703,7 +754,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>440</y>
+        <y>390</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -719,7 +770,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>480</y>
+        <y>430</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -775,7 +826,7 @@
       <property name="geometry">
        <rect>
         <x>200</x>
-        <y>500</y>
+        <y>450</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -791,7 +842,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>400</y>
+        <y>350</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -807,7 +858,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>330</y>
+        <y>280</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -823,7 +874,7 @@
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>490</y>
+        <y>440</y>
         <width>451</width>
         <height>25</height>
        </rect>
@@ -839,7 +890,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>440</y>
+        <y>390</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -855,7 +906,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>310</y>
+        <y>260</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -871,7 +922,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>370</y>
+        <y>320</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -886,16 +937,11 @@
      <widget class="QLabel" name="label_42">
       <property name="geometry">
        <rect>
-        <x>310</x>
-        <y>20</y>
+        <x>280</x>
+        <y>10</y>
         <width>161</width>
         <height>16</height>
        </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>11</pointsize>
-       </font>
       </property>
       <property name="text">
        <string>Calibration screen</string>
@@ -1116,7 +1162,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>filled_by_main.py</string>
+       <string>/mnt/data/data/2021-03-16/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1168,6 +1214,22 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="ReconstructionDataLoadCheck">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>70</y>
+        <width>91</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Load data</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
      </widget>
      <widget class="QComboBox" name="ReconstructionDataLoadUseSelect">
@@ -1301,7 +1363,7 @@
       <property name="geometry">
        <rect>
         <x>610</x>
-        <y>610</y>
+        <y>440</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1389,7 +1451,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>610</y>
+        <y>440</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1445,7 +1507,7 @@
       <property name="geometry">
        <rect>
         <x>170</x>
-        <y>610</y>
+        <y>440</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1708,38 +1770,6 @@
       </property>
       <property name="text">
        <string>From Saved</string>
-      </property>
-      <property name="checked">
-       <bool>true</bool>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="BunchLengthMeasFile">
-      <property name="geometry">
-       <rect>
-        <x>270</x>
-        <y>550</y>
-        <width>611</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>filled_by_main.py</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QCheckBox" name="ShowBlmeasCheck">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>550</y>
-        <width>231</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Show bunch length measurement</string>
       </property>
       <property name="checked">
        <bool>true</bool>

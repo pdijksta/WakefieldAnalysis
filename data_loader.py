@@ -135,22 +135,24 @@ def load_blmeas(file_):
 
 # For application
 
-def load_screen_data(filename_or_dict, key, index):
-    if type(filename_or_dict) is dict:
-        dict_ = filename_or_dict
-    elif filename_or_dict.endswith('.h5'):
-        dict_ = loadH5Recursive(filename_or_dict)
-    elif filename_or_dict.endswith('.mat'):
-        dict_ = loadmat(filename_or_dict)
+def load_screen_data(filename, key, index):
+    if filename.endswith('.h5'):
+        dict_ = loadH5Recursive(filename)
+    elif filename.endswith('.mat'):
+        dict_ = loadmat(filename)
     else:
-        raise ValueError('Must be h5 or mat file. Is: %s' % filename_or_dict)
+        raise ValueError('Must be h5 or mat file. Is: %s' % filename)
 
     if 'pyscan_result' in dict_:
         #dict0 = dict_
         dict_ = dict_['pyscan_result']
         key = 'image'
 
-    x_axis = dict_['x_axis']
+    try:
+        x_axis = dict_['x_axis']
+    except Exception as e:
+        print(e)
+        import pdb; pdb.set_trace()
     data = dict_[key].astype(float)
     if index not in ('None', None):
         index = int(index)

@@ -13,11 +13,9 @@ from ElegantWrapper.watcher import FileViewer, Watcher2
 try:
     import data_loader
     import wf_model
-    import config
 except ImportError:
     from . import data_loader
     from . import wf_model
-    from . import config
 
 pid = os.getpid()
 ctr = 0
@@ -30,8 +28,9 @@ default_SF_par = FileViewer(os.path.join(this_dir, './default.par.h5'))
 default_SF_par_athos = FileViewer(os.path.join(this_dir, './default_athos.par.h5'))
 symlink_files = glob.glob(os.path.join(this_dir, './elegant_wakes/wake*.sdds'))
 
-quads = config.beamline_quads['Aramis']
-quads_athos = config.beamline_quads['Athos']
+quads = ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030']
+quads_athos = ['SATMA02.MQUA050', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030']
+
 
 #tmp_dir = '/home/philipp/tmp_elegant/'
 tmp_dir = None

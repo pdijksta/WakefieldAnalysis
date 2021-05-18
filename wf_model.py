@@ -186,15 +186,12 @@ class WakeFieldCalculator:
 
     def wake_potential(self, single_particle_wake):
         if len(single_particle_wake.shape) == 1:
-            outp = np.convolve(self.charge_profile, single_particle_wake)[:len(self.xx)]
+            return np.convolve(self.charge_profile, single_particle_wake)[:len(self.xx)]
         elif len(single_particle_wake.shape) == 2:
             outp = np.zeros_like(single_particle_wake)
             for n_row in range(single_particle_wake.shape[0]):
                 outp[n_row] = np.convolve(self.charge_profile, single_particle_wake[n_row])[:len(self.xx)]
-
-        if np.any(np.isnan(outp)):
-            raise ValueError('Nan in wake_potential')
-        return outp
+            return outp
 
     def kick_factor(self, wake_potential):
         return np.sum(self.charge_profile*wake_potential, axis=-1) / self.total_charge
@@ -231,12 +228,8 @@ class WakeFieldCalculator:
                 ]:
 
             if do_calc and direction == TRANS:
-                if beam_offset == 0:
-                    spw = np.zeros_like(self.xx)
-                    wake_potential = spw.copy()
-                else:
-                    spw = wxd_function(self.xx, semigap, beam_offset)
-                    wake_potential = self.wake_potential(spw)
+                spw = wxd_function(self.xx, semigap, beam_offset)
+                wake_potential = self.wake_potential(spw)
                 kick_factor = self.kick_factor(wake_potential)
                 kick = self.kick(kick_factor)
                 kick_effect = kick * R12

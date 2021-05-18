@@ -102,7 +102,7 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
             run_str += ' -macro=%s=%s' % (key, val)
         if mute_elegant:
             run_str_mute = run_str + ' >/dev/null'
-        #print(cmd)
+
         with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
             f.write(run_str_mute+'\n')
         with open(os.path.join(new_dir, 'run_verbose.sh'), 'w') as f:

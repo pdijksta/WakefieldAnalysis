@@ -679,11 +679,13 @@ class StartMain(QtWidgets.QMainWindow):
             print('Cannot save to ELOG')
             print('I would post:')
             print(text)
-        else:
+        elif self.ElogSaveCheck.isChecked():
             dict_att = {'Application': 'PostUndulatorStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
             self.logbook.post(text, attributes=dict_att, attachments=attachments)
 
             print('ELOG entry saved.')
+        else:
+            print('Save to ELOG is not checked in GUI')
 
         return filename
 

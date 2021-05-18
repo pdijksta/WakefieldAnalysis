@@ -152,7 +152,7 @@ def load_screen_data(filename_or_dict, key, index):
     else:
         dict_ = dict0
 
-    x_axis = dict_['x_axis']
+    x_axis = dict_['x_axis_m']
     data = dict_[key].astype(float)
     if index not in ('None', None):
         index = int(index)
@@ -165,11 +165,14 @@ def load_screen_data(filename_or_dict, key, index):
         # Assume saved data are images
         projx = np.zeros((data.shape[0], len(x_axis)))
         for n_img, img in enumerate(data):
-            projx[n_img,:] = img.sum(axis=0)
+            try:
+                projx[n_img,:] = img.sum(axis=0)
+            except:
+                import pdb; pdb.set_trace()
     else:
         raise ValueError('Expect shape of 2 or 3. Is: %i' % len(data.shape))
 
-    y_axis = dict_['y_axis'] if 'y_axis' in dict_ else None
+    y_axis = dict_['y_axis_m'] if 'y_axis_m' in dict_ else None
 
     if np.abs(x_axis.max()) > 1:
         x_axis *= 1e-6
@@ -194,5 +197,7 @@ def load_screen_data(filename_or_dict, key, index):
             }
     if 'meta_data' in dict0:
         output['meta_data'] = dict0['meta_data']
+    if 'meta_data_end' in dict0:
+        output['meta_data'] = dict0['meta_data_end']
     return output
 

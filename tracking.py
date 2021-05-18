@@ -55,7 +55,10 @@ class Tracker:
     def set_simulator(self, magnet_file, energy_eV, timestamp=None):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
         if energy_eV == 'file':
-            self.energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
+            try:
+                self.energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
+            except KeyError:
+                self.energy_eV = self.simulator.get_data('SARBD01-MBND100:ENERGY-OP', timestamp)*1e6
         else:
             self.energy_eV = energy_eV
 

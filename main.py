@@ -38,6 +38,8 @@ import myplotstyle as ms
 # - streaker center calibration: repeat with one data point removed at one side
 # - Offset based on centroid, offset based on sizes (?)
 # - Script to compare different scans
+# - png.png
+# - Rec plot legends
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -128,12 +130,13 @@ class StartMain(QtWidgets.QMainWindow):
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
         bunch_length_meas_file = default_dir + '119325494_bunch_length_meas.h5'
-        recon_data_file = default_dir+'2021_04_25-17_16_30_Lasing_False_SARBD02-DSCR050.h5'
+        recon_data_file = default_dir+'2021_05_18-17_30_29_Screen_data_SARBD02-DSCR050.h5'
         lattice_file = archiver_dir+'2021-04-25.h5'
         time_str = '2021-04-25:17-22-26'
-        lasing_file_off = default_dir + '2021_04_25-17_16_30_Lasing_False_SARBD02-DSCR050.h5'
-        lasing_file_on = default_dir + '2021_04_25-17_57_34_Lasing_True_SARBD02-DSCR050.h5'
+        lasing_file_off = default_dir + '2021_05_18-18_04_08_Screen_data_SARBD02-DSCR050.h5'
+        lasing_file_on = default_dir + '2021_05_18-18_13_33_Lasing_True_SARBD02-DSCR050.h5'
         streaker_calib_file = default_dir + '2021_04_25-16_55_25_Calibration_SARUN18-UDCP020.h5'
+        lasing_current_profile = default_dir + '2021_05_18-17_41_02_PassiveReconstruction.h5'
 
         self.ImportCalibration.setText(screen_calib_file)
         self.ImportFile.setText(lattice_file)
@@ -143,6 +146,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.SaveDir.setText(save_dir)
         self.LasingOnDataLoad.setText(lasing_file_on)
         self.LasingOffDataLoad.setText(lasing_file_off)
+        self.LasingCurrentProfileDataLoad.setText(lasing_current_profile)
         self.SaveDir.setText(save_dir)
         self.LoadCalibrationFilename.setText(streaker_calib_file)
         self.ForwardBlmeasFilename.setText(bunch_length_meas_file)
@@ -284,6 +288,7 @@ class StartMain(QtWidgets.QMainWindow):
             raise ValueError(errormessage)
 
     def calibrate_screen(self):
+        self.clear_screen_plots()
         n_images = int(self.CalibrateScreenImages.text())
         image_dict = daq.get_images(self.screen, n_images, dry_run=self.dry_run)
         try:
@@ -354,7 +359,7 @@ class StartMain(QtWidgets.QMainWindow):
             other_input = {'method': 'live'}
             if daq is None:
                 raise RuntimeError('Cannot get settings from live!')
-            meta_dict = daq.get_meta_data()
+            meta_dict = daq.get_meta_data(self.screen)
 
         elif self.SetStreakerSaveCheck:
             other_input = {'method': 'saved'}
@@ -493,6 +498,8 @@ class StartMain(QtWidgets.QMainWindow):
         self.StreakerName.setText(self.streaker_name)
 
     def calibrate_streaker(self):
+
+        self.clear_calib_plots()
         start, stop, step= float(self.Range1Begin.text()), float(self.Range1Stop.text()), int(float(self.Range1Step.text()))
         range1 = np.linspace(start, stop, step)
         start, stop, step= float(self.Range2Begin.text()), float(self.Range2Stop.text()), int(float(self.Range2Step.text()))
@@ -540,6 +547,7 @@ class StartMain(QtWidgets.QMainWindow):
         return full_dict
 
     def load_calibration(self):
+        self.clear_calib_plots()
         filename = self.LoadCalibrationFilename.text().strip()
         saved_dict = h5_storage.loadH5Recursive(filename)
 
@@ -664,18 +672,25 @@ class StartMain(QtWidgets.QMainWindow):
 
         assert os.path.isfile(file_on)
         assert os.path.isfile(file_off)
-        r12, disp = self.obtain_r12(dict_on['meta_data'])
-        energy_eV = self.get_energy_from_meta(dict_on['meta_data'])
+        r12, disp = self.obtain_r12(dict_on['meta_data_end'])
+        energy_eV = self.get_energy_from_meta(dict_on['meta_data_end'])
         charge = float(self.Charge.text())*1e-12
 
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
-        analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
+        lasing_dict = analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
 
         if self.lasing_plot_handles is not None:
 
             self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
+
+        elog_text = 'Lasing reconstruction'
+        date = datetime.now()
+        screen_str = self.screen.replace('.','_')
+        basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_reconstruction_%s.h5' % screen_str
+
+        self.elog_and_H5(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, lasing_dict)
 
     def elog_and_H5(self, text, figs, title, basename, data_dict):
 

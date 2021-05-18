@@ -521,7 +521,14 @@ def lasing_figures():
 
     sp_current = subplot(sp_ctr)
     sp_ctr += 1
-    output.append((fig, (sp_power, sp_current)))
+
+    sp_centroid = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_slice_size = subplot(sp_ctr)
+    sp_ctr += 1
+
+    output.append((fig, (sp_power, sp_current, sp_centroid, sp_slice_size)))
 
     clear_lasing(output)
 
@@ -529,7 +536,7 @@ def lasing_figures():
 
 def clear_lasing(plot_handles):
     (_, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
-    (_, (sp_power, sp_current)) = plot_handles[1]
+    (_, (sp_power, sp_current, sp_centroid, sp_slice_size)) = plot_handles[1]
 
     for sp, title, xlabel, ylabel in [
             (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
@@ -542,6 +549,8 @@ def clear_lasing(plot_handles):
             (sp_on_tE, 'Lasing off', 't (fs)', '$\Delta$ E (MeV)'),
             (sp_power, 'Power', 't (fs)', 'P (GW)'),
             (sp_current, 'Current', 't (fs)', 'I (arb. units)'),
+            (sp_centroid, 'Slice centroids', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_slice_size, 'Slice sizes', 't (fs)', '$\sigma_E$ (MeV)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -552,11 +561,11 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
     dict_on = h5_storage.loadH5Recursive(file_on)
     dict_on_p = dict_on['pyscan_result']
-    dict_on_m = dict_on['meta_data']
+    dict_on_m = dict_on['meta_data_end']
 
     dict_off = h5_storage.loadH5Recursive(file_off)
     dict_off_p = dict_off['pyscan_result']
-    dict_off_m = dict_off['meta_data']
+    dict_off_m = dict_off['meta_data_end']
 
     if energy_eV == 'file':
         if 'SARBD01-MBND100:ENERGY-OP' in dict_on_m:
@@ -638,7 +647,7 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
         plot_handles = lasing_figures()
 
     (fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
-    (fig, (sp_power, sp_current)) = plot_handles[1]
+    (fig, (sp_power, sp_current, sp_centroid, sp_slice_size)) = plot_handles[1]
 
     slice_time = lasing_dict['slice_time']
     all_slice_dict = lasing_dict['all_slice_dict']
@@ -648,11 +657,19 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_off']['slice_current'], label='Off')
     sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_on']['slice_current'], label='On')
 
+    for key in ('Lasing_off', 'Lasing_on'):
+        slice_sigma = all_slice_dict[key]['slice_sigma']
+        slice_centroid = all_slice_dict[key]['slice_mean']
+        sp_slice_size.plot(slice_time*1e15, slice_sigma/1e6, label=key)
+        sp_centroid.plot(slice_time*1e15, slice_centroid/1e6, label=key)
+
     sp_power.plot(slice_time*1e15, power_from_Eloss/1e9, label='$\Delta$E')
     sp_power.plot(slice_time*1e15, power_from_Espread/1e9, label='$\Delta\sigma_E$')
 
     sp_current.legend()
     sp_power.legend()
+    sp_slice_size.legend()
+    sp_centroid.legend()
 
     median_image_off.plot_img_and_proj(sp_off)
     median_image_on.plot_img_and_proj(sp_on)

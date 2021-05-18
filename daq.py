@@ -53,7 +53,7 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
 
     return output
 
-def get_images(screen, n_images, beamline='Aramis'):
+def get_images(screen, n_images, beamline='Aramis', dry_run=None):
 
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 

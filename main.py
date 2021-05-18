@@ -38,7 +38,6 @@ import myplotstyle as ms
 # - streaker center calibration: repeat with one data point removed at one side
 # - Offset based on centroid, offset based on sizes (?)
 # - Script to compare different scans
-# - Show sizes
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -60,6 +59,7 @@ import myplotstyle as ms
 # - Forward propagation from TDC to screen inside tool
 # - plot TDC blmeas next to current reconstruction (optional)
 # - save BPM data also
+# - Show sizes
 
 
 try:

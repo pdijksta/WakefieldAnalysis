@@ -170,6 +170,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     n_images = int(data_dict['n_images'])
 
     centroids = np.zeros([len(offsets), n_images])
+    rms = np.zeros_like(centroids)
 
     plot_list = []
     if n_images > 1:
@@ -179,18 +180,24 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             proj[np.abs(proj)< np.abs(proj).max()*0.02] = 0
             if n_i == 0:
                 plot_list.append(proj)
-            centroids[n_o,n_i] = np.sum(proj*x_axis) / np.sum(proj)
+            centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
+            rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
         centroid_mean = np.mean(centroids, axis=1)
         centroid_std = np.std(centroids, axis=1)
+        rms_mean = np.mean(rms, axis=1)
+        rms_std = np.std(rms, axis=1)
     elif n_images == 1:
         for n_o in range(len(offsets)):
             proj = proj_x[n_o]
             proj -= np.median(proj)
             proj[np.abs(proj)< np.abs(proj).max()*0.05] = 0
-            centroids[n_o] = np.sum(proj_x[n_o]*x_axis) / np.sum(proj_x[n_o])
+            centroids[n_o] = cc = np.sum(proj*x_axis) / np.sum(proj)
+            rms[n_o] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
             plot_list.append(proj)
         centroid_mean = centroids.squeeze()
         centroid_std = None
+        rms_mean = rms
+        rms_std = None
 
     streaker = data_dict['streaker']
     if 'meta_data_end' in data_dict:
@@ -249,6 +256,8 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             'centroids': centroids,
             'centroid_mean': centroid_mean,
             'centroid_std': centroid_std,
+            'rms_mean': rms_mean,
+            'rms_std': rms_std,
             'offsets': offsets,
             'semigap': semigap,
             'streaker_offset': streaker_offset,
@@ -291,15 +300,17 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     if do_plot:
 
         if plot_handles is None:
-            fig, (sp_center, sp_proj, sp_current) = streaker_calibration_figure()
+            fig, (sp_center, sp_sizes, sp_proj, sp_current) = streaker_calibration_figure()
         else:
-            (sp_center, sp_proj, sp_current) = plot_handles
+            (sp_center, sp_sizes, sp_proj, sp_current) = plot_handles
         screen = data_dict['screen']
         sp_center.set_title(screen)
 
         xx_plot = (offsets - streaker_offset)*1e3
         xx_plot_fit = (xx_fit - streaker_offset)*1e3
         sp_center.errorbar(xx_plot, (centroid_mean-const0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
+        sp_sizes.errorbar(xx_plot, (rms_mean-const0)*1e3, yerr=rms_std*1e3, label='Data', marker='o')
+
         sp_center.plot(xx_plot_fit, (reconstruction-const0)*1e3, label='Fit')
         sp_center.plot(xx_plot_fit, (initial_guess-const0)*1e3, label='Guess')
         sp_center.legend()
@@ -439,16 +450,19 @@ def streaker_calibration_figure():
     sp_ctr = 1
     subplot = ms.subplot_factory(2, 2)
     sp_center = subplot(sp_ctr)
+    sp_ctr +=1
+    sp_sizes = subplot(sp_ctr)
     sp_ctr += 1
     sp_proj = subplot(sp_ctr)
     sp_ctr += 1
     sp_current = subplot(sp_ctr)
-    clear_streaker_calibration(sp_center, sp_proj, sp_current)
-    return fig, (sp_center, sp_proj, sp_current)
+    clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_current)
+    return fig, (sp_center, sp_sizes, sp_proj, sp_current)
 
-def clear_streaker_calibration(sp_center, sp_proj, sp_current):
+def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_current):
     for sp, title, xlabel, ylabel in [
-            (sp_center, 'Screen center', 'Streaker center [mm]', 'Beam X centroid [mm]'),
+            (sp_center, 'Centroid shift', 'Streaker center [mm]', 'Beam X centroid [mm]'),
+            (sp_sizes, 'Size increase', 'Streaker center [mm]', 'Beam X rms [mm]'),
             (sp_proj, 'Screen projections', 'x (mm)', 'Intensity (arb. units)'),
             (sp_current, 'Beam current', 't (fs)', 'Current (kA)'),
             ]:
@@ -473,6 +487,7 @@ def lasing_figures():
     sp_wake = subplot(sp_ctr)
     sp_ctr += 1
 
+    sp_ctr += 1
     sp_off = subplot(sp_ctr)
     sp_ctr += 1
 

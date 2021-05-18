@@ -13,9 +13,11 @@ from ElegantWrapper.watcher import FileViewer, Watcher2
 try:
     import data_loader
     import wf_model
+    import config
 except ImportError:
     from . import data_loader
     from . import wf_model
+    from . import config
 
 pid = os.getpid()
 ctr = 0
@@ -28,9 +30,8 @@ default_SF_par = FileViewer(os.path.join(this_dir, './default.par.h5'))
 default_SF_par_athos = FileViewer(os.path.join(this_dir, './default_athos.par.h5'))
 symlink_files = glob.glob(os.path.join(this_dir, './elegant_wakes/wake*.sdds'))
 
-quads = ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030']
-quads_athos = ['SATMA02.MQUA050', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030']
-
+quads = config.beamline_quads['Aramis']
+quads_athos = config.beamline_quads['Athos']
 
 #tmp_dir = '/home/philipp/tmp_elegant/'
 tmp_dir = None
@@ -82,25 +83,38 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
     ctr += 1
     new_ele_file = shutil.copy(ele, new_dir)
     shutil.copy(lat, new_dir)
+    run_str = '#!/bin/bash\n'
+
+    # Elegant needs this environment variable to run
+    rpn_file = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/defns.rpn'
+    if 'RPN_DEFNS' in os.environ and os.path.isfile(os.environ['RPN_DEFNS']):
+        pass
+    elif os.path.isfile(rpn_file):
+        run_str += 'export RPN_DEFNS=%s\n' % rpn_file
+    else:
+        raise ValueError('No RPN_DEFNS')
+
     old_dir = os.getcwd()
     try:
         os.chdir(new_dir)
-        cmd = 'elegant %s ' % os.path.basename(new_ele_file)
+        run_str += 'elegant %s ' % os.path.basename(new_ele_file)
         for key, val in macro_dict.items():
-            cmd += ' -macro=%s=%s' % (key, val)
+            run_str += ' -macro=%s=%s' % (key, val)
         if mute_elegant:
-            cmd += ' >/dev/null'
-        #print(cmd)
+            run_str_mute = run_str + ' >/dev/null'
+
         with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
-            f.write(cmd+'\n')
-        status = os.system(cmd)
+            f.write(run_str_mute+'\n')
+        with open(os.path.join(new_dir, 'run_verbose.sh'), 'w') as f:
+            f.write(run_str+'\n')
+        status = os.system(run_str_mute)
         if status != 0:
             raise RuntimeError('Elegant failed! %s' % new_dir)
     finally:
         os.chdir(old_dir)
 
     sim = ElegantSimulation(new_ele_file, del_sim=del_sim)
-    return cmd, sim
+    return run_str, sim
 
 @functools.lru_cache(5)
 def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_duration, n_particles):

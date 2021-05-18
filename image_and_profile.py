@@ -292,6 +292,10 @@ class BeamProfile(Profile):
         wake_effect = self.wake_effect_on_screen(wake_dict, r12)
         tt, xx = wake_effect['t'], wake_effect['x']
         tt = tt - tt.min()
+        if np.any(np.isnan(xx)):
+            raise ValueError('Nan in x!')
+        if np.any(np.isnan(tt)):
+            raise ValueError('Nan in t!')
         return tt, xx
 
     def write_sdds(self, filename, gap, beam_offset, struct_length):
@@ -311,6 +315,10 @@ class BeamProfile(Profile):
         quad = wf_dict['quadrupole']['wake_potential']
         wake_effect = wake/self.energy_eV*r12*np.sign(self.charge)
         quad_effect = quad/self.energy_eV*r12*np.sign(self.charge)
+        if np.any(np.isnan(wake_effect)):
+            raise ValueError('Nan in wake_effect!')
+        if np.any(np.isnan(quad_effect)):
+            raise ValueError('Nan in quad_effect!')
         output = {
                 't': self.time,
                 'x': wake_effect,

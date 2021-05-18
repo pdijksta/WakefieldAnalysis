@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -35,7 +35,7 @@
        <rect>
         <x>160</x>
         <y>50</y>
-        <width>571</width>
+        <width>641</width>
         <height>26</height>
        </rect>
       </property>
@@ -179,7 +179,7 @@
        <rect>
         <x>10</x>
         <y>130</y>
-        <width>121</width>
+        <width>131</width>
         <height>41</height>
        </rect>
       </property>
@@ -227,7 +227,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Do calibration</string>
+       <string>Screen calibration</string>
       </property>
      </widget>
      <widget class="QPushButton" name="ClearScreenPlots">
@@ -374,67 +374,11 @@
        <string>Set X emittance</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="LoadScreenCalibration">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>50</y>
-        <width>121</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="font">
-       <font>
-        <family>Sans Serif</family>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Load calibration</string>
-      </property>
-     </widget>
      <widget class="QPushButton" name="ClearCalibPlots">
       <property name="geometry">
        <rect>
         <x>590</x>
-        <y>380</y>
+        <y>430</y>
         <width>121</width>
         <height>41</height>
        </rect>
@@ -490,7 +434,7 @@
       <property name="geometry">
        <rect>
         <x>40</x>
-        <y>280</y>
+        <y>330</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -506,10 +450,15 @@
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>230</y>
-        <width>161</width>
+        <y>280</y>
+        <width>191</width>
         <height>16</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Calibration of streaker</string>
@@ -522,7 +471,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>320</y>
+        <y>370</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -538,7 +487,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>350</y>
+        <y>400</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -554,7 +503,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>320</y>
+        <y>370</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -570,7 +519,7 @@
       <property name="geometry">
        <rect>
         <x>180</x>
-        <y>400</y>
+        <y>450</y>
         <width>51</width>
         <height>16</height>
        </rect>
@@ -586,7 +535,7 @@
       <property name="geometry">
        <rect>
         <x>580</x>
-        <y>320</y>
+        <y>370</y>
         <width>81</width>
         <height>20</height>
        </rect>
@@ -602,7 +551,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>350</y>
+        <y>400</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -658,7 +607,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>280</y>
+        <y>330</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -674,7 +623,7 @@
       <property name="geometry">
        <rect>
         <x>580</x>
-        <y>350</y>
+        <y>400</y>
         <width>81</width>
         <height>26</height>
        </rect>
@@ -690,7 +639,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>260</y>
+        <y>310</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -706,7 +655,7 @@
       <property name="geometry">
        <rect>
         <x>180</x>
-        <y>360</y>
+        <y>410</y>
         <width>51</width>
         <height>16</height>
        </rect>
@@ -722,7 +671,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>390</y>
+        <y>440</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -738,7 +687,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>350</y>
+        <y>400</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -754,7 +703,7 @@
       <property name="geometry">
        <rect>
         <x>470</x>
-        <y>390</y>
+        <y>440</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -770,7 +719,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>430</y>
+        <y>500</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -825,8 +774,8 @@
      <widget class="QLabel" name="label_49">
       <property name="geometry">
        <rect>
-        <x>200</x>
-        <y>450</y>
+        <x>360</x>
+        <y>480</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -842,7 +791,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>350</y>
+        <y>400</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -858,7 +807,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>280</y>
+        <y>330</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -873,9 +822,9 @@
      <widget class="QLineEdit" name="LoadCalibrationFilename">
       <property name="geometry">
        <rect>
-        <x>310</x>
-        <y>440</y>
-        <width>451</width>
+        <x>190</x>
+        <y>510</y>
+        <width>601</width>
         <height>25</height>
        </rect>
       </property>
@@ -890,7 +839,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>390</y>
+        <y>440</y>
         <width>91</width>
         <height>26</height>
        </rect>
@@ -906,7 +855,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>260</y>
+        <y>310</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -922,7 +871,7 @@
       <property name="geometry">
        <rect>
         <x>350</x>
-        <y>320</y>
+        <y>370</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -937,14 +886,67 @@
      <widget class="QLabel" name="label_42">
       <property name="geometry">
        <rect>
-        <x>280</x>
-        <y>10</y>
+        <x>310</x>
+        <y>20</y>
         <width>161</width>
         <height>16</height>
        </rect>
       </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>Calibration screen</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="ForwardBlmeasCheck">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>560</y>
+        <width>321</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Forward propagate Bunch length measurement </string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="ForwardBlmeasFilename">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>590</y>
+        <width>601</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_56">
+      <property name="geometry">
+       <rect>
+        <x>360</x>
+        <y>560</y>
+        <width>91</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Filename</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -984,7 +986,7 @@
        <string>Import from file (json, h5)</string>
       </property>
       <property name="checked">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
      </widget>
      <widget class="QLineEdit" name="ImportFileTime">
@@ -1016,7 +1018,7 @@
        <string>From live</string>
       </property>
       <property name="checked">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
      </widget>
      <widget class="QLabel" name="label_24">
@@ -1091,62 +1093,6 @@
        <string>Obtain R12</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="ObtainR12_2">
-      <property name="geometry">
-       <rect>
-        <x>170</x>
-        <y>430</y>
-        <width>131</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="font">
-       <font>
-        <family>Sans Serif</family>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Obtain R12</string>
-      </property>
-     </widget>
     </widget>
     <widget class="QWidget" name="tab_3">
      <attribute name="title">
@@ -1162,7 +1108,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>/mnt/data/data/2021-03-16/2021_03_16-20_22_26_Screen_data_SARBD02-DSCR050.h5</string>
+       <string>filled_by_main.py</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -1214,22 +1160,6 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QCheckBox" name="ReconstructionDataLoadCheck">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>70</y>
-        <width>91</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Load data</string>
-      </property>
-      <property name="checked">
-       <bool>true</bool>
       </property>
      </widget>
      <widget class="QComboBox" name="ReconstructionDataLoadUseSelect">
@@ -1363,7 +1293,7 @@
       <property name="geometry">
        <rect>
         <x>610</x>
-        <y>440</y>
+        <y>610</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1451,7 +1381,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>440</y>
+        <y>610</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1507,7 +1437,7 @@
       <property name="geometry">
        <rect>
         <x>170</x>
-        <y>440</y>
+        <y>610</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1775,6 +1705,38 @@
        <bool>true</bool>
       </property>
      </widget>
+     <widget class="QLineEdit" name="BunchLengthMeasFile">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>550</y>
+        <width>611</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>filled_by_main.py</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="ShowBlmeasCheck">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>550</y>
+        <width>231</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Show bunch length measurement</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab_4">
      <attribute name="title">
@@ -1852,22 +1814,6 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="LasingOffDataLoadIndex">
-      <property name="geometry">
-       <rect>
-        <x>610</x>
-        <y>90</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>None</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QComboBox" name="LasingOffDataLoadUseSelect">
       <property name="geometry">
        <rect>
@@ -1934,22 +1880,6 @@
       </property>
       <property name="text">
        <string>Number of images</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_59">
-      <property name="geometry">
-       <rect>
-        <x>450</x>
-        <y>100</y>
-        <width>151</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Index (can be None)</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2059,22 +1989,6 @@
        <string>Obtain lasing OFF data</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="LasingOnDataLoadIndex">
-      <property name="geometry">
-       <rect>
-        <x>610</x>
-        <y>280</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>None</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QLabel" name="label_67">
       <property name="geometry">
        <rect>
@@ -2134,22 +2048,6 @@
       </property>
       <property name="text">
        <string>Number of images</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_70">
-      <property name="geometry">
-       <rect>
-        <x>450</x>
-        <y>290</y>
-        <width>151</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Index (can be None)</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -3119,6 +3017,22 @@
       <string>SARBD01-DSCR050</string>
      </property>
     </item>
+   </widget>
+   <widget class="QCheckBox" name="ElogSaveCheck">
+    <property name="geometry">
+     <rect>
+      <x>740</x>
+      <y>730</y>
+      <width>111</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save to ELOG</string>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

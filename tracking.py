@@ -25,7 +25,10 @@ class Tracker:
         self.simulator = elegant_matrix.get_simulator(magnet_file)
 
         if energy_eV == 'file':
-            energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
+            try:
+                energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
+            except KeyError:
+                energy_eV = self.simulator.get_data('SARBD01-MBND100:ENERGY-OP', timestamp)*1e6
         self.energy_eV = energy_eV
         self.timestamp = timestamp
         self.struct_lengths = struct_lengths
@@ -54,7 +57,14 @@ class Tracker:
         elif forward_method == 'elegant':
             self.forward = self.elegant_forward
 
-    @functools.lru_cache(1)
+    def set_simulator(self, magnet_file, energy_eV, timestamp=None):
+        self.simulator = elegant_matrix.get_simulator(magnet_file)
+        if energy_eV == 'file':
+            self.energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
+        else:
+            self.energy_eV = energy_eV
+
+    #@functools.lru_cache(1)
     def calcR12(self):
         outp = {}
         for n_streaker in (0, 1):
@@ -62,7 +72,7 @@ class Tracker:
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
-    @functools.lru_cache(1)
+    #@functools.lru_cache(1)
     def calcDisp(self):
         outp = {}
         for n_streaker in (0, 1):
@@ -446,7 +456,7 @@ class Tracker:
         elif np.all(np.diff(wake_x) >= 0):
             pass
         else:
-            raise ValueError
+            raise ValueError('Wake x is not monotonous')
 
         if abs(wake_x.max()) > abs(wake_x.min()):
             mask_negative = screen.x < 0
@@ -514,13 +524,11 @@ class Tracker:
             sp = subplot(3, title='Current profile', xlabel='time', ylabel='Current')
             sp.plot(t_interp, charge_interp)
             plt.show()
-            import pdb; pdb.set_trace()
             raise
         bp.reshape(self.len_screen)
         bp.cutoff(self.profile_cutoff)
         bp.crop()
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
-            #import pdb; pdb.set_trace()
             raise ValueError('NaNs in beam profile')
         if self.bp_smoothen:
             #bp0 = copy.deepcopy(bp)
@@ -545,6 +553,8 @@ class Tracker:
         return bp
 
     def track_backward2(self, screen, profile, gaps, beam_offsets, n_streaker, **kwargs):
+        if beam_offsets[n_streaker] == 0:
+            raise ValueError('Beam Offset is 0')
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, self.calcR12()[n_streaker])
         return self.track_backward(screen, wake_effect, n_streaker, **kwargs)

@@ -54,7 +54,14 @@ class Tracker:
         elif forward_method == 'elegant':
             self.forward = self.elegant_forward
 
-    @functools.lru_cache(1)
+    def set_simulator(self, magnet_file, energy_eV, timestamp=None):
+        self.simulator = elegant_matrix.get_simulator(magnet_file)
+        if energy_eV == 'file':
+            self.energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
+        else:
+            self.energy_eV = energy_eV
+
+    #@functools.lru_cache(1)
     def calcR12(self):
         outp = {}
         for n_streaker in (0, 1):
@@ -62,7 +69,7 @@ class Tracker:
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 
-    @functools.lru_cache(1)
+    #@functools.lru_cache(1)
     def calcDisp(self):
         outp = {}
         for n_streaker in (0, 1):

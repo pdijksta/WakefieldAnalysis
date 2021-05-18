@@ -83,25 +83,38 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
     ctr += 1
     new_ele_file = shutil.copy(ele, new_dir)
     shutil.copy(lat, new_dir)
+    run_str = '#!/bin/bash\n'
+
+    # Elegant needs this environment variable to run
+    rpn_file = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/defns.rpn'
+    if 'RPN_DEFNS' in os.environ and os.path.isfile(os.environ['RPN_DEFNS']):
+        pass
+    elif os.path.isfile(rpn_file):
+        run_str += 'export RPN_DEFNS=%s\n' % rpn_file
+    else:
+        raise ValueError('No RPN_DEFNS')
+
     old_dir = os.getcwd()
     try:
         os.chdir(new_dir)
-        cmd = 'elegant %s ' % os.path.basename(new_ele_file)
+        run_str += 'elegant %s ' % os.path.basename(new_ele_file)
         for key, val in macro_dict.items():
-            cmd += ' -macro=%s=%s' % (key, val)
+            run_str += ' -macro=%s=%s' % (key, val)
         if mute_elegant:
-            cmd += ' >/dev/null'
+            run_str_mute = run_str + ' >/dev/null'
         #print(cmd)
         with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
-            f.write(cmd+'\n')
-        status = os.system(cmd)
+            f.write(run_str_mute+'\n')
+        with open(os.path.join(new_dir, 'run_verbose.sh'), 'w') as f:
+            f.write(run_str+'\n')
+        status = os.system(run_str_mute)
         if status != 0:
             raise RuntimeError('Elegant failed! %s' % new_dir)
     finally:
         os.chdir(old_dir)
 
     sim = ElegantSimulation(new_ele_file, del_sim=del_sim)
-    return cmd, sim
+    return run_str, sim
 
 @functools.lru_cache(5)
 def gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, rms_bunch_duration, n_particles):

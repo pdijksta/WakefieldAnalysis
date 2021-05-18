@@ -145,7 +145,7 @@ def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, con
     c2 = np.abs((offsets-streaker_offset-wall1))**(-order)
     return const + (c1 - c2)*strength
 
-def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis'):
+def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12):
     if type(filename_or_dict) is dict:
         data_dict = filename_or_dict
     elif type(filename_or_dict) is str:
@@ -257,7 +257,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
 
 
     if forward_propagate_blmeas:
-        blmeas_profile = iap.profile_from_blmeas(blmeas, 200e-15, 200e-12, tracker.energy_eV)
+        blmeas_profile = iap.profile_from_blmeas(blmeas, 200e-15, charge, tracker.energy_eV)
         blmeas_profile.cutoff2(5e-2)
         blmeas_profile.crop()
         blmeas_profile.reshape(len_screen)

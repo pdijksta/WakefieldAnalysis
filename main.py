@@ -42,6 +42,8 @@ import myplotstyle as ms
 # - Rec plot legends
 # - Dispersion (?)
 # - Comments to elog
+# - Plot centroid of forward propagated
+# - One-sided plate
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -64,6 +66,11 @@ import myplotstyle as ms
 # - plot TDC blmeas next to current reconstruction (optional)
 # - save BPM data also
 # - Show sizes
+
+# - Data for paper
+# - 33713
+# - One for big streaking
+# - Resolution for big streaking
 
 
 try:
@@ -106,7 +113,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.ReconstructLasing.clicked.connect(self.reconstruct_lasing)
-        self.ObtainR12.clicked.connect(self.obtain_r12)
+        self.ObtainR12.clicked.connect(self.obtain_r12_0)
 
         self.StreakerSelect.activated.connect(self.update_streaker)
         self.BeamlineSelect.activated.connect(self.update_streaker)
@@ -215,13 +222,18 @@ class StartMain(QtWidgets.QMainWindow):
                     }
         elif self.LatticeFromLiveCheck:
             magnet_file = daq.get_aramis_quad_strengths()
+            print(magnet_file)
             other_input = {
                     'method': magnet_file,
                     'filename_or_dict': magnet_file,
                     }
         return magnet_file, other_input
 
+    def obtain_r12_0(self):
+        return self.obtain_r12()
+
     def obtain_r12(self, meta_data=None):
+        print('obtain_r12', meta_data)
         analysis_obj = self.init_tracker(meta_data)
         r12 = analysis_obj.tracker.calcR12()[self.n_streaker]
         disp = analysis_obj.tracker.calcDisp()[self.n_streaker]
@@ -261,6 +273,8 @@ class StartMain(QtWidgets.QMainWindow):
             magnet_file, other_input = self.obtain_lattice()
         else:
             magnet_file = machine_dict
+        print('magnet_file')
+        print(magnet_file)
 
         self.tracker_kwargs = {
                 'magnet_file': magnet_file,
@@ -560,6 +574,8 @@ class StartMain(QtWidgets.QMainWindow):
         streaker_offset = full_dict['meta_data']['streaker_offset']
         self.updateCalibration(streaker_offset)
         #self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
+        if self.streaker_calib_canvas is not None:
+            self.streaker_calib_canvas.draw()
 
     def updateCalibration(self, streaker_offset):
         if self.n_streaker == 0:
@@ -707,7 +723,7 @@ class StartMain(QtWidgets.QMainWindow):
         attachments = []
         for num, fig in enumerate(figs):
             fig_title = filename.replace('.h5', '_%i.png' % num)
-            fig_filename = os.path.join(self.save_dir, fig_title+'.png')
+            fig_filename = os.path.join(self.save_dir, fig_title)
             fig.savefig(fig_filename, bbox_inches='tight', pad_inches=0)
             print('Saved %s' % fig_filename)
             attachments.append(fig_filename)

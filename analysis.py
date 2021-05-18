@@ -156,7 +156,10 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     result_dict = data_dict['pyscan_result']
 
     if 'image' in result_dict:
-        images = result_dict['image'].astype(float).squeeze()
+        try:
+            images = result_dict['image'].astype(float).squeeze()
+        except:
+            import pdb; pdb.set_trace()
         proj_x = np.sum(images, axis=-2).squeeze()
     elif 'projx' in result_dict:
         proj_x = result_dict['projx']

@@ -664,8 +664,8 @@ class Image:
             new_obj0 = self.child(new_img0, new_t_axis, self.y_axis, x_unit='s')
             new_obj0.plot_img_and_proj(sp)
 
-        ms.plt.show()
-        import pdb; pdb.set_trace()
+        #ms.plt.show()
+        #import pdb; pdb.set_trace()
         return output
 
     def force_projection(self, proj_x, proj):
@@ -677,7 +677,7 @@ class Image:
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=True, revert_x=False, plot_gauss=True):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True):
 
         def unit_to_factor(unit):
             if unit == 'm':

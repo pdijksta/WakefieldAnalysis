@@ -41,6 +41,7 @@ import myplotstyle as ms
 # - png.png
 # - Rec plot legends
 # - Dispersion (?)
+# - Comments to elog
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -134,8 +135,8 @@ class StartMain(QtWidgets.QMainWindow):
         recon_data_file = default_dir+'2021_05_18-17_30_29_Screen_data_SARBD02-DSCR050.h5'
         lattice_file = archiver_dir+'2021-04-25.h5'
         time_str = '2021-04-25:17-22-26'
-        lasing_file_off = default_dir + '2021_05_18-18_27_23_Lasing_False_SARBD02-DSCR050.h5'
-        lasing_file_on = default_dir + '2021_05_18-18_13_33_Lasing_True_SARBD02-DSCR050.h5'
+        lasing_file_off = default_dir + '2021_05_18-20_05_21_Lasing_False_SARBD02-DSCR050.h5'
+        lasing_file_on = default_dir + '2021_05_18-20_04_28_Lasing_True_SARBD02-DSCR050.h5'
         streaker_calib_file = default_dir + '2021_04_25-16_55_25_Calibration_SARUN18-UDCP020.h5'
         lasing_current_profile = default_dir + '2021_05_18-17_41_02_PassiveReconstruction.h5'
 
@@ -652,9 +653,13 @@ class StartMain(QtWidgets.QMainWindow):
         return energy_eV
 
     def reconstruct_lasing(self):
+        self.clear_lasing_plots()
+
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
         dict_on = h5_storage.loadH5Recursive(file_on)
+        dict_off = h5_storage.loadH5Recursive(file_off)
+
         lasing_energy_txt = self.LasingEnergyInput.text()
         if lasing_energy_txt == 'None':
             lasing_energy = None
@@ -680,7 +685,7 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
-        lasing_dict = analysis.reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
+        lasing_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
 
         if self.lasing_plot_handles is not None:
 

@@ -559,13 +559,19 @@ def clear_lasing(plot_handles):
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
 
-def reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy):
+def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy):
 
-    dict_on = h5_storage.loadH5Recursive(file_on)
+    if type(file_or_dict_on) is dict:
+        dict_on = file_or_dict_on
+    else:
+        dict_on = h5_storage.loadH5Recursive(file_or_dict_on)
     dict_on_p = dict_on['pyscan_result']
     dict_on_m = dict_on['meta_data_end']
 
-    dict_off = h5_storage.loadH5Recursive(file_off)
+    if type(file_or_dict_off) is dict:
+        dict_off = file_or_dict_off
+    else:
+        dict_off = h5_storage.loadH5Recursive(file_or_dict_off)
     dict_off_p = dict_off['pyscan_result']
     dict_off_m = dict_off['meta_data_end']
 
@@ -579,8 +585,8 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
 
     input_dict = {
-            'file_on': file_on,
-            'file_off': file_off,
+            'file_or_dict_on': file_or_dict_on,
+            'file_or_dict_off': file_or_dict_off,
             'screen_center': screen_center,
             'structure_center': structure_center,
             'structure_length': structure_length,
@@ -629,7 +635,6 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     projx0_on = images0_on.sum(axis=-2)
     median_index = misc.get_median(projx0_on, output='index')
 
-    images0_on[median_index] -= np.median(images0_on[median_index])
     median_image_on = iap.Image(images0_on[median_index], x_axis0, y_axis0, x_offset=screen_center)
 
     # TODO

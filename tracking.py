@@ -648,7 +648,7 @@ class Tracker:
         gauss_wakes = []
 
         meas_screen.reshape(self.len_screen)
-        meas_screen.cutoff2(self.screen_cutoff)
+        meas_screen.cutoff(self.screen_cutoff)
         meas_screen.crop()
         meas_screen.reshape(self.len_screen)
 

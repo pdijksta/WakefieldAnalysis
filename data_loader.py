@@ -145,10 +145,12 @@ def load_screen_data(filename_or_dict, key, index):
     else:
         raise ValueError('Must be h5 or mat file. Is: %s' % filename_or_dict)
 
-    if 'pyscan_result' in dict_:
-        #dict0 = dict_
+    dict0 = dict_
+    if 'pyscan_result' in dict0:
         dict_ = dict_['pyscan_result']
         key = 'image'
+    else:
+        dict_ = dict0
 
     x_axis = dict_['x_axis']
     data = dict_[key].astype(float)
@@ -185,9 +187,12 @@ def load_screen_data(filename_or_dict, key, index):
     if y_axis[1] < y_axis[0]:
         y_axis = y_axis[::-1]
 
-    return {
+    output = {
             'x_axis': x_axis,
             'projx': projx,
             'y_axis': y_axis,
             }
+    if 'meta_data' in dict0:
+        output['meta_data'] = dict0['meta_data']
+    return output
 

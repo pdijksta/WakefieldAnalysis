@@ -30,6 +30,10 @@ beamline_bpm_pvs = {
         'Aramis': _aramis_pvs,
         }
 
+beamline_charge_pvs_bsread = {
+        'Aramis': ['SARBD01-DICT030:B1_CHARGE', 'SINEG01-DICT215:B1_CHARGE'],
+        }
+
 all_streakers = []
 for beamline, beamline_dict in streaker_names.items():
     all_streakers.extend([x for x in beamline_dict.values()])

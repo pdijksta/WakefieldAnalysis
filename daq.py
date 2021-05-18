@@ -181,7 +181,6 @@ def move_pv(pv, value, timeout, tolerance):
     else:
         raise ValueError('Pv %s should be %e, is: %e after %f seconds!' % (pv, value, current_value, timeout))
 
-
 def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
     print('Start bpm_data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
     meta_dict_1 = get_meta_data(screen)
@@ -202,8 +201,9 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
     result_dict['image'] = np.zeros([len(offset_range), n_images, len(y_axis), len(x_axis)], dtype=np.uint16)
 
     bpm_channels = config.beamline_bpm_pvs[beamline]
+    charge_channels = config.beamline_charge_pvs_bsread[beamline]
 
-    for bpm_channel in bpm_channels:
+    for bpm_channel in bpm_channels+charge_channels:
         result_dict[bpm_channel] = np.zeros([len(offset_range), n_images])
 
     for n_offset, offset_mm in enumerate(offset_range_mm):
@@ -231,7 +231,6 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
             }
     print('End bpm_data_streaker_offset')
     return output
-
 
 def get_axis(screen):
     camera_client = CamClient()
@@ -276,8 +275,9 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
         result_dict['y_axis_m'] = y_axis
 
     bpm_channels = config.beamline_bpm_pvs[beamline]
+    charge_channels = config.beamline_charge_pvs_bsread[beamline]
     image_pv = screen+':FPICTURE'
-    channels = bpm_channels + [image_pv]
+    channels = bpm_channels + [image_pv] + charge_channels
 
     images = np.zeros([n_images, len(y_axis), len(x_axis)], dtype=np.uint16)
     bpm_values = np.zeros([len(bpm_channels), n_images])
@@ -290,18 +290,18 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
                 for n_image in range(n_images):
                     msg = stream.receive()
                     pulse_ids[n_image] = msg.data.pulse_id
-                    for n_bpm, bpm_channel in enumerate(bpm_channels):
+                    for n_bpm, bpm_channel in enumerate(bpm_channels+charge_channels):
                         bpm_values[n_bpm, n_image] = msg.data.data[bpm_channel].value
                     if not dry_run:
                         images[n_image] = msg.data.data[image_pv].value
 
             result_dict['image'] = images
             result_dict['pulse_id'] = pulse_ids
-            for n_bpm, bpm_channel in enumerate(bpm_channels):
+            for n_bpm, bpm_channel in enumerate(bpm_channels+charge_channels):
                 result_dict[bpm_channel] = bpm_values[n_bpm]
         except Exception as e:
             print('Try %i' % _try, e)
-            pass
+            raise
         else:
             break
     else:

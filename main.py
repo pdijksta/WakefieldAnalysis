@@ -113,21 +113,21 @@ class StartMain(QtWidgets.QMainWindow):
         # Default strings in gui fields
         hostname = socket.gethostname()
         if 'psi' in hostname or 'lc6a' in hostname or 'lc7a' in hostname:
-            default_dir = '/sf/data/measurements/2021/04/25/'
+            default_dir = '/sf/data/measurements/2021/05/18/'
             archiver_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/'
             date = datetime.now()
             save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
         elif hostname == 'desktop':
-            default_dir = '/storage/data_2021-04-25/'
+            default_dir = '/storage/data_2021-05-18/'
             archiver_dir = '/storage/Philipp_data_folder/archiver_api_data/'
             save_dir = '/storage/tmp_reconstruction/'
         elif hostname == 'pubuntu':
-            default_dir = '/home/work/data_2021-04-25/'
+            default_dir = '/home/work/data_2021-05-18/'
             archiver_dir = '/home/work/archiver_api_data/'
             save_dir = '/home/work/tmp_reconstruction/'
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
-        bunch_length_meas_file = default_dir + '117348568_bunch_length_meas.h5'
+        bunch_length_meas_file = default_dir + '119325494_bunch_length_meas.h5'
         recon_data_file = default_dir+'2021_04_25-17_16_30_Lasing_False_SARBD02-DSCR050.h5'
         lattice_file = archiver_dir+'2021-04-25.h5'
         time_str = '2021-04-25:17-22-26'
@@ -215,19 +215,18 @@ class StartMain(QtWidgets.QMainWindow):
                     }
         return magnet_file, other_input
 
-    def obtain_r12(self):
-        analysis_obj = self.init_tracker()
+    def obtain_r12(self, meta_data=None):
+        analysis_obj = self.init_tracker(meta_data)
         r12 = analysis_obj.tracker.calcR12()[self.n_streaker]
         disp = analysis_obj.tracker.calcDisp()[self.n_streaker]
         print('R12:', r12)
         print('Dispersion:', disp)
         return r12, disp
 
-
-    def init_tracker(self):
+    def init_tracker(self, machine_dict=None):
 
         analysis_obj = analysis.Reconstruction(self.screen_x0, self.streaker_means)
-        magnet_file, other_input = self.obtain_lattice()
+        magnet_file = None
 
         tmp_dir = os.path.expanduser(self.TmpDir.text())
         assert os.path.isdir(tmp_dir)
@@ -252,6 +251,11 @@ class StartMain(QtWidgets.QMainWindow):
         override_quad_beamsize = self.OverrideQuadCheck.isChecked()
         quad_x_beamsize = [float(self.QuadBeamsize1.text())*1e-6, float(self.QuadBeamsize2.text())*1e-6]
 
+        if machine_dict is None:
+            magnet_file, other_input = self.obtain_lattice()
+        else:
+            magnet_file = machine_dict
+
         self.tracker_kwargs = {
                 'magnet_file': magnet_file,
                 'timestamp': timestamp,
@@ -269,7 +273,7 @@ class StartMain(QtWidgets.QMainWindow):
                 'quad_x_beamsize': quad_x_beamsize,
                 }
         analysis_obj.add_tracker(self.tracker_kwargs)
-        self.other_input['lattice'] = other_input
+        #self.other_input['lattice'] = other_input
         print('Tracker successfully initialized')
         return analysis_obj
 
@@ -387,20 +391,26 @@ class StartMain(QtWidgets.QMainWindow):
 
     def reconstruct_current(self):
 
-        analysis_obj = self.init_tracker()
-        # Streaker calibration
-        other_input = {'method': 'direct_input'}
+        filename = self.ReconstructionDataLoad.text().strip()
+        key = self.ReconstructionDataLoadKey.text()
+        index = self.ReconstructionDataLoadIndex.text()
+        screen_data = data_loader.load_screen_data(filename, key, index)
+        #if 'SARBD01-MBND100:ENERGY-OP' in screen_data['meta_data']:
+        #    energy_eV = screen_data['meta_data']['SARBD01-MBND100:ENERGY-OP']*1e6
+        #elif 'SARBD01-MBND100:P-SET' in screen_data['meta_data']:
+        #    energy_eV = screen_data['meta_data']['SARBD01-MBND100:P-SET']*1e6
+        #else:
+        #    raise ValueError('Energy undefined!')
 
+
+        analysis_obj = self.init_tracker(screen_data['meta_data'])
+        other_input = {'method': 'direct_input'}
         streaker_means = self.streaker_means
         other_input['streaker_means'] = streaker_means
         self.other_input['streaker_calibration'] = other_input
         print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
 
         gaps, streaker_offsets = self.streaker_set()
-        filename = self.ReconstructionDataLoad.text().strip()
-        key = self.ReconstructionDataLoadKey.text()
-        index = self.ReconstructionDataLoadIndex.text()
-        screen_data = data_loader.load_screen_data(filename, key, index)
         x_axis, projx = screen_data['x_axis'], screen_data['projx']
         other_input = {'method': 'data_loader.load_screen_data', 'args': (filename, key, index)}
 
@@ -623,9 +633,19 @@ class StartMain(QtWidgets.QMainWindow):
     def obtainLasingOff(self):
         return self.obtainLasing(False)
 
+    @staticmethod
+    def get_energy_from_meta(meta_data):
+        if 'SARBD01-MBND100:ENERGY-OP' in meta_data:
+            energy_eV = meta_data['SARBD01-MBND100:ENERGY-OP']*1e6
+        elif 'SARBD01-MBND100:P-SET' in meta_data:
+            energy_eV = meta_data['SARBD01-MBND100:P-SET']*1e6
+
+        return energy_eV
+
     def reconstruct_lasing(self):
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
+        dict_on = h5_storage.loadH5Recursive(file_on)
         lasing_energy_txt = self.LasingEnergyInput.text()
         if lasing_energy_txt == 'None':
             lasing_energy = None
@@ -644,8 +664,8 @@ class StartMain(QtWidgets.QMainWindow):
 
         assert os.path.isfile(file_on)
         assert os.path.isfile(file_off)
-        r12, disp = self.obtain_r12()
-        energy_eV = 'file'
+        r12, disp = self.obtain_r12(dict_on['meta_data'])
+        energy_eV = self.get_energy_from_meta(dict_on['meta_data'])
         charge = float(self.Charge.text())*1e-12
 
         if self.lasing_plot_handles is not None:
@@ -680,7 +700,7 @@ class StartMain(QtWidgets.QMainWindow):
             print('I would post:')
             print(text)
         elif self.ElogSaveCheck.isChecked():
-            dict_att = {'Application': 'PostUndulatorStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
+            dict_att = {'Author': 'Application: PostUndulatorStreakerAnalysis', 'Application': 'PostUndulatorStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
             self.logbook.post(text, attributes=dict_att, attachments=attachments)
 
             print('ELOG entry saved.')

@@ -22,14 +22,9 @@ e0_eV = m_e*c**2/e
 
 class Tracker:
     def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.), quad_wake_back=False):
-        self.simulator = elegant_matrix.get_simulator(magnet_file)
 
-        if energy_eV == 'file':
-            try:
-                energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
-            except KeyError:
-                energy_eV = self.simulator.get_data('SARBD01-MBND100:ENERGY-OP', timestamp)*1e6
-        self.energy_eV = energy_eV
+        self.set_simulator(magnet_file, energy_eV, timestamp)
+
         self.timestamp = timestamp
         self.struct_lengths = struct_lengths
         self.n_particles = n_particles

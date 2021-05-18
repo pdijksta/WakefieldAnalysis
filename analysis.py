@@ -261,7 +261,9 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             'offsets': offsets,
             'semigap': semigap,
             'streaker_offset': streaker_offset,
-            'reconstruction': reconstruction,
+            'fit_reconstruction': reconstruction,
+            'fit_xx': xx_fit,
+            'screen_x0': const0,
             }
 
 

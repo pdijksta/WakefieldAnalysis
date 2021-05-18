@@ -532,6 +532,24 @@ def clear_lasing(plot_handles):
         sp.set_ylabel(ylabel)
 
 def reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy):
+
+    dict_on = h5_storage.loadH5Recursive(file_on)
+    dict_on_p = dict_on['pyscan_result']
+    dict_on_m = dict_on['meta_data']
+
+    dict_off = h5_storage.loadH5Recursive(file_off)
+    dict_off_p = dict_off['pyscan_result']
+    dict_off_m = dict_off['meta_data']
+
+    if energy_eV == 'file':
+        if 'SARBD01-MBND100:ENERGY-OP' in dict_on_m:
+            energy_eV = dict_on_m['SARBD01-MBND100:ENERGY-OP']*1e6
+        elif 'SARBD01-MBND100:P-SET' in dict_on_m:
+            energy_eV = dict_on_m['SARBD01-MBND100:P-SET']*1e6
+        else:
+            raise ValueError('No energy saved!')
+
+
     input_dict = {
             'file_on': file_on,
             'file_off': file_off,
@@ -544,18 +562,8 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
             'energy_eV': energy_eV,
             'charge': charge,
             'streaker': streaker,
-            #'gap': gap,
-            #'beam_offset': beam_offset,
-            #'struct_length': struct_length,
+            'pulse_energy': pulse_energy,
             }
-
-    dict_on = h5_storage.loadH5Recursive(file_on)
-    dict_on_p = dict_on['pyscan_result']
-    dict_on_m = dict_on['meta_data']
-
-    dict_off = h5_storage.loadH5Recursive(file_off)
-    dict_off_p = dict_off['pyscan_result']
-    dict_off_m = dict_off['meta_data']
 
     gaps, beam_offsets = [], []
     for dict_ in dict_off_m, dict_on_m:

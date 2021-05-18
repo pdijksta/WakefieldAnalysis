@@ -645,7 +645,7 @@ class StartMain(QtWidgets.QMainWindow):
         assert os.path.isfile(file_on)
         assert os.path.isfile(file_off)
         r12, disp = self.obtain_r12()
-        energy_eV = self.analysis_obj.tracker.energy_eV
+        energy_eV = 'file'
         charge = float(self.Charge.text())*1e-12
 
         if self.lasing_plot_handles is not None:

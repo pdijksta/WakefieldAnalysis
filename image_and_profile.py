@@ -493,6 +493,7 @@ class Image:
             image = image - np.median(image)
             np.clip(image, 0, None, out=image)
 
+
         self.image = image
         self.x_axis = x_axis - x_offset
         self.y_axis = y_axis
@@ -557,11 +558,11 @@ class Image:
             intensity = self.image[:,n_slice]
             if smoothen_first:
                 yy_conv = gaussian_filter1d(intensity, smoothen)
-                gf0 = GaussFit(y_axis, yy_conv, fit_const=False)
+                gf0 = GaussFit(y_axis, yy_conv, fit_const=True)
                 p0 = gf0.popt
             else:
                 p0 = None
-            gf = GaussFit(y_axis, intensity, fit_const=False, p0=p0)
+            gf = GaussFit(y_axis, intensity, fit_const=True, p0=p0)
             slice_mean.append(gf.mean)
             slice_sigma.append(abs(gf.sigma))
             slice_gf.append(gf)
@@ -630,6 +631,7 @@ class Image:
         new_img = new_img0 * np.abs(diff_x)
         new_img = new_img / new_img.sum() * self.image.sum()
 
+
         output = self.child(new_img, new_t_axis, self.y_axis, x_unit='s')
 
         if debug:
@@ -653,10 +655,17 @@ class Image:
             sp_ctr += 1
             self.plot_img_and_proj(sp)
 
-            sp = subplot(sp_ctr, title='Image new', xlabel='s [fs]', ylabel='y [mm]', grid=False)
+            sp = subplot(sp_ctr, title='Image new', xlabel='t [fs]', ylabel='y [mm]', grid=False)
             sp_ctr += 1
             output.plot_img_and_proj(sp)
 
+            sp = subplot(sp_ctr, title='Image new 0', xlabel='t [fs]', ylabel=' y [mm]', grid=False)
+            sp_ctr += 1
+            new_obj0 = self.child(new_img0, new_t_axis, self.y_axis, x_unit='s')
+            new_obj0.plot_img_and_proj(sp)
+
+        ms.plt.show()
+        import pdb; pdb.set_trace()
         return output
 
     def force_projection(self, proj_x, proj):

@@ -490,22 +490,23 @@ def lasing_figures():
     sp_ctr += 1
 
     sp_ctr += 1
-    sp_off = subplot(sp_ctr)
-    sp_ctr += 1
 
     sp_on = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_off_cut = subplot(sp_ctr)
     sp_ctr += 1
 
     sp_on_cut = subplot(sp_ctr)
     sp_ctr += 1
 
-    sp_off_tE = subplot(sp_ctr)
+    sp_on_tE = subplot(sp_ctr)
     sp_ctr += 1
 
-    sp_on_tE = subplot(sp_ctr)
+    sp_off = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_off_cut = subplot(sp_ctr)
+    sp_ctr += 1
+
+    sp_off_tE = subplot(sp_ctr)
     sp_ctr += 1
 
     output.append((fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)))
@@ -513,6 +514,7 @@ def lasing_figures():
 
 
     fig = plt.figure()
+    fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,2, grid=False)
     sp_ctr = 1
 
@@ -541,12 +543,12 @@ def clear_lasing(plot_handles):
     for sp, title, xlabel, ylabel in [
             (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
             (sp_wake, 'Wake', 't (fs)', 'x (mm)'),
-            (sp_off, 'Lasing off', 'x (mm)', 'y (mm)'),
-            (sp_on, 'Lasing on', 'x (mm)', 'y (mm)'),
-            (sp_off_cut, 'Lasing off', 'x (mm)', 'y (mm)'),
-            (sp_on_cut, 'Lasing on', 'x (mm)', 'y (mm)'),
-            (sp_off_tE, 'Lasing off', 't (fs)', '$\Delta$ E (MeV)'),
-            (sp_on_tE, 'Lasing off', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_off, 'Lasing off raw', 'x (mm)', 'y (mm)'),
+            (sp_on, 'Lasing on raw', 'x (mm)', 'y (mm)'),
+            (sp_off_cut, 'Lasing off cut', 'x (mm)', 'y (mm)'),
+            (sp_on_cut, 'Lasing on cut', 'x (mm)', 'y (mm)'),
+            (sp_off_tE, 'Lasing off tE', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_on_tE, 'Lasing on tE', 't (fs)', '$\Delta$ E (MeV)'),
             (sp_power, 'Power', 't (fs)', 'P (GW)'),
             (sp_current, 'Current', 't (fs)', 'I (arb. units)'),
             (sp_centroid, 'Slice centroids', 't (fs)', '$\Delta$ E (MeV)'),
@@ -626,6 +628,8 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
     projx0_on = images0_on.sum(axis=-2)
     median_index = misc.get_median(projx0_on, output='index')
+
+    images0_on[median_index] -= np.median(images0_on[median_index])
     median_image_on = iap.Image(images0_on[median_index], x_axis0, y_axis0, x_offset=screen_center)
 
     # TODO
@@ -635,7 +639,7 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     current_dict = h5_storage.loadH5Recursive(file_current)
     wake_profile_dict = current_dict['gaussian_reconstruction']['reconstructed_profile']
     wake_profile = iap.BeamProfile.from_dict(wake_profile_dict)
-    wake_profile.cutoff2(0.2)
+    wake_profile.cutoff2(0.1)
     wake_profile.crop()
     wake_profile.reshape(len_profile)
 
@@ -657,11 +661,23 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_off']['slice_current'], label='Off')
     sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_on']['slice_current'], label='On')
 
-    for key in ('Lasing_off', 'Lasing_on'):
+    lasing_dict['all_images']['Lasing_off']['image_tE'].plot_img_and_proj(sp_off_tE)
+    lasing_dict['all_images']['Lasing_on']['image_tE'].plot_img_and_proj(sp_on_tE)
+
+    lasing_dict['all_images']['Lasing_off']['image_cut'].plot_img_and_proj(sp_off_cut)
+    lasing_dict['all_images']['Lasing_on']['image_cut'].plot_img_and_proj(sp_on_cut)
+
+
+
+    for key, sp_tE in [('Lasing_off',sp_off_tE), ('Lasing_on',sp_on_tE)]:
         slice_sigma = all_slice_dict[key]['slice_sigma']
         slice_centroid = all_slice_dict[key]['slice_mean']
         sp_slice_size.plot(slice_time*1e15, slice_sigma/1e6, label=key)
         sp_centroid.plot(slice_time*1e15, slice_centroid/1e6, label=key)
+
+        lims = sp_tE.get_ylim()
+        sp_tE.errorbar(slice_time*1e15, slice_centroid/1e6, yerr=slice_sigma/1e6, ls='None', marker='+', color='red')
+        sp_tE.set_ylim(*lims)
 
     sp_power.plot(slice_time*1e15, power_from_Eloss/1e9, label='$\Delta$E')
     sp_power.plot(slice_time*1e15, power_from_Espread/1e9, label='$\Delta\sigma_E$')
@@ -673,12 +689,6 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
     median_image_off.plot_img_and_proj(sp_off)
     median_image_on.plot_img_and_proj(sp_on)
-
-    lasing_dict['all_images']['Lasing_off']['image_tE'].plot_img_and_proj(sp_off_tE)
-    lasing_dict['all_images']['Lasing_on']['image_tE'].plot_img_and_proj(sp_on_tE)
-
-    lasing_dict['all_images']['Lasing_off']['image_cut'].plot_img_and_proj(sp_off_cut)
-    lasing_dict['all_images']['Lasing_on']['image_cut'].plot_img_and_proj(sp_on_cut)
 
     sp_wake.plot(wake_t*1e15, wake_x*1e3)
     wake_profile.plot_standard(sp_profile)

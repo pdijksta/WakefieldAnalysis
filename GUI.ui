@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -2607,7 +2607,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>30</string>
+       <string>20</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2639,7 +2639,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>60</string>
+       <string>40</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

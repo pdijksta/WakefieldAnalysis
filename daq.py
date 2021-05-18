@@ -280,7 +280,7 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
     channels = bpm_channels + [image_pv] + charge_channels
 
     images = np.zeros([n_images, len(y_axis), len(x_axis)], dtype=np.uint16)
-    bpm_values = np.zeros([len(bpm_channels), n_images])
+    bpm_values = np.zeros([len(bpm_channels+charge_channels), n_images])
     pulse_ids = np.zeros(n_images)
 
     max_tries = 3

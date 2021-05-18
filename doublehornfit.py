@@ -52,7 +52,7 @@ class DoublehornFit:
                 plt.plot(gf.xx, gf.reconstruction, label='gaussfit')
                 plt.legend()
                 plt.show()
-                import pdb; pdb.set_trace()
+                raise
             self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
             print(e)
             print('Fit did not converge. Using p0 instead!')

@@ -67,11 +67,7 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
 
     for ctr, (image_obj, label) in enumerate([(image_off, 'Lasing_off'), (image_on, 'Lasing_on')]):
 
-        try:
-            image_cut = image_obj.cut(wake_x.min(), wake_x.max())
-        except Exception as e:
-            print(e)
-            import pdb; pdb.set_trace()
+        image_cut = image_obj.cut(wake_x.min(), wake_x.max())
         image_reshaped = image_cut.reshape_x(len_profile)
         image_t = image_reshaped.x_to_t(wake_x, wake_t, debug=False)
         if ctr == 0:

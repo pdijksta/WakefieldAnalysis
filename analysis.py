@@ -675,8 +675,6 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
     lasing_dict['all_images']['Lasing_off']['image_cut'].plot_img_and_proj(sp_off_cut)
     lasing_dict['all_images']['Lasing_on']['image_cut'].plot_img_and_proj(sp_on_cut)
 
-
-
     for key, sp_tE in [('Lasing_off',sp_off_tE), ('Lasing_on',sp_on_tE)]:
         slice_sigma = all_slice_dict[key]['slice_sigma']
         slice_centroid = all_slice_dict[key]['slice_mean']
@@ -710,4 +708,9 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
             }
     #import pdb; pdb.set_trace()
     return output
+
+def reconstruct_current(data_file_or_dict, tracker_kwargs, ):
+    pass
+
+
 

@@ -16,7 +16,6 @@ from PyQt5.QtCore import pyqtRemoveInputHook
 import config
 import tracking
 import elegant_matrix
-import data_loader
 import misc2 as misc
 import analysis
 import h5_storage
@@ -119,7 +118,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.BeamlineSelect.activated.connect(self.update_streaker)
 
         self.update_streaker()
-        self.other_input = {}
 
         # Default strings in gui fields
         hostname = socket.gethostname()
@@ -139,7 +137,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
         bunch_length_meas_file = default_dir + '119325494_bunch_length_meas.h5'
-        recon_data_file = default_dir+'2021_05_18-17_30_29_Screen_data_SARBD02-DSCR050.h5'
+        recon_data_file = default_dir+'2021_05_18-17_41_02_PassiveReconstruction.h5'
         lattice_file = archiver_dir+'2021-04-25.h5'
         time_str = '2021-04-25:17-22-26'
         lasing_file_off = default_dir + '2021_05_18-20_05_21_Lasing_False_SARBD02-DSCR050.h5'
@@ -216,18 +214,10 @@ class StartMain(QtWidgets.QMainWindow):
 
         if self.LatticeFromFileCheck.isChecked():
             magnet_file = self.ImportFile.text()
-            other_input = {
-                    'method': 'from_file',
-                    'filename_or_dict': magnet_file,
-                    }
         elif self.LatticeFromLiveCheck:
             magnet_file = daq.get_aramis_quad_strengths()
             print(magnet_file)
-            other_input = {
-                    'method': magnet_file,
-                    'filename_or_dict': magnet_file,
-                    }
-        return magnet_file, other_input
+        return magnet_file
 
     def obtain_r12_0(self):
         return self.obtain_r12()
@@ -270,7 +260,7 @@ class StartMain(QtWidgets.QMainWindow):
         quad_x_beamsize = [float(self.QuadBeamsize1.text())*1e-6, float(self.QuadBeamsize2.text())*1e-6]
 
         if machine_dict is None:
-            magnet_file, other_input = self.obtain_lattice()
+            magnet_file = self.obtain_lattice()
         else:
             magnet_file = machine_dict
         print('magnet_file')
@@ -293,7 +283,6 @@ class StartMain(QtWidgets.QMainWindow):
                 'quad_x_beamsize': quad_x_beamsize,
                 }
         analysis_obj.add_tracker(self.tracker_kwargs)
-        #self.other_input['lattice'] = other_input
         print('Tracker successfully initialized')
         return analysis_obj
 
@@ -368,17 +357,14 @@ class StartMain(QtWidgets.QMainWindow):
         self._check_check(widgets, 'Check set streaker checkmarks')
 
         if self.SetStreakerDirectCheck.isChecked():
-            other_input = {'method': 'direct_input'}
             meta_dict = None
         elif self.SetStreakerFromLiveCheck.isChecked():
             self.obtain_streaker_settings_from_live()
-            other_input = {'method': 'live'}
             if daq is None:
                 raise RuntimeError('Cannot get settings from live!')
             meta_dict = daq.get_meta_data(self.screen)
 
         elif self.SetStreakerSaveCheck:
-            other_input = {'method': 'saved'}
             filename = self.ReconstructionDataLoad.text().strip()
             dict_ = h5_storage.loadH5Recursive(filename)
             if 'meta_data' in dict_:
@@ -404,36 +390,30 @@ class StartMain(QtWidgets.QMainWindow):
         # beam offset is negative of streaker offset
         streaker_offsets = self.streaker_offsets
 
-        other_input['gaps'] = gaps,
-        other_input['streaker_offsets'] = streaker_offsets
-        self.other_input['streaker_set'] = other_input
         print('Streaker is set: gaps: %s, offsets: %s' % (gaps, streaker_offsets))
         return gaps, streaker_offsets
 
     def reconstruct_current(self):
 
         filename = self.ReconstructionDataLoad.text().strip()
-        key = self.ReconstructionDataLoadKey.text()
-        index = self.ReconstructionDataLoadIndex.text()
-        screen_data = data_loader.load_screen_data(filename, key, index)
-        #if 'SARBD01-MBND100:ENERGY-OP' in screen_data['meta_data']:
-        #    energy_eV = screen_data['meta_data']['SARBD01-MBND100:ENERGY-OP']*1e6
-        #elif 'SARBD01-MBND100:P-SET' in screen_data['meta_data']:
-        #    energy_eV = screen_data['meta_data']['SARBD01-MBND100:P-SET']*1e6
-        #else:
-        #    raise ValueError('Energy undefined!')
+        screen_data = h5_storage.loadH5Recursive(filename)
 
+        if 'gaussian_reconstruction' in screen_data:
+            screen_data = screen_data['input']
+        if 'meta_data' in screen_data:
+            meta_data = screen_data['meta_data']
+        elif 'meta_data_begin' in screen_data:
+            meta_data = screen_data['meta_data_begin']
+        else:
+            print(screen_data.keys())
+            raise ValueError
 
-        analysis_obj = self.init_tracker(screen_data['meta_data'])
-        other_input = {'method': 'direct_input'}
+        analysis_obj = self.init_tracker(meta_data)
         streaker_means = self.streaker_means
-        other_input['streaker_means'] = streaker_means
-        self.other_input['streaker_calibration'] = other_input
         print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
 
         gaps, streaker_offsets = self.streaker_set()
         x_axis, projx = screen_data['x_axis'], screen_data['projx']
-        other_input = {'method': 'data_loader.load_screen_data', 'args': (filename, key, index)}
 
         if self.ReconstructionDataLoadUseSelect.currentText() == 'Median':
             median_projx = misc.get_median(projx)
@@ -442,9 +422,6 @@ class StartMain(QtWidgets.QMainWindow):
         meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
 
         self.meas_screen = meas_screen
-        other_input['screen_x'] = meas_screen.x
-        other_input['screen_intensity'] = meas_screen.intensity
-        self.other_input['obtain_reconstruction_data'] = other_input
         print('Obtained reconstruction data')
 
         analysis_obj.input_data['screen_x0'] = self.screen_x0
@@ -473,7 +450,6 @@ class StartMain(QtWidgets.QMainWindow):
                 'self_consistent': self_consistent,
                 'meas_screen': meas_screen,
                 }
-        analysis_obj.input_data['other'] = self.other_input
 
         kwargs_recon2 = analysis_obj.prepare_rec_gauss_args(kwargs_recon)
         print('Analysing reconstruction')

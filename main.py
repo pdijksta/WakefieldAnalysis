@@ -19,7 +19,6 @@ import elegant_matrix
 import misc2 as misc
 import analysis
 import h5_storage
-import image_and_profile as iap
 
 import myplotstyle as ms
 
@@ -66,6 +65,7 @@ import myplotstyle as ms
 # - save BPM data also
 # - Show sizes
 
+# Other comments
 # - Data for paper
 # - 33713
 # - One for big streaking
@@ -107,7 +107,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.LoadCalibration.clicked.connect(self.load_calibration)
         self.CalibrateScreen.clicked.connect(self.calibrate_screen)
         self.ClearScreenPlots.clicked.connect(self.clear_screen_plots)
-        self.SetXEmittance.clicked.connect(self.set_x_emittance)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
@@ -206,19 +205,6 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
-    def obtain_lattice(self):
-
-
-        widgets = [self.LatticeFromFileCheck, self.LatticeFromLiveCheck]
-        self._check_check(widgets, 'Check lattice checkmarks')
-
-        if self.LatticeFromFileCheck.isChecked():
-            magnet_file = self.ImportFile.text()
-        elif self.LatticeFromLiveCheck:
-            magnet_file = daq.get_aramis_quad_strengths()
-            print(magnet_file)
-        return magnet_file
-
     def obtain_r12_0(self):
         return self.obtain_r12()
 
@@ -231,7 +217,7 @@ class StartMain(QtWidgets.QMainWindow):
         print('Dispersion:', disp)
         return r12, disp
 
-    def init_tracker(self, machine_dict=None):
+    def init_tracker(self, magnet_file):
 
         analysis_obj = analysis.Reconstruction(self.screen_x0, self.streaker_means)
         magnet_file = None
@@ -259,10 +245,6 @@ class StartMain(QtWidgets.QMainWindow):
         override_quad_beamsize = self.OverrideQuadCheck.isChecked()
         quad_x_beamsize = [float(self.QuadBeamsize1.text())*1e-6, float(self.QuadBeamsize2.text())*1e-6]
 
-        if machine_dict is None:
-            magnet_file = self.obtain_lattice()
-        else:
-            magnet_file = machine_dict
         print('magnet_file')
         print(magnet_file)
 
@@ -320,27 +302,6 @@ class StartMain(QtWidgets.QMainWindow):
         print('Beamsize is %.3f um' % (beamsize*1e6))
         return x0, beamsize
         #self.tabWidget.setCurrentIndex(self.screen_calib_plot_tab_index)
-
-    def set_x_emittance(self):
-
-        analysis_obj = self.init_tracker()
-        tracker = analysis_obj.tracker
-
-        tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
-        charge = float(self.Charge.text())*1e-12
-        len_screen = tracker.len_screen
-        smoothen = tracker.smoothen
-
-        bp_test = iap.get_gaussian_profile(40e-15, tt_halfrange, len_screen, charge, tracker.energy_eV)
-        screen_sim = tracker.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
-        emit0 = tracker.n_emittances[0]
-        sig_real = float(self.DirectBeamsizeScreen.text())*1e-6
-        screen_sim2 = iap.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), smoothen)
-        sig_meas = np.sqrt(sig_real**2 - smoothen**2)
-        sig_sim = np.sqrt(screen_sim2.gaussfit.sigma**2 - smoothen**2)
-        emittance_fit = emit0 * (sig_meas / sig_sim)**2
-
-        print('Emittance fit is %.3f nm' % (emittance_fit*1e9))
 
     def obtain_streaker_settings_from_live(self):
         for n_streaker, gap_widget, offset_widget in [
@@ -400,6 +361,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         if 'gaussian_reconstruction' in screen_data:
             screen_data = screen_data['input']
+
         if 'meta_data' in screen_data:
             meta_data = screen_data['meta_data']
         elif 'meta_data_begin' in screen_data:
@@ -453,12 +415,6 @@ class StartMain(QtWidgets.QMainWindow):
 
         kwargs_recon2 = analysis_obj.prepare_rec_gauss_args(kwargs_recon)
         print('Analysing reconstruction')
-
-        #import pickle
-        #p_file = '/tmp/rec_args.pkl'
-        #with open(p_file, 'wb') as f:
-        #    pickle.dump((kwargs_recon2, analysis_obj), f)
-        #    print('Saved %s' % p_file)
 
         self.clear_rec_plots()
         analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles, blmeas_file)
@@ -647,6 +603,8 @@ class StartMain(QtWidgets.QMainWindow):
     def reconstruct_lasing(self):
         self.clear_lasing_plots()
 
+        n_slices = int(self.LasingReconstructionNSlices.text())
+        len_screen = int(self.ScreenLength.text())
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
         dict_on = h5_storage.loadH5Recursive(file_on)
@@ -677,7 +635,7 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
-        lasing_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
+        lasing_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy, n_slices, len_screen)
 
         if self.lasing_plot_handles is not None:
 

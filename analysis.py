@@ -26,11 +26,6 @@ except ImportError:
     from . import lasing
     from . import config
 
-def plt_show():
-    plt.pause(.1)
-    plt.draw()
-    plt.show(block=False)
-
 class Reconstruction:
     def __init__(self, screen_x0, streaker_means):
         self.input_data = {
@@ -78,7 +73,7 @@ class Reconstruction:
             sp = subplot(1)
             meas_screen = kwargs['meas_screen']
             meas_screen.plot_standard(sp)
-            plt_show()
+            plt.show()
             import pdb; pdb.set_trace()
 
         gauss_dict = self.tracker.find_best_gauss(**kwargs)
@@ -137,7 +132,7 @@ class Reconstruction:
             sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)
             sp_opt.set_ylim(0,1.1*yy_opt.max())
             if plot_handles is None:
-                plt_show()
+                plt.show()
 
 def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, const, semigap):
     wall0, wall1 = -semigap, semigap
@@ -480,63 +475,44 @@ def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_current):
 def lasing_figures():
 
     output = []
-
     fig = plt.figure()
     fig.canvas.set_window_title('Lasing reconstruction')
     subplot = ms.subplot_factory(3,3, grid=False)
     sp_ctr = 1
-
     sp_profile = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_wake = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_ctr += 1
-
     sp_on = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_on_cut = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_on_tE = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_off = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_off_cut = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_off_tE = subplot(sp_ctr)
     sp_ctr += 1
-
     output.append((fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)))
     fig.subplots_adjust(hspace=0.5, wspace=0.3)
-
 
     fig = plt.figure()
     fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,2, grid=False)
     sp_ctr = 1
-
     sp_power = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_current = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_centroid = subplot(sp_ctr)
     sp_ctr += 1
-
     sp_slice_size = subplot(sp_ctr)
     sp_ctr += 1
-
     output.append((fig, (sp_power, sp_current, sp_centroid, sp_slice_size)))
-
     clear_lasing(output)
-
     return output
 
 def clear_lasing(plot_handles):
@@ -562,7 +538,7 @@ def clear_lasing(plot_handles):
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
 
-def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy):
+def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy, n_slices, len_profile):
 
     if type(file_or_dict_on) is dict:
         dict_on = file_or_dict_on
@@ -640,10 +616,6 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
 
     median_image_on = iap.Image(images0_on[median_index], x_axis0, y_axis0, x_offset=screen_center)
 
-    # TODO
-    n_slices = 50
-    len_profile = 2000
-
     current_dict = h5_storage.loadH5Recursive(file_current)
     wake_profile_dict = current_dict['gaussian_reconstruction']['reconstructed_profile']
     wake_profile = iap.BeamProfile.from_dict(wake_profile_dict)
@@ -700,7 +672,7 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
     wake_profile.plot_standard(sp_profile)
 
     if plot_handles is None:
-        plt_show()
+        plt.show()
 
     output = {
             'input': input_dict,
@@ -709,8 +681,6 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
     #import pdb; pdb.set_trace()
     return output
 
-def reconstruct_current(data_file_or_dict, tracker_kwargs, ):
+def reconstruct_current(data_file_or_dict, tracker, ):
     pass
-
-
 

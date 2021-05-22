@@ -98,7 +98,7 @@ class StartMain(QtWidgets.QMainWindow):
         uic.loadUi('GUI.ui', self)
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
-        self.SaveData.clicked.connect(self.save_data)
+        self.SaveData.clicked.connect(self.save_current_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
         self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
@@ -152,6 +152,11 @@ class StartMain(QtWidgets.QMainWindow):
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
 
+
+        self.current_rec_dict = None
+        self.lasing_rec_dict = None
+
+        ## Handle plots
         def get_new_tab(fig, title):
             new_tab = QtWidgets.QWidget()
             layout = PyQt5.Qt.QVBoxLayout()
@@ -346,7 +351,6 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.clear_rec_plots()
         filename = self.ReconstructionDataLoad.text().strip()
-        screen_data = h5_storage.loadH5Recursive(filename)
         streaker_means = self.streaker_means
         print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
 
@@ -374,8 +378,8 @@ class StartMain(QtWidgets.QMainWindow):
                 'self_consistent': self_consistent,
                 }
 
-        tracker = self.get_tracker()
-        analysis.reconstruct_current(screen_data, self.n_streaker, self.beamline, tracker, rec_mode, kwargs_recon, self.screen_x0, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
+        tracker_kwargs = self.get_tracker_kwargs()
+        self.current_rec_dict = analysis.reconstruct_current(filename, self.n_streaker, self.beamline, tracker_kwargs, rec_mode, kwargs_recon, self.screen_x0, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
 
 
         if self.rec_canvas is not None:
@@ -384,18 +388,17 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
 
-    def save_data(self):
+    def save_current_rec_data(self):
+        if self.current_rec_dict is None:
+            raise ValueError('No current reconstruction to save!')
+
         save_path = self.save_dir
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
-        save_dict = {
-                'input': self.current_rec_obj.input_data,
-                'gaussian_reconstruction': self.current_rec_obj.gauss_dict,
-                }
         elog_text = 'Passive current reconstruction'
-        self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, save_dict)
+        self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, self.current_rec_dict)
 
     @property
     def save_dir(self):

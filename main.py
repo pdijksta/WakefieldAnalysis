@@ -26,21 +26,19 @@ import myplotstyle as ms
 # - add info of beamsize with / without assumed screen resolution
 # - debug delay after using BsreadPositioner or any pyscan
 # - add tilt option
-# - restructure analysis
 # - what is the correct beam energy pv?
 # - handle feedback in user interface
-# - simplify lattice
 # - detune undulator button
 # - optional provide the pulse energy calibration
 # - streaker center calibration: repeat with one data point removed at one side
 # - Offset based on centroid, offset based on sizes (?)
-# - Script to compare different scans
 # - png.png
-# - Rec plot legends
 # - Dispersion (?)
-# - Comments to elog
 # - Plot centroid of forward propagated
 # - One-sided plate
+
+#Problematic / cannot be done easily:
+# - save BPM data also
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -49,6 +47,7 @@ import myplotstyle as ms
 # - noise reduction from the image
 # - uJ instead of True, False
 # - non blocking daq
+# - Script to compare different scans
 
 # Done
 # - pulse energy from gas detector in pyscan
@@ -61,8 +60,11 @@ import myplotstyle as ms
 # - charge from pyscan
 # - Forward propagation from TDC to screen inside tool
 # - plot TDC blmeas next to current reconstruction (optional)
-# - save BPM data also
 # - Show sizes
+# - simplify lattice
+# - restructure analysis
+# - Rec plot legends
+# - Comments to elog
 
 # Other comments
 # - Data for paper
@@ -98,7 +100,8 @@ class StartMain(QtWidgets.QMainWindow):
         uic.loadUi('GUI.ui', self)
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
-        self.SaveData.clicked.connect(self.save_current_rec_data)
+        self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
+        self.LasingRecData.clicked.connect(self.save_lasing_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
         self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
@@ -381,7 +384,6 @@ class StartMain(QtWidgets.QMainWindow):
         tracker_kwargs = self.get_tracker_kwargs()
         self.current_rec_dict = analysis.reconstruct_current(filename, self.n_streaker, self.beamline, tracker_kwargs, rec_mode, kwargs_recon, self.screen_x0, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
 
-
         if self.rec_canvas is not None:
             self.rec_canvas.draw()
 
@@ -398,6 +400,7 @@ class StartMain(QtWidgets.QMainWindow):
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
         elog_text = 'Passive current reconstruction'
+        elog_text +='\nComment: %s' % self.CurrentElogComment.text()
         self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, self.current_rec_dict)
 
     @property
@@ -599,17 +602,20 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
-        lasing_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy, n_slices, len_screen)
+        self.lasing_rec_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy, n_slices, len_screen)
 
         if self.lasing_plot_handles is not None:
             self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
 
+    def save_lasing_rec_data(self):
+        if self.lasing_rec_dict is None:
+            raise ValueError('No lasing reconstruction data to save')
         elog_text = 'Lasing reconstruction'
+        elog_text +='\nComment: %s' % self.LasingElogComment.text()
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_reconstruction_%s.h5' % screen_str
-
-        self.elog_and_H5(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, lasing_dict)
+        self.elog_and_H5(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, self.lasing_rec_dict)
 
     def elog_and_H5(self, text, figs, title, basename, data_dict):
 
@@ -626,6 +632,7 @@ class StartMain(QtWidgets.QMainWindow):
             attachments.append(fig_filename)
 
         text += '\nData saved in %s' % filename
+        text += '\nBeamline: %s' % self.beamline
         text += '\nStreaker: %s' % self.streaker
         text += '\nScreen: %s' % self.screen
 

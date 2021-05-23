@@ -29,10 +29,8 @@ import myplotstyle as ms
 # - what is the correct beam energy pv?
 # - handle feedback in user interface
 # - detune undulator button
-# - optional provide the pulse energy calibration
 # - streaker center calibration: repeat with one data point removed at one side
 # - Offset based on centroid, offset based on sizes (?)
-# - png.png
 # - Dispersion (?)
 # - Plot centroid of forward propagated
 # - One-sided plate
@@ -65,6 +63,8 @@ import myplotstyle as ms
 # - restructure analysis
 # - Rec plot legends
 # - Comments to elog
+# - optional provide the pulse energy calibration
+# - png.png
 
 # Other comments
 # - Data for paper
@@ -101,7 +101,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
         self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
-        self.LasingRecData.clicked.connect(self.save_lasing_rec_data)
+        self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
         self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
@@ -208,8 +208,9 @@ class StartMain(QtWidgets.QMainWindow):
     def obtain_r12_0(self):
         return self.obtain_r12()
 
-    def obtain_r12(self):
-        meta_data = daq.get_meta_data(self.screen)
+    def obtain_r12(self, meta_data=None):
+        if meta_data is None:
+            meta_data = daq.get_meta_data(self.screen)
         #print('obtain_r12', meta_data)
         tracker = self.get_tracker(meta_data)
         r12 = tracker.calcR12()[self.n_streaker]
@@ -585,11 +586,7 @@ class StartMain(QtWidgets.QMainWindow):
         file_current = self.LasingCurrentProfileDataLoad.text()
         screen_center = self.screen_x0
 
-        if self.n_streaker == 0:
-            structure_center = float(self.StreakerDirect0.text())*1e-6
-        elif self.n_streaker == 1:
-            structure_center = float(self.StreakerDirect1.text())*1e-6
-
+        structure_center = self.streaker_means[self.n_streaker]
         streaker_name = config.streaker_names[self.beamline][self.n_streaker]
         structure_length = [float(self.StructLength1.text()), float(self.StructLength1.text())][self.n_streaker]
 

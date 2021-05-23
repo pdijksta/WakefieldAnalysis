@@ -694,7 +694,7 @@ def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs,
         if n != kwargs['n_streaker']:
             kwargs['beam_offsets'][n] = 0
 
-    gauss_dict = current_profile_rec_gauss(tracker, kwargs, True, plot_handles, blmeas_file)
+    gauss_dict = current_profile_rec_gauss(tracker, kwargs, plot_handles, blmeas_file)
 
     output_dict = {
             'input': {

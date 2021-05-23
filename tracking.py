@@ -75,7 +75,7 @@ class Tracker:
     def calcDisp(self):
         outp = {}
         for n_streaker in (0, 1):
-            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), int(self.timestamp))
+            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), self.timestamp)
             outp[n_streaker] = disp_dict['SARBD02.DSCR050']
         return outp
 

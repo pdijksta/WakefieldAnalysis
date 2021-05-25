@@ -50,8 +50,10 @@ for im, ax_x, ax_y in [
     sp = sp0 = subplot(sp_ctr)
     sp_ctr += 1
 
-    mask_x = np.logical_and(450 < ax_x, 1300 > ax_x)
-    mask_y = np.logical_and(2000 < ax_y, 3500 > ax_y)
+    #mask_x = np.logical_and(450 < ax_x, 1300 > ax_x)
+    #mask_y = np.logical_and(2000 < ax_y, 3500 > ax_y)
+    mask_x = np.ones_like(ax_x, dtype=bool)
+    mask_y = np.ones_like(ax_y, dtype=bool)
 
     ax_x2 = ax_x[mask_x]
     ax_y2 = ax_y[mask_y]

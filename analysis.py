@@ -71,8 +71,8 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
                 print(e)
                 print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
 
-        for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
+    for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
+        blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
 
 
     sp_screen.legend()

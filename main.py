@@ -26,7 +26,6 @@ import myplotstyle as ms
 # - add info of beamsize with / without assumed screen resolution
 # - debug delay after using BsreadPositioner or any pyscan
 # - add tilt option
-# - what is the correct beam energy pv?
 # - handle feedback in user interface
 # - detune undulator button
 # - streaker center calibration: repeat with one data point removed at one side
@@ -41,6 +40,7 @@ import myplotstyle as ms
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
+# - One-sided plate
 
 # Not so important
 # - noise reduction from the image

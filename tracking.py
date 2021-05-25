@@ -23,7 +23,8 @@ e0_eV = m_e*c**2/e
 class Tracker:
     def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.), quad_wake_back=False):
 
-        self.set_simulator(magnet_file, energy_eV, timestamp)
+        if magnet_file:
+            self.set_simulator(magnet_file, energy_eV, timestamp)
 
         self.timestamp = timestamp
         self.struct_lengths = struct_lengths
@@ -52,7 +53,7 @@ class Tracker:
         elif forward_method == 'elegant':
             self.forward = self.elegant_forward
 
-    def set_simulator(self, magnet_file, energy_eV, timestamp=None):
+    def set_simulator(self, magnet_file, energy_eV='file', timestamp=None):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
         if energy_eV == 'file':
             try:
@@ -66,7 +67,7 @@ class Tracker:
     def calcR12(self):
         outp = {}
         for n_streaker in (0, 1):
-            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), int(self.timestamp))
+            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), self.timestamp)
             outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
         return outp
 

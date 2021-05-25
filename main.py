@@ -16,11 +16,8 @@ from PyQt5.QtCore import pyqtRemoveInputHook
 import config
 import tracking
 import elegant_matrix
-import data_loader
-import misc2 as misc
 import analysis
 import h5_storage
-import image_and_profile as iap
 
 import myplotstyle as ms
 
@@ -69,6 +66,7 @@ import myplotstyle as ms
 # - png.png
 # - optional provide the pulse energy calibration
 
+# Other comments
 # - Data for paper
 # - 33713
 # - One for big streaking
@@ -102,7 +100,7 @@ class StartMain(QtWidgets.QMainWindow):
         uic.loadUi('GUI.ui', self)
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
-        self.SaveData.clicked.connect(self.save_data)
+        self.SaveData.clicked.connect(self.save_current_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
         self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
@@ -110,7 +108,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.LoadCalibration.clicked.connect(self.load_calibration)
         self.CalibrateScreen.clicked.connect(self.calibrate_screen)
         self.ClearScreenPlots.clicked.connect(self.clear_screen_plots)
-        self.SetXEmittance.clicked.connect(self.set_x_emittance)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
@@ -121,38 +118,30 @@ class StartMain(QtWidgets.QMainWindow):
         self.BeamlineSelect.activated.connect(self.update_streaker)
 
         self.update_streaker()
-        self.other_input = {}
 
         # Default strings in gui fields
         hostname = socket.gethostname()
         if 'psi' in hostname or 'lc6a' in hostname or 'lc7a' in hostname:
             default_dir = '/sf/data/measurements/2021/05/18/'
-            archiver_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/archiver_api_data/'
             date = datetime.now()
             save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
         elif hostname == 'desktop':
             default_dir = '/storage/data_2021-05-18/'
-            archiver_dir = '/storage/Philipp_data_folder/archiver_api_data/'
             save_dir = '/storage/tmp_reconstruction/'
         elif hostname == 'pubuntu':
             default_dir = '/home/work/data_2021-05-18/'
-            archiver_dir = '/home/work/archiver_api_data/'
             save_dir = '/home/work/tmp_reconstruction/'
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
         bunch_length_meas_file = default_dir + '119325494_bunch_length_meas.h5'
-        recon_data_file = default_dir+'2021_05_18-17_30_29_Screen_data_SARBD02-DSCR050.h5'
-        lattice_file = archiver_dir+'2021-04-25.h5'
-        time_str = '2021-04-25:17-22-26'
+        #recon_data_file = default_dir+'2021_05_18-17_41_02_PassiveReconstruction.h5'
         lasing_file_off = default_dir + '2021_05_18-20_05_21_Lasing_False_SARBD02-DSCR050.h5'
         lasing_file_on = default_dir + '2021_05_18-20_04_28_Lasing_True_SARBD02-DSCR050.h5'
         streaker_calib_file = default_dir + '2021_04_25-16_55_25_Calibration_SARUN18-UDCP020.h5'
         lasing_current_profile = default_dir + '2021_05_18-17_41_02_PassiveReconstruction.h5'
 
         self.ImportCalibration.setText(screen_calib_file)
-        self.ImportFile.setText(lattice_file)
-        self.ImportFileTime.setText(time_str)
-        self.ReconstructionDataLoad.setText(recon_data_file)
+        self.ReconstructionDataLoad.setText(lasing_file_off)
         self.BunchLengthMeasFile.setText(bunch_length_meas_file)
         self.SaveDir.setText(save_dir)
         self.LasingOnDataLoad.setText(lasing_file_on)
@@ -165,6 +154,11 @@ class StartMain(QtWidgets.QMainWindow):
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
 
+
+        self.current_rec_dict = None
+        self.lasing_rec_dict = None
+
+        ## Handle plots
         def get_new_tab(fig, title):
             new_tab = QtWidgets.QWidget()
             layout = PyQt5.Qt.QVBoxLayout()
@@ -210,54 +204,29 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
-    def obtain_lattice(self):
-
-
-        widgets = [self.LatticeFromFileCheck, self.LatticeFromLiveCheck]
-        self._check_check(widgets, 'Check lattice checkmarks')
-
-        if self.LatticeFromFileCheck.isChecked():
-            magnet_file = self.ImportFile.text()
-            other_input = {
-                    'method': 'from_file',
-                    'filename_or_dict': magnet_file,
-                    }
-        elif self.LatticeFromLiveCheck:
-            magnet_file = daq.get_aramis_quad_strengths()
-            print(magnet_file)
-            other_input = {
-                    'method': magnet_file,
-                    'filename_or_dict': magnet_file,
-                    }
-        return magnet_file, other_input
-
     def obtain_r12_0(self):
         return self.obtain_r12()
 
-    def obtain_r12(self, meta_data=None):
-        print('obtain_r12', meta_data)
-        analysis_obj = self.init_tracker(meta_data)
-        r12 = analysis_obj.tracker.calcR12()[self.n_streaker]
-        disp = analysis_obj.tracker.calcDisp()[self.n_streaker]
+    def obtain_r12(self):
+        meta_data = daq.get_meta_data(self.screen)
+        #print('obtain_r12', meta_data)
+        tracker = self.get_tracker(meta_data)
+        r12 = tracker.calcR12()[self.n_streaker]
+        disp = tracker.calcDisp()[self.n_streaker]
         print('R12:', r12)
         print('Dispersion:', disp)
         return r12, disp
 
-    def init_tracker(self, machine_dict=None):
-
-        analysis_obj = analysis.Reconstruction(self.screen_x0, self.streaker_means)
-        magnet_file = None
-
+    def get_tracker_kwargs(self, magnet_dict=None):
         tmp_dir = os.path.expanduser(self.TmpDir.text())
         assert os.path.isdir(tmp_dir)
         assert os.access(tmp_dir, os.W_OK)
         elegant_matrix.set_tmp_dir(tmp_dir)
 
-        time_match = re_time.match(self.ImportFileTime.text().strip())
-        if time_match is None:
-            raise ValueError('Wrong format of ImportFileTime: %s\nMust be: yyyy-MM-dd:hh-mm-ss' % self.ImportFileTime.text())
-        args = list(time_match.groups())
-        timestamp = elegant_matrix.get_timestamp(*args)
+        #time_match = re_time.match(self.ImportFileTime.text().strip())
+        #if time_match is None:
+        #    raise ValueError('Wrong format of ImportFileTime: %s\nMust be: yyyy-MM-dd:hh-mm-ss' % self.ImportFileTime.text())
+        timestamp = None
         struct_lengths = [float(self.StructLength1.text()), float(self.StructLength1.text())]
         n_particles = int(float(self.N_Particles.text()))
         n_emittances = [float(self.TransEmittanceX.text())*1e-9, float(self.TransEmittanceY.text())*1e-9]
@@ -271,15 +240,8 @@ class StartMain(QtWidgets.QMainWindow):
         override_quad_beamsize = self.OverrideQuadCheck.isChecked()
         quad_x_beamsize = [float(self.QuadBeamsize1.text())*1e-6, float(self.QuadBeamsize2.text())*1e-6]
 
-        if machine_dict is None:
-            magnet_file, other_input = self.obtain_lattice()
-        else:
-            magnet_file = machine_dict
-        print('magnet_file')
-        print(magnet_file)
-
-        self.tracker_kwargs = {
-                'magnet_file': magnet_file,
+        tracker_kwargs = {
+                'magnet_file': magnet_dict,
                 'timestamp': timestamp,
                 'struct_lengths': struct_lengths,
                 'n_particles': n_particles,
@@ -294,10 +256,12 @@ class StartMain(QtWidgets.QMainWindow):
                 'override_quad_beamsize': override_quad_beamsize,
                 'quad_x_beamsize': quad_x_beamsize,
                 }
-        analysis_obj.add_tracker(self.tracker_kwargs)
-        #self.other_input['lattice'] = other_input
-        print('Tracker successfully initialized')
-        return analysis_obj
+        return tracker_kwargs
+
+    def get_tracker(self, magnet_dict=None):
+        tracker_kwargs = self.get_tracker_kwargs(magnet_dict)
+        tracker = tracking.Tracker(**tracker_kwargs)
+        return tracker
 
     @staticmethod
     def _check_check(widgets, errormessage):
@@ -334,27 +298,6 @@ class StartMain(QtWidgets.QMainWindow):
         return x0, beamsize
         #self.tabWidget.setCurrentIndex(self.screen_calib_plot_tab_index)
 
-    def set_x_emittance(self):
-
-        analysis_obj = self.init_tracker()
-        tracker = analysis_obj.tracker
-
-        tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
-        charge = float(self.Charge.text())*1e-12
-        len_screen = tracker.len_screen
-        smoothen = tracker.smoothen
-
-        bp_test = iap.get_gaussian_profile(40e-15, tt_halfrange, len_screen, charge, tracker.energy_eV)
-        screen_sim = tracker.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
-        emit0 = tracker.n_emittances[0]
-        sig_real = float(self.DirectBeamsizeScreen.text())*1e-6
-        screen_sim2 = iap.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), smoothen)
-        sig_meas = np.sqrt(sig_real**2 - smoothen**2)
-        sig_sim = np.sqrt(screen_sim2.gaussfit.sigma**2 - smoothen**2)
-        emittance_fit = emit0 * (sig_meas / sig_sim)**2
-
-        print('Emittance fit is %.3f nm' % (emittance_fit*1e9))
-
     def obtain_streaker_settings_from_live(self):
         for n_streaker, gap_widget, offset_widget in [
                 (0, self.StreakerGap0, self.StreakerOffset0),
@@ -370,17 +313,14 @@ class StartMain(QtWidgets.QMainWindow):
         self._check_check(widgets, 'Check set streaker checkmarks')
 
         if self.SetStreakerDirectCheck.isChecked():
-            other_input = {'method': 'direct_input'}
             meta_dict = None
         elif self.SetStreakerFromLiveCheck.isChecked():
             self.obtain_streaker_settings_from_live()
-            other_input = {'method': 'live'}
             if daq is None:
                 raise RuntimeError('Cannot get settings from live!')
             meta_dict = daq.get_meta_data(self.screen)
 
         elif self.SetStreakerSaveCheck:
-            other_input = {'method': 'saved'}
             filename = self.ReconstructionDataLoad.text().strip()
             dict_ = h5_storage.loadH5Recursive(filename)
             if 'meta_data' in dict_:
@@ -406,51 +346,19 @@ class StartMain(QtWidgets.QMainWindow):
         # beam offset is negative of streaker offset
         streaker_offsets = self.streaker_offsets
 
-        other_input['gaps'] = gaps,
-        other_input['streaker_offsets'] = streaker_offsets
-        self.other_input['streaker_set'] = other_input
         print('Streaker is set: gaps: %s, offsets: %s' % (gaps, streaker_offsets))
         return gaps, streaker_offsets
 
     def reconstruct_current(self):
 
+        self.clear_rec_plots()
         filename = self.ReconstructionDataLoad.text().strip()
-        key = self.ReconstructionDataLoadKey.text()
-        index = self.ReconstructionDataLoadIndex.text()
-        screen_data = data_loader.load_screen_data(filename, key, index)
-        #if 'SARBD01-MBND100:ENERGY-OP' in screen_data['meta_data']:
-        #    energy_eV = screen_data['meta_data']['SARBD01-MBND100:ENERGY-OP']*1e6
-        #elif 'SARBD01-MBND100:P-SET' in screen_data['meta_data']:
-        #    energy_eV = screen_data['meta_data']['SARBD01-MBND100:P-SET']*1e6
-        #else:
-        #    raise ValueError('Energy undefined!')
-
-
-        analysis_obj = self.init_tracker(screen_data['meta_data'])
-        other_input = {'method': 'direct_input'}
         streaker_means = self.streaker_means
-        other_input['streaker_means'] = streaker_means
-        self.other_input['streaker_calibration'] = other_input
         print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
 
-        gaps, streaker_offsets = self.streaker_set()
-        x_axis, projx = screen_data['x_axis'], screen_data['projx']
-        other_input = {'method': 'data_loader.load_screen_data', 'args': (filename, key, index)}
+        rec_mode = self.ReconstructionDataLoadUseSelect.currentText()
 
-        if self.ReconstructionDataLoadUseSelect.currentText() == 'Median':
-            median_projx = misc.get_median(projx)
-        elif self.ReconstructionDataLoadUseSelect.currentText() == 'All':
-            raise NotImplementedError
-        meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
-
-        self.meas_screen = meas_screen
-        other_input['screen_x'] = meas_screen.x
-        other_input['screen_intensity'] = meas_screen.intensity
-        self.other_input['obtain_reconstruction_data'] = other_input
         print('Obtained reconstruction data')
-
-        analysis_obj.input_data['screen_x0'] = self.screen_x0
-        analysis_obj.input_data['streaker_offsets'] = self.streaker_offsets
 
         if self.ShowBlmeasCheck.isChecked():
             blmeas_file = self.BunchLengthMeasFile.text()
@@ -461,50 +369,38 @@ class StartMain(QtWidgets.QMainWindow):
         stop += 1e-3*step # assert that stop is part of array
         sig_t_range = np.arange(start, stop, step)*1e-15
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
-        meas_screen = self.meas_screen
         n_streaker = int(self.StreakerSelect.currentText())
         charge = float(self.Charge.text())*1e-12
         self_consistent = {'True': True, 'False': False}[self.SelfConsistentSelect.currentText()]
         kwargs_recon = {
                 'sig_t_range': sig_t_range,
                 'tt_halfrange': tt_halfrange,
-                'gaps': gaps,
-                'streaker_offsets': streaker_offsets,
                 'n_streaker': n_streaker,
                 'charge': charge,
                 'self_consistent': self_consistent,
-                'meas_screen': meas_screen,
                 }
-        analysis_obj.input_data['other'] = self.other_input
 
-        kwargs_recon2 = analysis_obj.prepare_rec_gauss_args(kwargs_recon)
-        print('Analysing reconstruction')
+        tracker_kwargs = self.get_tracker_kwargs()
+        self.current_rec_dict = analysis.reconstruct_current(filename, self.n_streaker, self.beamline, tracker_kwargs, rec_mode, kwargs_recon, self.screen_x0, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
 
-        #import pickle
-        #p_file = '/tmp/rec_args.pkl'
-        #with open(p_file, 'wb') as f:
-        #    pickle.dump((kwargs_recon2, analysis_obj), f)
-        #    print('Saved %s' % p_file)
-
-        self.clear_rec_plots()
-        analysis_obj.current_profile_rec_gauss(kwargs_recon2, True, self.reconstruction_plot_handles, blmeas_file)
-        self.current_rec_obj = analysis_obj
 
         if self.rec_canvas is not None:
             self.rec_canvas.draw()
 
-    def save_data(self):
+        if self.lasing_plot_handles is not None:
+            self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
+
+    def save_current_rec_data(self):
+        if self.current_rec_dict is None:
+            raise ValueError('No current reconstruction to save!')
+
         save_path = self.save_dir
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
-        save_dict = {
-                'input': self.current_rec_obj.input_data,
-                'gaussian_reconstruction': self.current_rec_obj.gauss_dict,
-                }
         elog_text = 'Passive current reconstruction'
-        self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, save_dict)
+        self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, self.current_rec_dict)
 
     @property
     def save_dir(self):
@@ -555,7 +451,7 @@ class StartMain(QtWidgets.QMainWindow):
     def _analyze_streaker_calib(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
         if forward_blmeas:
-            tracker = self.init_tracker().tracker
+            tracker = self.get_tracker(result_dict['meta_data_begin'])
             blmeasfile = self.ForwardBlmeasFilename.text()
         else:
             tracker = None
@@ -619,13 +515,13 @@ class StartMain(QtWidgets.QMainWindow):
 
     @property
     def streaker_offsets(self):
-        return [float(self.StreakerOffset0.text())*1e-3, float(self.StreakerOffset1.text())*1e-3]
+        return np.array([float(self.StreakerOffset0.text()), float(self.StreakerOffset1.text())])*1e-3
 
     @property
     def streaker_means(self):
         streaker0_mean = float(self.StreakerDirect0.text())*1e-6
         streaker1_mean = float(self.StreakerDirect1.text())*1e-6
-        return [streaker0_mean, streaker1_mean]
+        return np.array([streaker0_mean, streaker1_mean])
 
     @property
     def screen(self):
@@ -673,6 +569,8 @@ class StartMain(QtWidgets.QMainWindow):
     def reconstruct_lasing(self):
         self.clear_lasing_plots()
 
+        n_slices = int(self.LasingReconstructionNSlices.text())
+        len_screen = int(self.ScreenLength.text())
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
         dict_on = h5_storage.loadH5Recursive(file_on)
@@ -703,10 +601,9 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
-        lasing_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy)
+        lasing_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy, n_slices, len_screen)
 
         if self.lasing_plot_handles is not None:
-
             self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
 
         elog_text = 'Lasing reconstruction'
@@ -747,7 +644,6 @@ class StartMain(QtWidgets.QMainWindow):
             print('Save to ELOG is not checked in GUI')
 
         return filename
-
 
 if __name__ == '__main__':
     def my_excepthook(type, value, tback):

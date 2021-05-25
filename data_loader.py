@@ -152,6 +152,8 @@ def load_screen_data(filename_or_dict, key, index):
     else:
         dict_ = dict0
 
+    if 'x_axis_m' not in dict_:
+        print(dict_.keys())
     x_axis = dict_['x_axis_m']
     data = dict_[key].astype(float)
     if index not in ('None', None):

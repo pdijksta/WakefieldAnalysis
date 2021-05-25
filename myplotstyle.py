@@ -4,6 +4,12 @@ import re
 import colorsys
 import matplotlib.pyplot as plt
 
+mute = False
+
+def myprint(*args, **kwargs):
+    if not mute:
+        print(*args, **kwargs)
+
 
 def set_fontsizes(fontsize):
     plt.rc('font', size=fontsize)
@@ -62,9 +68,9 @@ def saveall(basepath, hspace=0.2, wspace=0.2, trim=True, figs=None, ending='.png
 
         if 'pdf' not in ending and trim:
             cmd = 'convert -trim %s %s' % (path, path)
-            print(cmd)
+            myprint(cmd)
             os.system(cmd)
-        print('Saved fig %i with title %s in %s' % (num, title, path))
+        myprint('Saved fig %i with title %s in %s' % (num, title, path))
 
 def subplot_factory(ny, nx, grid=True):
     _sciy = sciy
@@ -98,7 +104,7 @@ def get_file_title(fig, title=None):
     if info is not None:
         script_number = info.group(1)
     else:
-        print('Warning! Script number could not be identified! %s' % script_title)
+        myprint('Warning! Script number could not be identified! %s' % script_title)
         script_number = script_title[:5]
 
     title = '_'.join([script_number, title, str(fig.number)])
@@ -106,7 +112,7 @@ def get_file_title(fig, title=None):
 
 def pdijksta(fig, title=None, figsize=None):
     if figsize is not None:
-        print('mystyle.pdijksta: figsize is deprecated')
+        myprint('mystyle.pdijksta: figsize is deprecated')
 
     if hasattr(fig, '__len__'):
         for f in fig: pdijksta(f, title=title, figsize=figsize)
@@ -116,7 +122,7 @@ def pdijksta(fig, title=None, figsize=None):
         #fig.set_size_inches(figsize)
         #fig.subplots_adjust(left=0.07, right=0.90, wspace=0.42)
         fig.savefig(save_path, dpi=200)
-        print('Saved in\n%s' % save_path)
+        myprint('Saved in\n%s' % save_path)
 
 def saveall_pdijksta(figsize=None):
     for num in plt.get_fignums():
@@ -132,5 +138,5 @@ def saveall_dir(dir_, title=None, figsize=None):
             title2 = title + '_%i.png' % num
         path = os.path.join(dir_, title2)
         fig.savefig(path)
-        print('Figure %i saved in %s' % (num, path))
+        myprint('Figure %i saved in %s' % (num, path))
 

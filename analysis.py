@@ -130,8 +130,8 @@ class Reconstruction:
                     blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
 
 
-            sp_screen.legend()
-            sp_profile.legend()
+            #sp_screen.legend()
+            #sp_profile.legend()
 
             yy_opt = opt_func_values[:,1]
             sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)

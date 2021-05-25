@@ -30,28 +30,27 @@ import myplotstyle as ms
 # - debug delay after using BsreadPositioner or any pyscan
 # - add tilt option
 # - restructure analysis
-# - what is the correct beam energy pv?
 # - handle feedback in user interface
 # - simplify lattice
 # - detune undulator button
-# - optional provide the pulse energy calibration
 # - streaker center calibration: repeat with one data point removed at one side
 # - Offset based on centroid, offset based on sizes (?)
-# - Script to compare different scans
-# - png.png
 # - Rec plot legends
 # - Dispersion (?)
-# - Comments to elog
+# - Comments to elog, more info in elog
 # - Plot centroid of forward propagated
-# - One-sided plate
+# - Unclear: what is reading from machine, what is setting stuff, what is just loading files
+# - Add load screen calibration button
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
+# - One-sided plate
 
 # Not so important
 # - noise reduction from the image
 # - uJ instead of True, False
 # - non blocking daq
+# - Script to compare different scans
 
 # Done
 # - pulse energy from gas detector in pyscan
@@ -66,6 +65,9 @@ import myplotstyle as ms
 # - plot TDC blmeas next to current reconstruction (optional)
 # - save BPM data also
 # - Show sizes
+# - what is the correct beam energy pv?
+# - png.png
+# - optional provide the pulse energy calibration
 
 # - Data for paper
 # - 33713

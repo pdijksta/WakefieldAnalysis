@@ -34,6 +34,7 @@ import myplotstyle as ms
 # - Dispersion (?)
 # - Plot centroid of forward propagated
 # - One-sided plate
+# - add blmeas option to lasing rec
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -154,7 +155,6 @@ class StartMain(QtWidgets.QMainWindow):
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
-
 
         self.current_rec_dict = None
         self.lasing_rec_dict = None
@@ -298,7 +298,6 @@ class StartMain(QtWidgets.QMainWindow):
         print('X0 is %.3f um' % (x0*1e6))
         print('Beamsize is %.3f um' % (beamsize*1e6))
         return x0, beamsize
-        #self.tabWidget.setCurrentIndex(self.screen_calib_plot_tab_index)
 
     def obtain_streaker_settings_from_live(self):
         for n_streaker, gap_widget, offset_widget in [
@@ -352,7 +351,6 @@ class StartMain(QtWidgets.QMainWindow):
         return gaps, streaker_offsets
 
     def reconstruct_current(self):
-
         self.clear_rec_plots()
         filename = self.ReconstructionDataLoad.text().strip()
         streaker_means = self.streaker_means
@@ -385,11 +383,8 @@ class StartMain(QtWidgets.QMainWindow):
         tracker_kwargs = self.get_tracker_kwargs()
         self.current_rec_dict = analysis.reconstruct_current(filename, self.n_streaker, self.beamline, tracker_kwargs, rec_mode, kwargs_recon, self.screen_x0, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
 
-        if self.rec_canvas is not None:
-            self.rec_canvas.draw()
-
-        if self.lasing_plot_handles is not None:
-            self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
+        self.rec_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
 
     def save_current_rec_data(self):
         if self.current_rec_dict is None:
@@ -449,6 +444,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (streaker, streaker_offset*1e6)
         self.elog_and_H5(elog_text, [self.streaker_calib_fig], 'Streaker center calibration', basename, full_dict)
+        self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
 
     def _analyze_streaker_calib(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
@@ -590,8 +586,6 @@ class StartMain(QtWidgets.QMainWindow):
         streaker_name = config.streaker_names[self.beamline][self.n_streaker]
         structure_length = [float(self.StructLength1.text()), float(self.StructLength1.text())][self.n_streaker]
 
-        assert os.path.isfile(file_on)
-        assert os.path.isfile(file_off)
         r12, disp = self.obtain_r12(dict_on['meta_data_end'])
         energy_eV = self.get_energy_from_meta(dict_on['meta_data_end'])
         charge = float(self.Charge.text())*1e-12
@@ -601,8 +595,9 @@ class StartMain(QtWidgets.QMainWindow):
 
         self.lasing_rec_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy, n_slices, len_screen)
 
-        if self.lasing_plot_handles is not None:
-            self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
+        self.lasing_canvas1.draw()
+        self.lasing_canvas2.draw()
+        self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
 
     def save_lasing_rec_data(self):
         if self.lasing_rec_dict is None:

@@ -1,4 +1,5 @@
 import pickle
+from socket import gethostname
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -7,12 +8,25 @@ import myplotstyle as ms
 
 plt.close('all')
 
-empty_snapshot = '/sf/data/measurements/2021/05/19/20210519_121718_SARBD02-DSCR050_camera_snapshot.h5'
+hostname = gethostname()
+if hostname == 'desktop':
+    dirname1 = '/storage/data_2021-05-18/'
+    dirname2 = '/storage/data_2021-05-19/'
+elif hostname == 'pc11292.psi.ch':
+    dirname1 = '/sf/data/measurements/2021/05/18/'
+    dirname2 = '/sf/data/measurements/2021/05/19/'
+elif hostname == 'pubuntu':
+    dirname1 = '/home/work/data_2021-05-18/'
+    dirname2 = '/home/work/data_2021-05-19/'
+
+
+
+empty_snapshot = dirname2 + '20210519_121718_SARBD02-DSCR050_camera_snapshot.h5'
 image_dict = h5_storage.loadH5Recursive(empty_snapshot)
 x_axis0 = image_dict['camera1']['x_axis']
 y_axis0 = image_dict['camera1']['y_axis']
 
-lasing_snapshot = '/sf/data/measurements/2021/05/18/20210518_233946_SARBD02-DSCR050_camera_snapshot.h5'
+lasing_snapshot = dirname1+'20210518_233946_SARBD02-DSCR050_camera_snapshot.h5'
 
 image_dict = h5_storage.loadH5Recursive(lasing_snapshot)
 

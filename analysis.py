@@ -569,8 +569,12 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
     median_image_on = iap.Image(images0_on[median_index], x_axis0, y_axis0, x_offset=screen_center)
 
     current_dict = h5_storage.loadH5Recursive(file_current)
-    wake_profile_dict = current_dict['gaussian_reconstruction']['reconstructed_profile']
-    wake_profile = iap.BeamProfile.from_dict(wake_profile_dict)
+    if 'gaussian_reconstruction' in current_dict:
+        wake_profile_dict = current_dict['gaussian_reconstruction']['reconstructed_profile']
+        wake_profile = iap.BeamProfile.from_dict(wake_profile_dict)
+    else:
+        wake_profile = iap.profile_from_blmeas(current_dict, 200e-15, charge, energy_eV, True)
+
     wake_profile.cutoff2(0.1)
     wake_profile.crop()
     wake_profile.reshape(len_profile)

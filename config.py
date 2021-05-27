@@ -1,3 +1,4 @@
+import numpy as np
 import itertools
 import collections
 
@@ -37,4 +38,30 @@ beamline_charge_pvs_bsread = {
 all_streakers = []
 for beamline, beamline_dict in streaker_names.items():
     all_streakers.extend([x for x in beamline_dict.values()])
+
+default_tracker_settings = {
+        'magnet_file': None,
+        'timestamp': None,
+        'struct_lengths': np.array([1., 1.]),
+        'n_particles': int(1e5),
+        'n_emittances': np.array([500, 500])*1e-9,
+        'screen_bins': 500,
+        'screen_cutoff': 2e-2,
+        'smoothen': 20e-6,
+        'profile_cutoff': 1e-2,
+        'len_screen': 5000,
+        'quad_wake': False,
+        'bp_smoothen': 1e-15,
+        'override_quad_beamsize': False,
+        'quad_x_beamsize': np.array([10, 10])*1e-6,
+        }
+
+default_gauss_recon_settings = {
+        'self_consistent': True,
+        'sig_t_range': np.arange(20, 40.001, 5)*1e-15,
+        'tt_halfrange': 200e-15,
+        'charge': 200e-12,
+        }
+
+tmp_elegant_dir = '~/tmp_elegant'
 

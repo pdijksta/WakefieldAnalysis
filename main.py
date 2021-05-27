@@ -73,6 +73,16 @@ import myplotstyle as ms
 # - One for big streaking
 # - Resolution for big streaking
 
+# - Figure 2: Current profile reconstruction (early offset scan)
+# - Time profile reconstructed and measured
+# - Screen profile: measured, reconstructed, TDC forward
+# - Unstreaked and streaked
+# - Resolution
+
+# - Figure 3: Lasing reconstruction of full, short, two-color beam
+# - Images (in time) 3x2
+# - FEL power profile (average and shot-to-shot) 3x1
+# - Slice energy spread per slice and slice current 1
 
 try:
     import daq
@@ -152,6 +162,30 @@ class StartMain(QtWidgets.QMainWindow):
         self.SaveDir.setText(save_dir)
         self.LoadCalibrationFilename.setText(streaker_calib_file)
         self.ForwardBlmeasFilename.setText(bunch_length_meas_file)
+
+        ds = config.default_tracker_settings
+        gs = config.default_gauss_recon_settings
+        self.StructLength1.setText('%.2f' % ds['struct_lengths'][0])
+        self.StructLength2.setText('%.2f' % ds['struct_lengths'][1])
+        self.N_Particles.setText('%i' % ds['n_particles'])
+        self.TransEmittanceX.setText('%i' % round(ds['n_emittances'][0]*1e9))
+        self.TransEmittanceY.setText('%i' % round(ds['n_emittances'][1]*1e9))
+        self.ScreenSmoothen.setText('%i' % round(ds['smoothen']*1e6))
+        self.ProfileSmoothen.setText('%i' % round(ds['bp_smoothen']*1e15))
+        self.SelfConsistentCheck.setChecked(gs['self_consistent'])
+        self.UseQuadCheck.setChecked(ds['quad_wake'])
+        self.OverrideQuadCheck.setChecked(ds['override_quad_beamsize'])
+        self.QuadBeamsize1.setText('%.2f' % (ds['quad_x_beamsize'][0]*1e6))
+        self.QuadBeamsize2.setText('%.2f' % (ds['quad_x_beamsize'][1]*1e6))
+        self.SigTfsStart.setText('%i' % round(gs['sig_t_range'][0]*1e15))
+        self.SigTfsStop.setText('%i' % round(gs['sig_t_range'][-1]*1e15))
+        self.SigTfsStep.setText('%i' % round((gs['sig_t_range'][1]-gs['sig_t_range'][0])*1e15))
+        self.TmpDir.setText(config.tmp_elegant_dir)
+        self.ScreenBins.setText('%i' % ds['screen_bins'])
+        self.ScreenCutoff.setText('%.4f' % ds['screen_cutoff'])
+        self.ProfileCutoff.setText('%.4f' % ds['profile_cutoff'])
+        self.ProfileExtent.setText('%i' % round(gs['tt_halfrange']*2*1e15))
+        self.Charge.setText('%i' % round(gs['charge']*1e12))
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
@@ -371,7 +405,7 @@ class StartMain(QtWidgets.QMainWindow):
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
         n_streaker = int(self.StreakerSelect.currentText())
         charge = float(self.Charge.text())*1e-12
-        self_consistent = {'True': True, 'False': False}[self.SelfConsistentSelect.currentText()]
+        self_consistent = self.SelfConsistentCheck.isChecked()
         kwargs_recon = {
                 'sig_t_range': sig_t_range,
                 'tt_halfrange': tt_halfrange,

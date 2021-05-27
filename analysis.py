@@ -92,7 +92,7 @@ def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, con
     c2 = np.abs((offsets-streaker_offset-wall1))**(-order)
     return const + (c1 - c2)*strength
 
-def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12):
+def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False):
     if type(filename_or_dict) is dict:
         data_dict = filename_or_dict
     elif type(filename_or_dict) is str:
@@ -113,8 +113,11 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
 
     if 'x_axis_m' in result_dict:
         x_axis = result_dict['x_axis_m']
-    else:
+    elif 'x_axis' in result_dict:
         x_axis = result_dict['x_axis']
+    else:
+        print(result_dict.keys())
+        raise KeyError
 
     offsets = data_dict['streaker_offsets'].squeeze()
     n_images = int(data_dict['n_images'])
@@ -174,22 +177,47 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     p0 = [delta_offset0, strength0]
     if fit_order:
         p0.append(order0)
+    if fit_gap:
+        p0.append(semigap)
 
     def fit_func(*args):
-        if fit_order:
+        if fit_order and not fit_gap:
             return streaker_calibration_fit_func(*args, const0, semigap)
-        else:
+        if not fit_order and not fit_gap:
             return streaker_calibration_fit_func(*args, order0, const0, semigap)
-
+        if fit_order and fit_gap:
+            new_args = args[:-1] + (const0, args[-1])
+            return streaker_calibration_fit_func(*new_args)
+        if not fit_order and fit_gap:
+            new_args = args[:-1] + (order0, const0, args[-1])
+            return streaker_calibration_fit_func(*new_args)
     try:
         p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
     except RuntimeError:
         print('Streaker calibration did not converge')
         p_opt = p0
+        if debug:
+            fignum = plt.gcf().number
+            plt.figure()
+            plt.plot(offsets, centroid_mean, ls='None', marker='.')
+            fit_xx = np.linspace(offsets.min(), offsets.max(), 100)
+            plt.plot(fit_xx, fit_func(fit_xx, *p0), ls='--')
+            plt.show()
+            plt.figure(fignum)
+
     xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
     reconstruction = fit_func(xx_fit, *p_opt)
     initial_guess = fit_func(xx_fit, *p0)
     streaker_offset = p_opt[0]
+    if fit_gap:
+        gap_fit = p_opt[-1]*2
+    else:
+        gap_fit = semigap*2
+
+    if fit_order:
+        order_fit = p_opt[2]
+    else:
+        order_fit = order0
 
     meas_screens = []
     for n_proj, (proj, offset) in enumerate(zip(plot_list, offsets)):
@@ -214,6 +242,8 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             'fit_reconstruction': reconstruction,
             'fit_xx': xx_fit,
             'screen_x0': const0,
+            'gap_fit': gap_fit,
+            'order_fit': order_fit,
             }
 
 
@@ -299,7 +329,9 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
         x_axis = screen_data['x_axis_m']
     else:
         print(screen_data['x_axis'].shape)
-        x_axis = screen_data['x_axis'][0]*1e-6
+        x_axis = screen_data['x_axis'].squeeze()*1e-6
+        if len(x_axis.shape) == 2:
+            x_axis = x_axis[0]
 
     assert len(x_axis.squeeze().shape) == 1
 

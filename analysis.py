@@ -87,80 +87,145 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
     return gauss_dict
 
 def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, const, semigap):
-    wall0, wall1 = -semigap, semigap
-    c1 = np.abs((offsets-streaker_offset-wall0))**(-order)
-    c2 = np.abs((offsets-streaker_offset-wall1))**(-order)
+    c1 = np.abs((offsets-streaker_offset+semigap))**(-order)
+    c2 = np.abs((offsets-streaker_offset-semigap))**(-order)
     return const + (c1 - c2)*strength
 
-def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False):
-    if type(filename_or_dict) is dict:
-        data_dict = filename_or_dict
-    elif type(filename_or_dict) is str:
-        data_dict = h5_storage.loadH5Recursive(filename_or_dict)
+def streaker_calibration_fit_func_os(offsets, streaker_offset, strength, order, const, semigap):
+    return const + np.abs((offsets-streaker_offset-semigap))**(-order)*strength
+
+def one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True, fit_gap=False, force_screen_center=None, debug=False):
+    if fit_gap:
+        raise ValueError
+
+    if force_screen_center is None:
+        where0 = np.argwhere(offsets == 0).squeeze()
+        const0 = centroid_mean[where0]
     else:
-        raise ValueError(type(filename_or_dict))
+        const0 = force_screen_center
+    order0 = 3
+    argmax = np.argmax(np.abs(centroid_mean-const0)).squeeze()
+    semigap *= np.sign(offsets[argmax])
+    if abs(semigap) > abs(offsets[argmax]):
+        offset0 = 0
+    else:
+        offset0 = offsets[argmax] - semigap - 200e-6*np.sign(semigap)
 
-    result_dict = data_dict['pyscan_result']
+    s01 = (centroid_mean[argmax] - const0) * np.abs((offsets[argmax]-semigap-offset0))**order0
+    p0 = [offset0, s01]
+    if fit_order:
+        p0.append(order0)
 
-    if 'image' in result_dict:
-        try:
-            images = result_dict['image'].astype(float).squeeze()
-        except:
+    def fit_func(*args):
+        if fit_order:
+            return streaker_calibration_fit_func_os(*args, const0, semigap)
+        else:
+            return streaker_calibration_fit_func_os(*args, order0, const0, semigap)
+    try:
+        p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
+    except RuntimeError:
+        print('Streaker calibration did not converge')
+        p_opt = p0
+        if debug:
+            fignum = plt.gcf().number
+            plt.figure()
+            plt.plot(offsets, centroid_mean, ls='None', marker='.')
+            fit_xx = np.linspace(offsets[0], offsets[-1], 100)
+            plt.plot(fit_xx, fit_func(fit_xx, *p0), ls='--')
+            plt.show()
+            plt.figure(fignum)
             import pdb; pdb.set_trace()
-        proj_x = np.sum(images, axis=-2).squeeze()
-    elif 'projx' in result_dict:
-        proj_x = result_dict['projx']
 
-    if 'x_axis_m' in result_dict:
-        x_axis = result_dict['x_axis_m']
-    elif 'x_axis' in result_dict:
-        x_axis = result_dict['x_axis']
+    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
+    reconstruction = fit_func(xx_fit, *p_opt)
+    initial_guess = fit_func(xx_fit, *p0)
+    streaker_offset = p_opt[0]
+    if fit_gap:
+        gap_fit = p_opt[-1]*2
     else:
-        print(result_dict.keys())
-        raise KeyError
-
-    offsets = data_dict['streaker_offsets'].squeeze()
-    n_images = int(data_dict['n_images'])
-
-    centroids = np.zeros([len(offsets), n_images])
-    rms = np.zeros_like(centroids)
-
-    plot_list = []
-    if n_images > 1:
-        for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
-            proj = proj_x[n_o,n_i]
-            proj -= np.median(proj)
-            proj[np.abs(proj)< np.abs(proj).max()*0.02] = 0
-            if n_i == 0:
-                plot_list.append(proj)
-            centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
-            rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
-        centroid_mean = np.mean(centroids, axis=1)
-        centroid_std = np.std(centroids, axis=1)
-        rms_mean = np.mean(rms, axis=1)
-        rms_std = np.std(rms, axis=1)
-    elif n_images == 1:
-        for n_o in range(len(offsets)):
-            proj = proj_x[n_o]
-            proj -= np.median(proj)
-            proj[np.abs(proj)< np.abs(proj).max()*0.05] = 0
-            centroids[n_o] = cc = np.sum(proj*x_axis) / np.sum(proj)
-            rms[n_o] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
-            plot_list.append(proj)
-        centroid_mean = centroids.squeeze()
-        centroid_std = None
-        rms_mean = rms
-        rms_std = None
-
-    streaker = data_dict['streaker']
-    if 'meta_data_end' in data_dict:
-        key = 'meta_data_end'
+        gap_fit = abs(semigap*2)
+    if fit_order:
+        order_fit = p_opt[2]
     else:
-        key = 'meta_data'
-    meta_data0 = data_dict[key]
-    semigap = meta_data0[streaker+':GAP']/2.*1e-3
+        order_fit = order0
+    return {
+            'reconstruction': reconstruction,
+            'initial_guess': initial_guess,
+            'streaker_offset': streaker_offset,
+            'gap_fit': gap_fit,
+            'order_fit': order_fit,
+            'p_opt': p_opt,
+            'p0': p0,
+            'xx_fit': xx_fit,
+            'screen_x0': const0
+            }
 
+def beamsize_fit_func(offsets, streaker_offset, strength, order, const, semigap):
+    sq0 = const**2
+    c1 = np.abs((offsets-streaker_offset+semigap))**(-order*2)
+    c2 = np.abs((offsets-streaker_offset-semigap))**(-order*2)
+    sq_add = strength * (c1+c2)
+    return np.sqrt(sq0 + sq_add)
 
+def beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=True, fit_gap=False, debug=False):
+
+    where0 = np.argwhere(offsets == 0).squeeze()
+    const0 = rms_mean[where0]
+    order0 = 3
+
+    offset0 = (offsets[0] + offsets[-1])/2
+
+    s0_arr = (rms_mean**2 - const0**2) / (np.abs((offsets-offset0-semigap))**(-order0*2) + np.abs((offsets-offset0+semigap))**(-order0*2))
+    s0 = s0_arr[0]
+    p0 = [offset0, s0]
+    if fit_order:
+        p0.append(order0)
+
+    def fit_func(*args):
+        if fit_order:
+            return beamsize_fit_func(*args, const0, semigap)
+        else:
+            return beamsize_fit_func(*args, order0, const0, semigap)
+    try:
+        p_opt, p_cov = curve_fit(fit_func, offsets, rms_mean, p0, sigma=rms_std)
+    except RuntimeError:
+        print('Streaker calibration did not converge')
+        p_opt = p0
+        if debug:
+            fignum = plt.gcf().number
+            plt.figure()
+            plt.plot(offsets, rms_mean, ls='None', marker='.')
+            fit_xx = np.linspace(offsets[0], offsets[-1], 100)
+            plt.plot(fit_xx, fit_func(fit_xx, *p0), ls='--')
+            plt.show()
+            plt.figure(fignum)
+            import pdb; pdb.set_trace()
+
+    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
+    reconstruction = fit_func(xx_fit, *p_opt)
+    initial_guess = fit_func(xx_fit, *p0)
+    streaker_offset = p_opt[0]
+    if fit_gap:
+        gap_fit = p_opt[-1]*2
+    else:
+        gap_fit = abs(semigap*2)
+    if fit_order:
+        order_fit = p_opt[2]
+    else:
+        order_fit = order0
+    return {
+            'reconstruction': reconstruction,
+            'initial_guess': initial_guess,
+            'streaker_offset': streaker_offset,
+            'gap_fit': gap_fit,
+            'order_fit': order_fit,
+            'p_opt': p_opt,
+            'p0': p0,
+            'xx_fit': xx_fit,
+            'screen_x0': const0
+            }
+
+def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True, fit_gap=False, force_screen_center=None, debug=False):
     if force_screen_center is None:
         where0 = np.argwhere(offsets == 0).squeeze()
         const0 = centroid_mean[where0]
@@ -219,33 +284,117 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
     else:
         order_fit = order0
 
+    return {
+            'reconstruction': reconstruction,
+            'initial_guess': initial_guess,
+            'streaker_offset': streaker_offset,
+            'gap_fit': gap_fit,
+            'order_fit': order_fit,
+            'p_opt': p_opt,
+            'p0': p0,
+            'xx_fit': xx_fit,
+            'screen_x0': const0
+            }
+
+def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False):
+    if type(filename_or_dict) is dict:
+        data_dict = filename_or_dict
+    elif type(filename_or_dict) is str:
+        data_dict = h5_storage.loadH5Recursive(filename_or_dict)
+    else:
+        raise ValueError(type(filename_or_dict))
+
+    result_dict = data_dict['pyscan_result']
+
+    if 'image' in result_dict:
+        images = result_dict['image'].astype(float).squeeze()
+        proj_x = np.sum(images, axis=-2).squeeze()
+    elif 'projx' in result_dict:
+        proj_x = result_dict['projx']
+
+    if 'x_axis_m' in result_dict:
+        x_axis = result_dict['x_axis_m']
+    elif 'x_axis' in result_dict:
+        x_axis = result_dict['x_axis']
+    else:
+        print(result_dict.keys())
+        raise KeyError
+
+    offsets = data_dict['streaker_offsets'].squeeze()
+    n_images = int(data_dict['n_images'])
+
+    centroids = np.zeros([len(offsets), n_images])
+    rms = np.zeros_like(centroids)
+
+    plot_list = []
+    if n_images > 1:
+        for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
+            proj = proj_x[n_o,n_i]
+            proj -= np.median(proj)
+            proj[np.abs(proj)< np.abs(proj).max()*0.02] = 0
+            if n_i == 0:
+                plot_list.append(proj)
+            centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
+            rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
+        centroid_mean = np.mean(centroids, axis=1)
+        centroid_std = np.std(centroids, axis=1)
+        rms_mean = np.mean(rms, axis=1)
+        rms_std = np.std(rms, axis=1)
+    elif n_images == 1:
+        for n_o in range(len(offsets)):
+            proj = proj_x[n_o]
+            proj -= np.median(proj)
+            proj[np.abs(proj)< np.abs(proj).max()*0.05] = 0
+            centroids[n_o] = cc = np.sum(proj*x_axis) / np.sum(proj)
+            rms[n_o] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
+            plot_list.append(proj)
+        centroid_mean = centroids.squeeze()
+        centroid_std = None
+        rms_mean = rms
+        rms_std = None
+
+    streaker = data_dict['streaker']
+    if 'meta_data_begin' in data_dict:
+        key = 'meta_data_begin'
+    else:
+        key = 'meta_data'
+    meta_data0 = data_dict[key]
+    semigap = meta_data0[streaker+':GAP']/2.*1e-3
+
+    if offsets.min() == 0 or offsets.max() == 0:
+        fit_dict = one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=fit_order, fit_gap=fit_gap, force_screen_center=force_screen_center, debug=debug)
+        fit_dict_rms = None
+    else:
+        fit_dict = two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=fit_order, fit_gap=fit_gap, force_screen_center=force_screen_center, debug=debug)
+        fit_dict_rms = beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=fit_order, fit_gap=fit_gap, debug=debug)
+
+    meta_data = {
+        'centroids': centroids,
+        'centroid_mean': centroid_mean,
+        'centroid_std': centroid_std,
+        'rms_mean': rms_mean,
+        'rms_std': rms_std,
+        'offsets': offsets,
+        'semigap': semigap,
+        }
+
+    if fit_dict_rms is not None:
+        meta_data['fit_dict_rms'] = fit_dict_rms
+    meta_data.update(fit_dict)
+    screen_x0 = fit_dict['screen_x0']
+    streaker_offset = fit_dict['streaker_offset']
+    xx_fit = fit_dict['xx_fit']
+    reconstruction = fit_dict['reconstruction']
+    initial_guess = fit_dict['initial_guess']
+
     meas_screens = []
     for n_proj, (proj, offset) in enumerate(zip(plot_list, offsets)):
-        meas_screen = misc.proj_to_screen(proj, x_axis, False, const0)
+        meas_screen = misc.proj_to_screen(proj, x_axis, False, screen_x0)
         len_screen = len(meas_screen.x)
         meas_screen.cutoff2(3e-2)
         meas_screen.crop()
         meas_screen.reshape(len_screen)
         meas_screens.append(meas_screen)
-
-    meta_data = {
-            'p_opt': p_opt,
-            'p0': p0,
-            'centroids': centroids,
-            'centroid_mean': centroid_mean,
-            'centroid_std': centroid_std,
-            'rms_mean': rms_mean,
-            'rms_std': rms_std,
-            'offsets': offsets,
-            'semigap': semigap,
-            'streaker_offset': streaker_offset,
-            'fit_reconstruction': reconstruction,
-            'fit_xx': xx_fit,
-            'screen_x0': const0,
-            'gap_fit': gap_fit,
-            'order_fit': order_fit,
-            }
-
 
     if forward_propagate_blmeas:
         blmeas_profile = iap.profile_from_blmeas(blmeas, 200e-15, charge, tracker.energy_eV)
@@ -271,10 +420,13 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             streaker_offsets[n_streaker_var] = -(s_offset-streaker_offset)
             forward_dict = tracker.matrix_forward(blmeas_profile, gaps, streaker_offsets)
             sim_screen = forward_dict['screen']
-            sim_screen.cutoff2(3e-2)
-            sim_screen.crop()
-            sim_screen.reshape(len_screen)
-            sim_screens.append(sim_screen)
+            try:
+                sim_screen.cutoff2(3e-2)
+                sim_screen.crop()
+                sim_screen.reshape(len_screen)
+                sim_screens.append(sim_screen)
+            except:
+                import pdb; pdb.set_trace()
         meta_data['sim_screens'] = sim_screens
     else:
         sim_screens = None
@@ -290,12 +442,19 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
 
         xx_plot = (offsets - streaker_offset)*1e3
         xx_plot_fit = (xx_fit - streaker_offset)*1e3
-        sp_center.errorbar(xx_plot, (centroid_mean-const0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
-        sp_sizes.errorbar(xx_plot, (rms_mean-const0)*1e3, yerr=rms_std*1e3, label='Data', marker='o')
-
-        sp_center.plot(xx_plot_fit, (reconstruction-const0)*1e3, label='Fit')
-        sp_center.plot(xx_plot_fit, (initial_guess-const0)*1e3, label='Guess')
+        sp_center.errorbar(xx_plot, (centroid_mean-screen_x0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
+        sp_center.plot(xx_plot_fit, (reconstruction-screen_x0)*1e3, label='Fit')
+        sp_center.plot(xx_plot_fit, (initial_guess-screen_x0)*1e3, label='Guess')
         sp_center.legend()
+
+        if fit_dict_rms is not None:
+            xx_plot = offsets - fit_dict_rms['streaker_offset']
+            sp_sizes.errorbar(xx_plot*1e3, rms_mean*1e3, yerr=rms_std*1e3, label='Data', marker='o', ls='None')
+            xx_plot_fit = (fit_dict_rms['xx_fit']-fit_dict_rms['streaker_offset'])*1e3
+            sp_sizes.plot(xx_plot_fit, fit_dict_rms['reconstruction']*1e3, label='Fit')
+            sp_sizes.plot(xx_plot_fit, fit_dict_rms['initial_guess']*1e3, label='Guess')
+            sp_sizes.legend()
+
 
         for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
             color = ms.colorprog(n_proj, offsets)
@@ -304,7 +463,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
                 sim_screen = sim_screens[n_proj]
                 sim_screen.plot_standard(sp_proj, color=color, ls='--')
 
-        sp_proj.legend()
+        #sp_proj.legend()
 
         if forward_propagate_blmeas:
             blmeas_profile.plot_standard(sp_current, color='black')
@@ -354,9 +513,6 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
 
     projx_median -= projx_median.min()
     x0 = gaussfit.GaussFit(x_axis, projx_median).mean
-    #x02 = np.sum(projx_median*x_axis) / np.sum(projx_median)
-    #x0 = x02
-    #import pdb; pdb.set_trace()
     output = {
             'raw_data': data_dict,
             'x0': x0,
@@ -431,6 +587,7 @@ def clear_reconstruction(sp_screen, sp_profile, sp_opt):
 def streaker_calibration_figure():
     fig = plt.figure()
     fig.canvas.set_window_title('Streaker center calibration')
+    fig.subplots_adjust(hspace=0.4)
     sp_ctr = 1
     subplot = ms.subplot_factory(2, 2)
     sp_center = subplot(sp_ctr)

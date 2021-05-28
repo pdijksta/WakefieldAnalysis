@@ -25,7 +25,7 @@ if hostname == 'desktop':
 elif hostname == 'pc11292.psi.ch':
     data_dir = '/sf/data/measurements/2021/04/25/'
 elif hostname == 'pubuntu':
-    data_dir = '/storage/data_2021-04-25/'
+    data_dir = '/mnt/data/data_2021-04-25/'
 
 
 calib_file = data_dir + '2021_04_25-16_55_25_Calibration_SARUN18-UDCP020.h5'
@@ -50,7 +50,7 @@ print('Screen center module', screen_center*1e6, 'um')
 calib_dict = h5_storage.loadH5Recursive(calib_file)
 raw_data = calib_dict['raw_data']
 
-result0 = analysis.analyze_streaker_calibration(calib_dict, True)
+result0 = analysis.analyze_streaker_calibration(raw_data, True)
 print('Module streaker center', result0['meta_data']['streaker_offset']*1e6, 'um')
 
 mask = np.logical_and(raw_data['streaker_offsets'] < 5.04e-3, raw_data['streaker_offsets'] > -0.0044)
@@ -183,7 +183,7 @@ output = {
 if do_plot:
 
     if plot_handles is None:
-        fig, (sp_center, sp_proj2) = streaker_calibration_figure()
+        fig, (sp_center, sp_sizes, sp_proj2, sp_current) = streaker_calibration_figure()
     else:
         (sp_center, ) = plot_handles
     screen = data_dict['screen']

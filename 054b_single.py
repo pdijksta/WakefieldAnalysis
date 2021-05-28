@@ -121,7 +121,7 @@ def save_lasing(lasing_file):
 
             sp.imshow(colors, extent=extent, aspect='auto')
 
-        if sp_ctr+1 > ny*nx:
+        if sp_ctr+1 > ny*nx or n_image == len(images)-1:
             fig.savefig('./album_2021-05-18/%s_%i.png' % (os.path.basename(lasing_file), image_ctr), bbox_inches='tight', pad_inches=0)
             plt.close('all')
             fig.clf()

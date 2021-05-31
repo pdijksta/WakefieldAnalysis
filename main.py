@@ -163,8 +163,8 @@ class StartMain(QtWidgets.QMainWindow):
         self.LoadCalibrationFilename.setText(streaker_calib_file)
         self.ForwardBlmeasFilename.setText(bunch_length_meas_file)
 
-        ds = config.default_tracker_settings
-        gs = config.default_gauss_recon_settings
+        ds = config.get_default_tracker_settings()
+        gs = config.get_default_gauss_recon_settings()
         self.StructLength1.setText('%.2f' % ds['struct_lengths'][0])
         self.StructLength2.setText('%.2f' % ds['struct_lengths'][1])
         self.N_Particles.setText('%i' % ds['n_particles'])

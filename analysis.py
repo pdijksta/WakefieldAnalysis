@@ -111,7 +111,7 @@ def one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
     else:
         offset0 = offsets[argmax] - semigap - 200e-6*np.sign(semigap)
 
-    s01 = (centroid_mean[argmax] - const0) * np.abs((offsets[argmax]-semigap-offset0))**order0
+    s01 = (centroid_mean[argmax] - const0) * np.abs((offsets[argmax] - semigap - offset0))**order0
     p0 = [offset0, s01]
     if fit_order:
         p0.append(order0)
@@ -240,6 +240,7 @@ def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
     strength0 = (s01 + s02) / 2
 
     p0 = [delta_offset0, strength0]
+
     if fit_order:
         p0.append(order0)
     if fit_gap:
@@ -296,7 +297,7 @@ def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
             'screen_x0': const0
             }
 
-def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False):
+def prepare_streaker_fit(filename_or_dict, force_screen_center=None):
     if type(filename_or_dict) is dict:
         data_dict = filename_or_dict
     elif type(filename_or_dict) is str:
@@ -333,7 +334,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             proj -= np.median(proj)
             proj[np.abs(proj)< np.abs(proj).max()*0.02] = 0
             if n_i == 0:
-                plot_list.append(proj)
+                plot_list.append((x_axis, proj))
             centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
             rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
         centroid_mean = np.mean(centroids, axis=1)
@@ -347,7 +348,7 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
             proj[np.abs(proj)< np.abs(proj).max()*0.05] = 0
             centroids[n_o] = cc = np.sum(proj*x_axis) / np.sum(proj)
             rms[n_o] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
-            plot_list.append(proj)
+            plot_list.append((x_axis, proj))
         centroid_mean = centroids.squeeze()
         centroid_std = None
         rms_mean = rms
@@ -358,15 +359,8 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         key = 'meta_data_begin'
     else:
         key = 'meta_data'
-    meta_data0 = data_dict[key]
-    semigap = meta_data0[streaker+':GAP']/2.*1e-3
-
-    if offsets.min() == 0 or offsets.max() == 0:
-        fit_dict = one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=fit_order, fit_gap=fit_gap, force_screen_center=force_screen_center, debug=debug)
-        fit_dict_rms = None
-    else:
-        fit_dict = two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=fit_order, fit_gap=fit_gap, force_screen_center=force_screen_center, debug=debug)
-        fit_dict_rms = beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=fit_order, fit_gap=fit_gap, debug=debug)
+    magnet_data0 = data_dict[key]
+    semigap = magnet_data0[streaker+':GAP']/2.*1e-3
 
     meta_data = {
         'centroids': centroids,
@@ -376,104 +370,243 @@ def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=No
         'rms_std': rms_std,
         'offsets': offsets,
         'semigap': semigap,
+        'x_axis': x_axis,
+        'streaker': streaker,
+        'screen': data_dict['screen'],
         }
+    return meta_data, plot_list, magnet_data0, data_dict
+
+
+def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False, tt_halfrange=200e-15, len_screen=5000):
+
+    meta_data, plot_list, magnet_data0, raw_data = prepare_streaker_fit(filename_or_dict, force_screen_center)
+    meta_data['beamline'] = beamline
+    offsets = meta_data['offsets']
+    centroid_mean = meta_data['centroid_mean']
+    centroid_std = meta_data['centroid_std']
+    semigap = meta_data['semigap']
+    rms_mean = meta_data['rms_mean']
+    rms_std = meta_data['rms_std']
+
+    if offsets.min() == 0 or offsets.max() == 0:
+        fit_dict = one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=fit_order, fit_gap=fit_gap, force_screen_center=force_screen_center, debug=debug)
+        fit_dict_rms = None
+    else:
+        fit_dict = two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=fit_order, fit_gap=fit_gap, force_screen_center=force_screen_center, debug=debug)
+        fit_dict_rms = beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=fit_order, fit_gap=fit_gap, debug=debug)
 
     if fit_dict_rms is not None:
         meta_data['fit_dict_rms'] = fit_dict_rms
     meta_data.update(fit_dict)
-    screen_x0 = fit_dict['screen_x0']
-    streaker_offset = fit_dict['streaker_offset']
-    xx_fit = fit_dict['xx_fit']
-    reconstruction = fit_dict['reconstruction']
-    initial_guess = fit_dict['initial_guess']
+
+    if forward_propagate_blmeas:
+        blmeas_profile = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV)
+        blmeas_profile.cutoff2(5e-2)
+        blmeas_profile.crop()
+        blmeas_profile.reshape(len_screen)
+
+        sim_screens = forward_propagate(blmeas_profile, tt_halfrange, charge, tracker, magnet_data0, meta_data)
+    else:
+        sim_screens = None
+        blmeas_profile = None
+    meta_data['sim_screens'] = sim_screens
+    meta_data['blmeas_profile'] = blmeas_profile
+
+    if do_plot:
+        plot_streaker_calib(meta_data, plot_handles, plot_list, forward_propagate_blmeas, len_screen)
+
+    output = {
+            'raw_data': raw_data,
+            'meta_data': meta_data,
+            }
+    return output
+
+def analyze_streaker_calibration_stitch_together(filename_or_dict1, filename_or_dict2, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False, tt_halfrange=200e-15, len_screen=5000):
+
+    if type(filename_or_dict1) is dict:
+        dict1 = filename_or_dict1
+    else:
+        dict1 = h5_storage.loadH5Recursive(filename_or_dict1)
+    if type(filename_or_dict2) is dict:
+        dict2 = filename_or_dict2
+    else:
+        dict2 = h5_storage.loadH5Recursive(filename_or_dict2)
+
+    meta_data = {
+        'centroids': [],
+        'centroid_mean': [],
+        'centroid_std': [],
+        'rms_mean': [],
+        'rms_std': [],
+        'offsets': [],
+        'semigap': None,
+        'x_axis': None,
+        'streaker': None,
+        'screen': None,
+        }
+    plot_list = []
+
+    for ctr, dict_ in enumerate([dict1, dict2]):
+        meta_dict = dict_['meta_data']
+        raw_dict = dict_['raw_data']
+        where0 = np.argwhere(meta_dict['offsets'] == 0).squeeze()
+
+        screen_x0 = meta_dict['centroid_mean'][where0]
+
+        this_meta_data, this_plot_list, this_magnet_data0, this_raw_data = prepare_streaker_fit(raw_dict, None)
+
+        this_meta_data['centroids'] -= screen_x0
+        this_meta_data['centroid_mean'] -= screen_x0
+
+        for key in 'semigap', 'streaker', 'screen':
+            meta_data[key] = this_meta_data[key]
+
+        mask_offset = this_meta_data['offsets'] != 0
+        for key in 'centroids', 'centroid_mean', 'centroid_std', 'rms_mean', 'rms_std', 'offsets':
+            if ctr == 0:
+                meta_data[key].extend(this_meta_data[key][mask_offset])
+            else:
+                meta_data[key].extend(this_meta_data[key][::-1])
+
+        if type(this_plot_list[0]) is tuple:
+            plot_list.extend([(x_axis-screen_x0, proj) for (x_axis, proj) in this_plot_list])
+        else:
+            x_axis = raw_dict['pyscan_result']['x_axis_m']
+            plot_list.extend([(x_axis-screen_x0, proj) for proj in this_plot_list])
+
+
+    for key in 'centroids', 'centroid_mean', 'centroid_std', 'rms_mean', 'rms_std', 'offsets':
+        meta_data[key] = np.array(meta_data[key])
+
+    meta_data['beamline'] = beamline
+    offsets = meta_data['offsets']
+    centroid_mean = meta_data['centroid_mean']
+    centroid_std = meta_data['centroid_std']
+    semigap = meta_data['semigap']
+    rms_mean = meta_data['rms_mean']
+    rms_std = meta_data['rms_std']
+
+    fit_dict = two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=fit_order, fit_gap=fit_gap, force_screen_center=force_screen_center, debug=debug)
+    fit_dict_rms = beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=fit_order, fit_gap=fit_gap, debug=debug)
+
+    if fit_dict_rms is not None:
+        meta_data['fit_dict_rms'] = fit_dict_rms
+    meta_data.update(fit_dict)
+
+    if forward_propagate_blmeas:
+        blmeas_profile = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV)
+        blmeas_profile.cutoff2(5e-2)
+        blmeas_profile.crop()
+        blmeas_profile.reshape(len_screen)
+
+        magnet_data0 = dict1['raw_data']['meta_data_begin']
+        sim_screens = forward_propagate(blmeas_profile, tt_halfrange, charge, tracker, magnet_data0, meta_data)
+    else:
+        sim_screens = None
+        blmeas_profile = None
+    meta_data['sim_screens'] = sim_screens
+    meta_data['blmeas_profile'] = blmeas_profile
+
+    if do_plot:
+        plot_streaker_calib(meta_data, plot_handles, plot_list, forward_propagate_blmeas, len_screen)
+
+    output = {
+            'meta_data': meta_data,
+            }
+    return output
+
+
+
+def forward_propagate(blmeas_profile, tt_halfrange, charge, tracker, magnet_data0, meta_data):
+
+    beamline = meta_data['beamline']
+    streaker_name = meta_data['streaker']
+    offsets = meta_data['offsets']
+    streaker_offset = meta_data['streaker_offset']
+    len_screen = len(blmeas_profile._xx)
+
+    streaker_names = config.streaker_names[beamline]
+    gaps = [magnet_data0[x+':GAP']*1e-3 for x in streaker_names.values()]
+    streaker_offsets0 = []
+    n_streaker_var = None
+    for n_streaker, streaker in streaker_names.items():
+        if streaker == streaker_name:
+            n_streaker_var = n_streaker
+            streaker_offsets0.append(None)
+        else:
+            streaker_offsets0.append(magnet_data0[streaker+':CENTER']*1e-3)
+    assert n_streaker_var is not None
+
+    sim_screens = []
+    for s_offset in offsets:
+        streaker_offsets = streaker_offsets0[:]
+        streaker_offsets[n_streaker_var] = -(s_offset-streaker_offset)
+        forward_dict = tracker.matrix_forward(blmeas_profile, gaps, streaker_offsets)
+        sim_screen = forward_dict['screen']
+        try:
+            sim_screen.cutoff2(tracker.screen_cutoff)
+            sim_screen.crop()
+            sim_screen.reshape(len_screen)
+            sim_screens.append(sim_screen)
+        except:
+            import pdb; pdb.set_trace()
+
+
+def plot_streaker_calib(meta_data, plot_handles, plot_list, forward_propagate_blmeas, len_screen):
+
+    screen_name = meta_data['screen']
+    offsets = meta_data['offsets']
+    streaker_offset = meta_data['streaker_offset']
+    xx_fit = meta_data['xx_fit']
+    centroid_mean = meta_data['centroid_mean']
+    centroid_std = meta_data['centroid_std']
+    screen_x0 = meta_data['screen_x0']
+    reconstruction = meta_data['reconstruction']
+    initial_guess = meta_data['initial_guess']
+    rms_mean = meta_data['rms_mean']
+    rms_std = meta_data['rms_std']
+    sim_screens = meta_data['sim_screens']
+    blmeas_profile = meta_data['blmeas_profile']
 
     meas_screens = []
-    for n_proj, (proj, offset) in enumerate(zip(plot_list, offsets)):
+    for n_proj, ((x_axis, proj), offset) in enumerate(zip(plot_list, offsets)):
         meas_screen = misc.proj_to_screen(proj, x_axis, False, screen_x0)
-        len_screen = len(meas_screen.x)
         meas_screen.cutoff2(3e-2)
         meas_screen.crop()
         meas_screen.reshape(len_screen)
         meas_screens.append(meas_screen)
 
-    if forward_propagate_blmeas:
-        blmeas_profile = iap.profile_from_blmeas(blmeas, 200e-15, charge, tracker.energy_eV)
-        blmeas_profile.cutoff2(5e-2)
-        blmeas_profile.crop()
-        blmeas_profile.reshape(len_screen)
-
-        streaker_names = config.streaker_names[beamline]
-        gaps = [meta_data0[x+':GAP']*1e-3 for x in streaker_names.values()]
-        streaker_offsets0 = []
-        n_streaker_var = None
-        for n_streaker, streaker in streaker_names.items():
-            if streaker == data_dict['streaker']:
-                n_streaker_var = n_streaker
-                streaker_offsets0.append(None)
-            else:
-                streaker_offsets0.append(meta_data0[streaker+':CENTER']*1e-3)
-        assert n_streaker_var is not None
-
-        sim_screens = []
-        for s_offset in offsets:
-            streaker_offsets = streaker_offsets0[:]
-            streaker_offsets[n_streaker_var] = -(s_offset-streaker_offset)
-            forward_dict = tracker.matrix_forward(blmeas_profile, gaps, streaker_offsets)
-            sim_screen = forward_dict['screen']
-            try:
-                sim_screen.cutoff2(3e-2)
-                sim_screen.crop()
-                sim_screen.reshape(len_screen)
-                sim_screens.append(sim_screen)
-            except:
-                import pdb; pdb.set_trace()
-        meta_data['sim_screens'] = sim_screens
+    if plot_handles is None:
+        fig, (sp_center, sp_sizes, sp_proj, sp_current) = streaker_calibration_figure()
     else:
-        sim_screens = None
+        (sp_center, sp_sizes, sp_proj, sp_current) = plot_handles
+    sp_center.set_title(screen_name)
 
-    if do_plot:
+    xx_plot = (offsets - streaker_offset)*1e3
+    xx_plot_fit = (xx_fit - streaker_offset)*1e3
+    sp_center.errorbar(xx_plot, (centroid_mean-screen_x0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
+    sp_center.plot(xx_plot_fit, (reconstruction-screen_x0)*1e3, label='Fit')
+    sp_center.plot(xx_plot_fit, (initial_guess-screen_x0)*1e3, label='Guess')
+    sp_center.legend()
 
-        if plot_handles is None:
-            fig, (sp_center, sp_sizes, sp_proj, sp_current) = streaker_calibration_figure()
-        else:
-            (sp_center, sp_sizes, sp_proj, sp_current) = plot_handles
-        screen = data_dict['screen']
-        sp_center.set_title(screen)
+    if 'fit_dict_rms' in meta_data:
+        fit_dict_rms = meta_data['fit_dict_rms']
+        xx_plot = offsets - fit_dict_rms['streaker_offset']
+        sp_sizes.errorbar(xx_plot*1e3, rms_mean*1e3, yerr=rms_std*1e3, label='Data', marker='o', ls='None')
+        xx_plot_fit = (fit_dict_rms['xx_fit']-fit_dict_rms['streaker_offset'])*1e3
+        sp_sizes.plot(xx_plot_fit, fit_dict_rms['reconstruction']*1e3, label='Fit')
+        sp_sizes.plot(xx_plot_fit, fit_dict_rms['initial_guess']*1e3, label='Guess')
+        sp_sizes.legend()
 
-        xx_plot = (offsets - streaker_offset)*1e3
-        xx_plot_fit = (xx_fit - streaker_offset)*1e3
-        sp_center.errorbar(xx_plot, (centroid_mean-screen_x0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
-        sp_center.plot(xx_plot_fit, (reconstruction-screen_x0)*1e3, label='Fit')
-        sp_center.plot(xx_plot_fit, (initial_guess-screen_x0)*1e3, label='Guess')
-        sp_center.legend()
+    for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
+        color = ms.colorprog(n_proj, offsets)
+        meas_screen.plot_standard(sp_proj, label='%.2f mm' % (offset*1e3), color=color)
+        if sim_screens is not None:
+            sim_screen = sim_screens[n_proj]
+            sim_screen.plot_standard(sp_proj, color=color, ls='--')
 
-        if fit_dict_rms is not None:
-            xx_plot = offsets - fit_dict_rms['streaker_offset']
-            sp_sizes.errorbar(xx_plot*1e3, rms_mean*1e3, yerr=rms_std*1e3, label='Data', marker='o', ls='None')
-            xx_plot_fit = (fit_dict_rms['xx_fit']-fit_dict_rms['streaker_offset'])*1e3
-            sp_sizes.plot(xx_plot_fit, fit_dict_rms['reconstruction']*1e3, label='Fit')
-            sp_sizes.plot(xx_plot_fit, fit_dict_rms['initial_guess']*1e3, label='Guess')
-            sp_sizes.legend()
-
-
-        for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
-            color = ms.colorprog(n_proj, offsets)
-            meas_screen.plot_standard(sp_proj, label='%.2f mm' % (offset*1e3), color=color)
-            if sim_screens is not None:
-                sim_screen = sim_screens[n_proj]
-                sim_screen.plot_standard(sp_proj, color=color, ls='--')
-
-        #sp_proj.legend()
-
-        if forward_propagate_blmeas:
-            blmeas_profile.plot_standard(sp_current, color='black')
-
-    output = {
-            'raw_data': data_dict,
-            'meta_data': meta_data,
-            }
-
-    return output
+    if forward_propagate_blmeas:
+        blmeas_profile.plot_standard(sp_current, color='black')
 
 def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None):
     if type(filename_or_dict) is dict:

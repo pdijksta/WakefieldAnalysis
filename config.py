@@ -39,7 +39,7 @@ all_streakers = []
 for beamline, beamline_dict in streaker_names.items():
     all_streakers.extend([x for x in beamline_dict.values()])
 
-default_tracker_settings = {
+get_default_tracker_settings = lambda: {
         'magnet_file': None,
         'timestamp': None,
         'struct_lengths': np.array([1., 1.]),
@@ -56,7 +56,7 @@ default_tracker_settings = {
         'quad_x_beamsize': np.array([10, 10])*1e-6,
         }
 
-default_gauss_recon_settings = {
+get_default_gauss_recon_settings = lambda: {
         'self_consistent': True,
         'sig_t_range': np.arange(20, 40.001, 5)*1e-15,
         'tt_halfrange': 200e-15,

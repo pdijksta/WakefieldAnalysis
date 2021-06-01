@@ -103,7 +103,7 @@ def one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
         const0 = centroid_mean[where0]
     else:
         const0 = force_screen_center
-    order0 = 3
+    order0 = 2.7
     argmax = np.argmax(np.abs(centroid_mean-const0)).squeeze()
     semigap *= np.sign(offsets[argmax])
     if abs(semigap) > abs(offsets[argmax]):
@@ -136,9 +136,6 @@ def one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
             plt.figure(fignum)
             import pdb; pdb.set_trace()
 
-    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
-    reconstruction = fit_func(xx_fit, *p_opt)
-    initial_guess = fit_func(xx_fit, *p0)
     streaker_offset = p_opt[0]
     if fit_gap:
         gap_fit = p_opt[-1]*2
@@ -148,8 +145,17 @@ def one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
         order_fit = p_opt[2]
     else:
         order_fit = order0
+
+    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
+    xx_fit2_min = -(gap_fit/2-streaker_offset-10e-6)
+    xx_fit2_max = -xx_fit2_min + 2*streaker_offset
+    xx_fit2 = np.linspace(xx_fit2_min, xx_fit2_max, int(1e3))
+    reconstruction = fit_func(xx_fit, *p_opt)
+    reconstruction2 = fit_func(xx_fit2, *p_opt)
+    initial_guess = fit_func(xx_fit, *p0)
     return {
             'reconstruction': reconstruction,
+            'reconstruction2': reconstruction2,
             'initial_guess': initial_guess,
             'streaker_offset': streaker_offset,
             'gap_fit': gap_fit,
@@ -157,10 +163,11 @@ def one_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
             'p_opt': p_opt,
             'p0': p0,
             'xx_fit': xx_fit,
+            'xx_fit2': xx_fit2,
             'screen_x0': const0
             }
 
-def beamsize_fit_func(offsets, streaker_offset, strength, order, const, semigap):
+def beamsize_fit_func(offsets, streaker_offset, strength, order, semigap, const):
     sq0 = const**2
     c1 = np.abs((offsets-streaker_offset+semigap))**(-order*2)
     c2 = np.abs((offsets-streaker_offset-semigap))**(-order*2)
@@ -171,7 +178,7 @@ def beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=True, fit_gap=Fa
 
     where0 = np.argwhere(offsets == 0).squeeze()
     const0 = rms_mean[where0]
-    order0 = 3
+    order0 = 2.7
 
     offset0 = (offsets[0] + offsets[-1])/2
 
@@ -180,12 +187,20 @@ def beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=True, fit_gap=Fa
     p0 = [offset0, s0]
     if fit_order:
         p0.append(order0)
+    if fit_gap:
+        p0.append(semigap)
 
     def fit_func(*args):
         if fit_order:
-            return beamsize_fit_func(*args, const0, semigap)
+            if fit_gap:
+                return beamsize_fit_func(*args, const0)
+            else:
+                return beamsize_fit_func(*args, semigap, const0)
         else:
-            return beamsize_fit_func(*args, order0, const0, semigap)
+            if fit_gap:
+                return beamsize_fit_func(*args[:-1], order0, args[-1], const0)
+            else:
+                return beamsize_fit_func(*args[:-1], order0, args[-1], const0)
     try:
         p_opt, p_cov = curve_fit(fit_func, offsets, rms_mean, p0, sigma=rms_std)
     except RuntimeError:
@@ -201,9 +216,6 @@ def beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=True, fit_gap=Fa
             plt.figure(fignum)
             import pdb; pdb.set_trace()
 
-    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
-    reconstruction = fit_func(xx_fit, *p_opt)
-    initial_guess = fit_func(xx_fit, *p0)
     streaker_offset = p_opt[0]
     if fit_gap:
         gap_fit = p_opt[-1]*2
@@ -213,8 +225,17 @@ def beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=True, fit_gap=Fa
         order_fit = p_opt[2]
     else:
         order_fit = order0
+
+    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
+    xx_fit2_min = -(gap_fit/2-streaker_offset-10e-6)
+    xx_fit2_max = -xx_fit2_min + 2*streaker_offset
+    xx_fit2 = np.linspace(xx_fit2_min, xx_fit2_max, int(1e3))
+    reconstruction = fit_func(xx_fit, *p_opt)
+    reconstruction2 = fit_func(xx_fit2, *p_opt)
+    initial_guess = fit_func(xx_fit, *p0)
     return {
             'reconstruction': reconstruction,
+            'reconstruction2': reconstruction2,
             'initial_guess': initial_guess,
             'streaker_offset': streaker_offset,
             'gap_fit': gap_fit,
@@ -222,7 +243,8 @@ def beamsize_fit(offsets, rms_mean, rms_std, semigap, fit_order=True, fit_gap=Fa
             'p_opt': p_opt,
             'p0': p0,
             'xx_fit': xx_fit,
-            'screen_x0': const0
+            'xx_fit2': xx_fit2,
+            'screen_rms0': const0
             }
 
 def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True, fit_gap=False, force_screen_center=None, debug=False):
@@ -232,7 +254,7 @@ def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
     else:
         const0 = force_screen_center
     delta_offset0 = (offsets.min() + offsets.max())/2
-    order0 = 3
+    order0 = 2.7
     wall0, wall1 = -semigap+delta_offset0, semigap+delta_offset0
 
     s01 = (centroid_mean[0] - const0) / (np.abs((offsets[0]-wall0))**(-order0) - np.abs((offsets[0]-wall1))**(-order0))
@@ -271,9 +293,6 @@ def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
             plt.show()
             plt.figure(fignum)
 
-    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
-    reconstruction = fit_func(xx_fit, *p_opt)
-    initial_guess = fit_func(xx_fit, *p0)
     streaker_offset = p_opt[0]
     if fit_gap:
         gap_fit = p_opt[-1]*2
@@ -285,8 +304,22 @@ def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
     else:
         order_fit = order0
 
+    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
+    xx_fit2_min = -(gap_fit/2-streaker_offset-10e-6)
+    xx_fit2_max = -xx_fit2_min + 2*streaker_offset
+    xx_fit2 = np.linspace(xx_fit2_min, xx_fit2_max, int(1e3))
+    reconstruction = fit_func(xx_fit, *p_opt)
+    reconstruction2 = fit_func(xx_fit2, *p_opt)
+    initial_guess = fit_func(xx_fit, *p0)
+
+    #plt.figure()
+    #plt.plot(xx_fit2-streaker_offset, reconstruction2)
+    #plt.show()
+    #import pdb; pdb.set_trace()
+
     return {
             'reconstruction': reconstruction,
+            'reconstruction2': reconstruction2,
             'initial_guess': initial_guess,
             'streaker_offset': streaker_offset,
             'gap_fit': gap_fit,
@@ -294,6 +327,7 @@ def two_sided_fit(offsets, centroid_mean, centroid_std, semigap, fit_order=True,
             'p_opt': p_opt,
             'p0': p0,
             'xx_fit': xx_fit,
+            'xx_fit2': xx_fit2,
             'screen_x0': const0
             }
 
@@ -446,14 +480,25 @@ def analyze_streaker_calibration_stitch_together(filename_or_dict1, filename_or_
         }
     plot_list = []
 
+    diff1, diff2 = np.sign(np.diff(dict1['meta_data']['offsets'])[0]), np.sign(np.diff(dict2['meta_data']['offsets'])[0])
+
     for ctr, dict_ in enumerate([dict1, dict2]):
         meta_dict = dict_['meta_data']
         raw_dict = dict_['raw_data']
         where0 = np.argwhere(meta_dict['offsets'] == 0).squeeze()
 
+
         screen_x0 = meta_dict['centroid_mean'][where0]
 
         this_meta_data, this_plot_list, this_magnet_data0, this_raw_data = prepare_streaker_fit(raw_dict, None)
+        this_offsets = this_meta_data['offsets']
+
+        if ctr == 0:
+            reverse = np.abs(this_offsets[0]) < np.abs(this_offsets[-1])
+            if reverse:
+                diff1 *= -1
+        else:
+            reverse = diff1 != diff2
 
         this_meta_data['centroids'] -= screen_x0
         this_meta_data['centroid_mean'] -= screen_x0
@@ -461,19 +506,32 @@ def analyze_streaker_calibration_stitch_together(filename_or_dict1, filename_or_
         for key in 'semigap', 'streaker', 'screen':
             meta_data[key] = this_meta_data[key]
 
-        mask_offset = this_meta_data['offsets'] != 0
+        if ctr == 0:
+            mask_offset = this_offsets != 0
+        else:
+            mask_offset = np.ones_like(this_meta_data['offsets'], bool)
+
         for key in 'centroids', 'centroid_mean', 'centroid_std', 'rms_mean', 'rms_std', 'offsets':
-            if ctr == 0:
-                meta_data[key].extend(this_meta_data[key][mask_offset])
+            if reverse:
+                meta_data[key].extend(this_meta_data[key][mask_offset][::-1])
             else:
-                meta_data[key].extend(this_meta_data[key][::-1])
+                meta_data[key].extend(this_meta_data[key][mask_offset])
+
+        if ctr == 0:
+            where0 = np.argwhere(this_offsets == 0).squeeze()
+            del this_plot_list[where0]
 
         if type(this_plot_list[0]) is tuple:
-            plot_list.extend([(x_axis-screen_x0, proj) for (x_axis, proj) in this_plot_list])
+            if reverse:
+                plot_list.extend([(x_axis-screen_x0, proj) for (x_axis, proj) in this_plot_list][::-1])
+            else:
+                plot_list.extend([(x_axis-screen_x0, proj) for (x_axis, proj) in this_plot_list])
         else:
             x_axis = raw_dict['pyscan_result']['x_axis_m']
-            plot_list.extend([(x_axis-screen_x0, proj) for proj in this_plot_list])
-
+            if reverse:
+                plot_list.extend([(x_axis-screen_x0, proj) for proj in this_plot_list][::-1])
+            else:
+                plot_list.extend([(x_axis-screen_x0, proj) for proj in this_plot_list])
 
     for key in 'centroids', 'centroid_mean', 'centroid_std', 'rms_mean', 'rms_std', 'offsets':
         meta_data[key] = np.array(meta_data[key])
@@ -494,8 +552,8 @@ def analyze_streaker_calibration_stitch_together(filename_or_dict1, filename_or_
     meta_data.update(fit_dict)
 
     if forward_propagate_blmeas:
-        blmeas_profile = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV)
-        blmeas_profile.cutoff2(5e-2)
+        blmeas_profile = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, subtract_min=True)
+        blmeas_profile.cutoff2(3e-2)
         blmeas_profile.crop()
         blmeas_profile.reshape(len_screen)
 
@@ -514,8 +572,6 @@ def analyze_streaker_calibration_stitch_together(filename_or_dict1, filename_or_
             'meta_data': meta_data,
             }
     return output
-
-
 
 def forward_propagate(blmeas_profile, tt_halfrange, charge, tracker, magnet_data0, meta_data):
 
@@ -543,30 +599,28 @@ def forward_propagate(blmeas_profile, tt_halfrange, charge, tracker, magnet_data
         streaker_offsets[n_streaker_var] = -(s_offset-streaker_offset)
         forward_dict = tracker.matrix_forward(blmeas_profile, gaps, streaker_offsets)
         sim_screen = forward_dict['screen']
-        try:
-            sim_screen.cutoff2(tracker.screen_cutoff)
-            sim_screen.crop()
-            sim_screen.reshape(len_screen)
-            sim_screens.append(sim_screen)
-        except:
-            import pdb; pdb.set_trace()
-
+        sim_screen.cutoff2(tracker.screen_cutoff)
+        sim_screen.crop()
+        sim_screen.reshape(len_screen)
+        sim_screens.append(sim_screen)
+    return sim_screens
 
 def plot_streaker_calib(meta_data, plot_handles, plot_list, forward_propagate_blmeas, len_screen):
 
-    screen_name = meta_data['screen']
     offsets = meta_data['offsets']
     streaker_offset = meta_data['streaker_offset']
     xx_fit = meta_data['xx_fit']
+    xx_fit2 = meta_data['xx_fit2']
     centroid_mean = meta_data['centroid_mean']
     centroid_std = meta_data['centroid_std']
     screen_x0 = meta_data['screen_x0']
     reconstruction = meta_data['reconstruction']
-    initial_guess = meta_data['initial_guess']
+    reconstruction2 = meta_data['reconstruction2']
     rms_mean = meta_data['rms_mean']
     rms_std = meta_data['rms_std']
     sim_screens = meta_data['sim_screens']
     blmeas_profile = meta_data['blmeas_profile']
+    fit_semigap = meta_data['gap_fit']/2
 
     meas_screens = []
     for n_proj, ((x_axis, proj), offset) in enumerate(zip(plot_list, offsets)):
@@ -577,36 +631,88 @@ def plot_streaker_calib(meta_data, plot_handles, plot_list, forward_propagate_bl
         meas_screens.append(meas_screen)
 
     if plot_handles is None:
-        fig, (sp_center, sp_sizes, sp_proj, sp_current) = streaker_calibration_figure()
+        fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = streaker_calibration_figure()
     else:
-        (sp_center, sp_sizes, sp_proj, sp_current) = plot_handles
-    sp_center.set_title(screen_name)
-
-    xx_plot = (offsets - streaker_offset)*1e3
-    xx_plot_fit = (xx_fit - streaker_offset)*1e3
-    sp_center.errorbar(xx_plot, (centroid_mean-screen_x0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
-    sp_center.plot(xx_plot_fit, (reconstruction-screen_x0)*1e3, label='Fit')
-    sp_center.plot(xx_plot_fit, (initial_guess-screen_x0)*1e3, label='Guess')
-    sp_center.legend()
-
-    if 'fit_dict_rms' in meta_data:
-        fit_dict_rms = meta_data['fit_dict_rms']
-        xx_plot = offsets - fit_dict_rms['streaker_offset']
-        sp_sizes.errorbar(xx_plot*1e3, rms_mean*1e3, yerr=rms_std*1e3, label='Data', marker='o', ls='None')
-        xx_plot_fit = (fit_dict_rms['xx_fit']-fit_dict_rms['streaker_offset'])*1e3
-        sp_sizes.plot(xx_plot_fit, fit_dict_rms['reconstruction']*1e3, label='Fit')
-        sp_sizes.plot(xx_plot_fit, fit_dict_rms['initial_guess']*1e3, label='Guess')
-        sp_sizes.legend()
-
+        (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = plot_handles
+    rms_sim = np.zeros(len(offsets))
+    centroid_sim = np.zeros(len(offsets))
     for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
         color = ms.colorprog(n_proj, offsets)
         meas_screen.plot_standard(sp_proj, label='%.2f mm' % (offset*1e3), color=color)
         if sim_screens is not None:
             sim_screen = sim_screens[n_proj]
             sim_screen.plot_standard(sp_proj, color=color, ls='--')
+            centroid_sim[n_proj] = sim_screen.mean()
+            rms_sim[n_proj] = sim_screen.rms()
 
     if forward_propagate_blmeas:
         blmeas_profile.plot_standard(sp_current, color='black')
+
+    xx_plot = (offsets - streaker_offset)*1e3
+    xx_plot_fit = (xx_fit - streaker_offset)*1e3
+    sp_center.errorbar(xx_plot, (centroid_mean-screen_x0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
+    sp_center.plot(xx_plot_fit, (reconstruction-screen_x0)*1e3, label='Fit')
+    #initial_guess = meta_data['initial_guess']
+    #sp_center.plot(xx_plot_fit, (initial_guess-screen_x0)*1e3, label='Guess')
+
+    mask_pos, mask_neg = offsets > 0, offsets < 0
+    xx_plot2 = np.abs(fit_semigap*1e3 - np.abs(xx_plot))
+    for side_ctr, (mask2, label) in enumerate([(mask_pos, 'Positive'), (mask_neg, 'Negative')]):
+        sp_center2.errorbar(xx_plot2[mask2], np.abs(centroid_mean[mask2]-screen_x0)*1e3, yerr=centroid_std[mask2]*1e3, label=label, marker='o', ls='None')
+
+    plot2_sim = []
+    for mask in mask_pos, mask_neg:
+        plot2_sim.extend([(a, np.abs(b)*1e3) for a, b in zip(xx_plot2[mask], centroid_sim[mask])])
+    plot2_sim.sort()
+    xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
+    sp_center2.plot(xx_plot_sim, yy_plot_sim, label='Simulated', ls='None', marker='o')
+
+    xx_plot_fit2 = np.abs(fit_semigap - np.abs(xx_fit2 - streaker_offset))*1e3
+    yy_plot_fit2 = (np.abs(reconstruction2)-screen_x0)*1e3
+    xlims = sp_center2.get_xlim()
+    mask_fit = np.logical_and(xx_plot_fit2 > xlims[0], xx_plot_fit2 < xlims[1])
+    sp_center2.plot(xx_plot_fit2[mask_fit], yy_plot_fit2[mask_fit], label='Fit')
+    sp_center2.set_xlim(*xlims)
+
+    if 'fit_dict_rms' in meta_data:
+        fit_dict_rms = meta_data['fit_dict_rms']
+        fit_semigap = fit_dict_rms['gap_fit']/2
+        fit_dict_rms = meta_data['fit_dict_rms']
+        xx_plot = offsets - fit_dict_rms['streaker_offset']
+        sp_sizes.errorbar(xx_plot*1e3, rms_mean*1e3, yerr=rms_std*1e3, label='Data', marker='o', ls='None')
+        xx_plot_fit = (fit_dict_rms['xx_fit']-fit_dict_rms['streaker_offset'])*1e3
+        sp_sizes.plot(xx_plot_fit, fit_dict_rms['reconstruction']*1e3, label='Fit')
+        #sp_sizes.plot(xx_plot_fit, fit_dict_rms['initial_guess']*1e3, label='Guess')
+        if sim_screens is not None:
+            sp_sizes.plot(xx_plot*1e3, rms_sim*1e3, label='Simulated', marker='.', ls='None')
+
+        plot2_sim = []
+        for mask, label in [(offsets > 0, 'Positive'), (offsets < 0, 'Negative')]:
+            xx_plot2 = np.abs(fit_semigap - np.abs(xx_plot))
+            sp_sizes2.errorbar(xx_plot2[mask]*1e3, np.abs(rms_mean[mask])*1e3, yerr=rms_std[mask]*1e3, label=label, marker='o', ls='None')
+            if sim_screens is not None:
+                plot2_sim.extend([(a*1e3, b*1e3) for a, b in zip(xx_plot2[mask], rms_sim[mask])])
+
+        if sim_screens is not None:
+            plot2_sim.sort()
+            xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
+            sp_sizes2.plot(xx_plot_sim, yy_plot_sim, label='Simulated', ls='None', marker='o')
+
+
+        xx_plot_fit2 = np.abs(fit_semigap - np.abs(fit_dict_rms['xx_fit2']-fit_dict_rms['streaker_offset']))*1e3
+        xlims = sp_sizes2.get_xlim()
+        mask_fit = np.logical_and(xx_plot_fit2 > xlims[0], xx_plot_fit2 < xlims[1])
+        mask_fit = np.logical_and(mask_fit, fit_dict_rms['xx_fit2'] > 0)
+        sp_sizes2.plot(xx_plot_fit2[mask_fit], fit_dict_rms['reconstruction2'][mask_fit]*1e3, label='Fit')
+        sp_sizes.legend()
+        sp_sizes2.legend()
+
+
+    if sim_screens is not None:
+        sp_center.plot(xx_plot*1e3, centroid_sim*1e3, label='Simulated', marker='.', ls='None')
+
+    sp_center.legend()
+    sp_center2.legend()
 
 def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None):
     if type(filename_or_dict) is dict:
@@ -702,7 +808,6 @@ def reconstruction_figure():
     sp_opt = subplot(sp_ctr)
     sp_ctr += 1
     clear_reconstruction(sp_screen, sp_profile, sp_opt)
-
     return fig, (sp_screen, sp_profile, sp_opt)
 
 def clear_reconstruction(sp_screen, sp_profile, sp_opt):
@@ -721,22 +826,17 @@ def streaker_calibration_figure():
     fig = plt.figure()
     fig.canvas.set_window_title('Streaker center calibration')
     fig.subplots_adjust(hspace=0.4)
-    sp_ctr = 1
-    subplot = ms.subplot_factory(2, 2)
-    sp_center = subplot(sp_ctr)
-    sp_ctr +=1
-    sp_sizes = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_proj = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_current = subplot(sp_ctr)
-    clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_current)
-    return fig, (sp_center, sp_sizes, sp_proj, sp_current)
+    subplot = ms.subplot_factory(2, 3)
+    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+6)))
+    clear_streaker_calibration(*plot_handles)
+    return fig, plot_handles
 
-def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_current):
+def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current):
     for sp, title, xlabel, ylabel in [
-            (sp_center, 'Centroid shift', 'Streaker center [mm]', 'Beam X centroid [mm]'),
-            (sp_sizes, 'Size increase', 'Streaker center [mm]', 'Beam X rms [mm]'),
+            (sp_center, 'Centroid shift', 'Streaker center (mm)', 'Beam X centroid (mm)'),
+            (sp_sizes, 'Size increase', 'Streaker center (mm)', 'Beam X rms (mm)'),
+            (sp_center2, 'Centroid shift', 'Distance from jaw (mm)', 'Beam X centroid (mm)'),
+            (sp_sizes2, 'Size increase', 'Distance from jaw (mm)', 'Beam X rms (mm)'),
             (sp_proj, 'Screen projections', 'x (mm)', 'Intensity (arb. units)'),
             (sp_current, 'Beam current', 't (fs)', 'Current (kA)'),
             ]:
@@ -747,45 +847,19 @@ def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_current):
         sp.grid(False)
 
 def lasing_figures():
-
     output = []
     fig = plt.figure()
     fig.canvas.set_window_title('Lasing reconstruction')
     subplot = ms.subplot_factory(3,3, grid=False)
-    sp_ctr = 1
-    sp_profile = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_wake = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_ctr += 1
-    sp_on = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_on_cut = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_on_tE = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_off = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_off_cut = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_off_tE = subplot(sp_ctr)
-    sp_ctr += 1
-    output.append((fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)))
+    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+8)))
+    output.append((fig, plot_handles))
     fig.subplots_adjust(hspace=0.5, wspace=0.3)
 
     fig = plt.figure()
     fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,2, grid=False)
-    sp_ctr = 1
-    sp_power = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_current = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_centroid = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_slice_size = subplot(sp_ctr)
-    sp_ctr += 1
-    output.append((fig, (sp_power, sp_current, sp_centroid, sp_slice_size)))
+    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+4)))
+    output.append((fig, plot_handles))
     clear_lasing(output)
     return output
 
@@ -1046,4 +1120,3 @@ def get_gap_and_offset(meta_data, beamline):
         offsets.append(meta_data[streaker+':CENTER']*1e-3)
 
     return np.array(gaps), np.array(offsets)
-

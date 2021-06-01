@@ -60,8 +60,11 @@ class Profile:
         _yy *= old_sum / _yy.sum()
         self._xx, self._yy = _xx, _yy
 
+    def mean(self):
+        return np.sum(self._xx*self._yy) / np.sum(self._yy)
+
     def rms(self):
-        mean = np.sum(self._xx*self._yy) / np.sum(self._yy)
+        mean = self.mean()
         square = (self._xx - mean)**2
         rms = np.sqrt(np.sum(square * self._yy) / np.sum(self._yy))
         return rms

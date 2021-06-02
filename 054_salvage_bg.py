@@ -46,8 +46,6 @@ with open('./bytes.pkl', 'rb') as f:
     bytes = pickle.load(f)
 arr0 = np.frombuffer(bytes, dtype=np.uint16)
 bg = arr0.reshape([2160, 2560])
-
-
 mask_bg = bg > 150
 
 min_index_x = np.argwhere(x_axis0 == x_axis[0]).squeeze()
@@ -58,17 +56,14 @@ max_index_y = np.argwhere(y_axis0 == y_axis[-1]).squeeze()
 
 mask_image = mask_bg[min_index_y:max_index_y+1,min_index_x:max_index_x+1]
 
-
 image2 = image.copy()
 image_recover = image.copy()
 image2[mask_image] = np.array([0], dtype=np.uint16)-1
-
 
 mask_dest = image == 0
 
 image_recover += bg[min_index_y:max_index_y+1,min_index_x:max_index_x+1]
 image_recover[mask_dest] = 0
-
 
 cmap = cm.get_cmap('viridis', 12)
 image_float = image.astype(np.float64)
@@ -78,14 +73,8 @@ image_floored[image_floored < 0] = 0
 image_normed = image_floored/np.max(image_floored)
 
 colors = cmap(image_normed)
-
 colors[mask_dest] = np.array([1, 0, 0, 1])
-
-
-
-
 image_recover[mask_dest] = np.array([0], dtype=np.uint16)-1
-
 
 for im, ax_x, ax_y, title in [
         (colors, x_axis, y_axis, 'Lasing'),

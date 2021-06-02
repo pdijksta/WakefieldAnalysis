@@ -1,11 +1,11 @@
 import os
 import matplotlib.pyplot as plt
 from socket import gethostname
-import analysis
 import tracking
 import config
 import h5_storage
 import elegant_matrix
+import streaker_calibration as sc
 
 elegant_matrix.set_tmp_dir('~/tmp_elegant/')
 
@@ -41,12 +41,12 @@ files3 = [
         data_dir+'2021_05_19-00_24_47_Calibration_SARUN18-UDCP020.h5', # Bad data maybe
         ]
 
-for files in files1, files2, files3:
+for files in files1, files2:
     tracker_kwargs = config.get_default_tracker_settings()
     dict1 = h5_storage.loadH5Recursive(files[0])
     dict2 = h5_storage.loadH5Recursive(files[1])
-    dict1 = analysis.analyze_streaker_calibration(dict1['raw_data'], False)
-    dict2 = analysis.analyze_streaker_calibration(dict2['raw_data'], False)
+    dict1 = sc.analyze_streaker_calibration(dict1['raw_data'], False)
+    dict2 = sc.analyze_streaker_calibration(dict2['raw_data'], False)
     magnet_data = dict1['raw_data']['meta_data_begin']
     tracker_kwargs['magnet_file'] = magnet_data
     tracker_kwargs['quad_wake'] = False
@@ -56,14 +56,19 @@ for files in files1, files2, files3:
     #tracker.split_streaker = 5
     #tracker.set_simulator(magnet_data)
 
-    meta_data = analysis.analyze_streaker_calibration_stitch_together(dict1, dict2, do_plot=True, plot_handles=None, fit_order=True, force_screen_center=None, forward_propagate_blmeas=True, tracker=tracker, blmeas=blmeas_file, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False, tt_halfrange=200e-15, len_screen=5000, force_gap=10e-3)['meta_data']
+    meta_data = sc.analyze_streaker_calibration_stitch_together(dict1, dict2, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=True, tracker=tracker, blmeas=blmeas_file, beamline='Aramis', charge=200e-12, fit_gap=False, debug=False, tt_halfrange=200e-15, len_screen=5000, force_gap=10e-3-70e-6)['meta_data']
 
     plt.suptitle(os.path.basename(files[0]))
 
     print(os.path.basename(files[0]))
     print(meta_data['streaker_offset'])
     print(meta_data['order_fit'])
-    print(meta_data['gap_fit'])
+    print('Gap fit', meta_data['gap_fit'])
 
 plt.show()
+
+
+orders = [3, 2.7]
+gap1 = [9.9723, 9.9918]
+gap2 = [9.9959, 9.900]
 

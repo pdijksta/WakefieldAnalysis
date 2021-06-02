@@ -140,3 +140,12 @@ def saveall_dir(dir_, title=None, figsize=None):
         fig.savefig(path)
         myprint('Figure %i saved in %s' % (num, path))
 
+def closeall():
+    nums = plt.get_fignums()
+    for num in nums:
+        plt.figure(num).clf()
+    plt.close('all')
+
+def show():
+    plt.show()
+

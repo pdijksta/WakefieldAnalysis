@@ -20,6 +20,10 @@ except ImportError:
 tmp_folder = './'
 e0_eV = m_e*c**2/e
 
+# Backward compatibility
+BeamProfile = iap.BeamProfile
+ScreenDistribution = iap.ScreenDistribution
+
 class Tracker:
     def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.), quad_wake_back=False):
 
@@ -767,8 +771,4 @@ class Tracker:
                'all_profiles': opt_func_profiles,
                'all_screens': opt_func_screens,
                }
-
-# Backward compatibility
-BeamProfile = iap.BeamProfile
-ScreenDistribution = iap.ScreenDistribution
 

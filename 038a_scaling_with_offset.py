@@ -8,7 +8,7 @@ import myplotstyle as ms
 plt.close('all')
 
 gap = 10e-3
-distance_arr = np.linspace(200e-6, 500e-6, int(1e4))
+distance_arr = np.linspace(250e-6, 500e-6, int(1e4))
 
 ms.figure('Scaling')
 sp = ms.subplot_factory(1,1)(1, xlabel='Distance [um]')

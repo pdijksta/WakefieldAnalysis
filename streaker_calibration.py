@@ -81,21 +81,20 @@ class StreakerCalibration:
         where0 = np.argwhere(offsets == 0).squeeze()
         assert where0.size == 1
 
-        plot_list_x = []
         plot_list_y = []
         for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
             proj = proj_x[n_o,n_i]
             proj = proj - np.median(proj)
             proj[proj<proj.max()*self.proj_cutoff] = 0
             if n_i == 0:
-                plot_list_x.append(x_axis)
                 plot_list_y.append(proj)
             centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
             rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
             if np.isnan(rms[n_o, n_i]):
                 import pdb; pdb.set_trace()
         centroid_mean = np.mean(centroids, axis=1)
-        centroid_mean -= centroid_mean[where0]
+        screen_x0 = centroid_mean[where0]
+        centroid_mean -= screen_x0
         centroid_std = np.std(centroids, axis=1)
         rms_mean = np.mean(rms, axis=1)
         rms_std = np.std(rms, axis=1)
@@ -112,6 +111,8 @@ class StreakerCalibration:
         self.centroids_std = np.concatenate([self.centroids_std, centroid_std[mask]])[sort]
         self.rms = np.concatenate([self.rms, rms_mean[mask]])[sort]
         self.rms_std = np.concatenate([self.rms_std, rms_std[mask]])[sort]
+
+        plot_list_x = [x_axis - screen_x0] * len(plot_list_y)
         new_plot_list_x = self.plot_list_x + plot_list_x
         new_plot_list_y = self.plot_list_y + plot_list_y
 
@@ -260,9 +261,9 @@ class StreakerCalibration:
         gap = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['gap_fit']
         offsets = self.offsets
         len_screen = len(blmeas_profile._xx)
-        gaps = np.array([10, 10])
+        gaps = np.array([10., 10.])
         gaps[self.n_streaker] = gap
-        beam_offsets0 = np.array([0, 0])
+        beam_offsets0 = np.array([0., 0.])
 
         sim_screens = []
         for s_offset in offsets:

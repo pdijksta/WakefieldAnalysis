@@ -18,6 +18,7 @@ import tracking
 import elegant_matrix
 import analysis
 import h5_storage
+import streaker_calibration as sc
 
 import myplotstyle as ms
 
@@ -208,7 +209,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.reconstruction_fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
         self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'Rec plots')
 
-        self.streaker_calib_fig, self.streaker_calib_plot_handles = analysis.streaker_calibration_figure()
+        self.streaker_calib_fig, self.streaker_calib_plot_handles = sc.streaker_calibration_figure()
         self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Cal. plots')
 
         self.screen_calib_fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
@@ -227,7 +228,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def clear_calib_plots(self):
         if self.streaker_calib_plot_handles is not None:
-            analysis.clear_streaker_calibration(*self.streaker_calib_plot_handles)
+            sc.clear_streaker_calibration(*self.streaker_calib_plot_handles)
             self.streaker_calib_canvas.draw()
 
     def clear_screen_plots(self):
@@ -489,7 +490,7 @@ class StartMain(QtWidgets.QMainWindow):
             tracker = None
             blmeasfile = None
 
-        full_dict = analysis.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=self.beamline)
+        full_dict = sc.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=self.beamline)
         return full_dict
 
     def load_calibration(self):

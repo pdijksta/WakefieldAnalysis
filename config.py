@@ -65,3 +65,5 @@ get_default_gauss_recon_settings = lambda: {
 
 tmp_elegant_dir = '~/tmp_elegant'
 
+fontsize = 8
+

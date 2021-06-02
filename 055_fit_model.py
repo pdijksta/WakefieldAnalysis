@@ -28,7 +28,7 @@ magnet_data_file = data_dir + '2021_05_18-21_27_16_Lasing_True_SARBD02-DSCR050.h
 magnet_data = loadH5Recursive(magnet_data_file)['meta_data_begin']
 
 tracker_kwargs['magnet_file'] = magnet_data
-tracker_kwargs['profile_cutoff'] = 2e-2
+tracker_kwargs['profile_cutoff'] = 5e-2
 
 tracker = tracking.Tracker(**tracker_kwargs)
 

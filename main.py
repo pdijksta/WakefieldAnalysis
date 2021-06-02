@@ -99,7 +99,7 @@ except ImportError:
     print('ELOG not available')
     elog = None
 
-ms.set_fontsizes(8)
+ms.set_fontsizes(config.fontsize)
 
 pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
@@ -150,7 +150,7 @@ class StartMain(QtWidgets.QMainWindow):
         #recon_data_file = default_dir+'2021_05_18-17_41_02_PassiveReconstruction.h5'
         lasing_file_off = default_dir + '2021_05_18-20_05_21_Lasing_False_SARBD02-DSCR050.h5'
         lasing_file_on = default_dir + '2021_05_18-20_04_28_Lasing_True_SARBD02-DSCR050.h5'
-        streaker_calib_file = default_dir + '2021_04_25-16_55_25_Calibration_SARUN18-UDCP020.h5'
+        streaker_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
         lasing_current_profile = default_dir + '2021_05_18-17_41_02_PassiveReconstruction.h5'
 
         self.ImportCalibration.setText(screen_calib_file)

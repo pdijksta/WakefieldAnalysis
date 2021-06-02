@@ -7,24 +7,57 @@ try:
     import h5_storage
     import myplotstyle as ms
     import misc2 as misc
+    import config
+    import image_and_profile as iap
 except ImportError:
     from . import h5_storage
     from . import myplotstyle as ms
     from . import misc2 as misc
+    from . import config
+    from . import image_and_profile as iap
 
 order0_centroid = 2.75
-order0_rms = 2.70
+order0_rms = 2.75
+
+def analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=None, fit_order=False, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=None, fit_gap=True, tt_halfrange=None, force_gap=None):
+    meta_data = result_dict['meta_data_begin']
+    streakers = list(config.streaker_names[beamline].values())
+    offsets = np.array([meta_data[x+':CENTER'] for x in streakers])
+    n_streaker = int(np.argmax(np.abs(offsets)).squeeze())
+
+    if force_gap is None:
+        gap0 = meta_data[streakers[n_streaker]+':GAP']*1e-3
+    else:
+        gap0 = force_gap
+    if charge is None:
+        charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
+    if tt_halfrange is None:
+        tt_halfrange = config.get_default_gauss_recon_settings()['tt_halfrange']
+
+    sc = StreakerCalibration(beamline, n_streaker, gap0, file_or_dict=result_dict)
+    sc.fit()
+    if forward_propagate_blmeas:
+        beam_profile = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, True, 1)
+        beam_profile.reshape(tracker.len_screen)
+        beam_profile.cutoff2(5e-2)
+        beam_profile.crop()
+        beam_profile.reshape(tracker.len_screen)
+
+        sc.forward_propagate(beam_profile, tt_halfrange, charge, tracker)
+    sc.plot_streaker_calib(plot_handles)
+    return sc.get_result_dict()
 
 class StreakerCalibration:
-    proj_cutoff = 0.02
 
-    def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, fit_gap=True, fit_order=False, order0_centroid=order0_centroid, order0_rms=order0_rms):
+    def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, fit_gap=True, fit_order=False, order0_centroid=order0_centroid, order0_rms=order0_rms, proj_cutoff=0.03):
         self.order0_rms = order0_rms
         self.order0_centroid = order0_centroid
         self.fit_gap = fit_gap
         self.fit_order = fit_order
         self.gap0 = gap0
         self.n_streaker = n_streaker
+        self.proj_cutoff = proj_cutoff
+        self.beamline = beamline
 
         self.offsets = []
         self.centroids = []
@@ -34,8 +67,10 @@ class StreakerCalibration:
         self.images = None
         self.blmeas_profile = None
         self.sim_screen_dict = {}
+        self.sim_screens = None
         self.plot_list_x = []
         self.plot_list_y = []
+        self.raw_data = None
 
         self.fit_dicts_gap_order = {
                 'beamsize':{
@@ -64,6 +99,28 @@ class StreakerCalibration:
             self.add_data(offsets_range, images, x_axis)
         if file_or_dict is not None:
             self.add_file(file_or_dict)
+
+    def get_result_dict(self):
+        fit_dict_centroid = self.fit_dicts_gap_order['centroid'][self.fit_gap][self.fit_order]
+        fit_dict_rms = self.fit_dicts_gap_order['beamsize'][self.fit_gap][self.fit_order]
+        meta_data = {
+                 'centroid_mean': self.centroids,
+                 'centroid_std': self.centroids_std,
+                 'rms_mean': self.rms,
+                 'rms_std': self.rms_std,
+                 'offsets': self.offsets,
+                 'semigap': fit_dict_centroid['gap_fit']/2.,
+                 'streaker_offset': fit_dict_centroid['streaker_offset'],
+                 'x_axis': self.plot_list_x[0],
+                 'streaker': config.streaker_names[self.beamline][self.n_streaker],
+                 'fit_dict_rms': fit_dict_rms,
+                 'fit_dict_centroid': fit_dict_centroid
+                 }
+        output = {
+                'raw_data': self.raw_data,
+                'meta_data': meta_data,
+                }
+        return output
 
     def add_data(self, offsets, images, x_axis):
         n_images = images.shape[1]
@@ -145,6 +202,7 @@ class StreakerCalibration:
 
         offsets = data_dict['streaker_offsets'].squeeze()
         self.add_data(offsets, images, x_axis)
+        self.raw_data = data_dict
 
     @staticmethod
     def beamsize_fit_func(offsets, streaker_offset, strength, order, semigap, const):
@@ -272,6 +330,7 @@ class StreakerCalibration:
 
         self.blmeas_profile = blmeas_profile
         self.sim_screen_dict[(gap, streaker_offset)] = sim_screens
+        self.sim_screens = sim_screens
         return sim_screens
 
     def plot_streaker_calib(self, plot_handles=None):
@@ -292,11 +351,12 @@ class StreakerCalibration:
         gap = fit_dict_centroid['gap_fit']
         fit_semigap = gap/2
 
+
         streaker_offset = fit_dict_centroid['streaker_offset']
         blmeas_profile = self.blmeas_profile
         forward_propagate_blmeas = (blmeas_profile is not None)
-        if (gap, streaker_offset) in self.sim_screen_dict:
-            sim_screens = self.sim_screen_dict[(gap, streaker_offset)]
+        if self.sim_screens is not None:
+            sim_screens = self.sim_screens
             len_screen = len(sim_screens[0])
         else:
             sim_screens = None
@@ -394,12 +454,18 @@ class StreakerCalibration:
         sp_center.legend()
         sp_center2.legend()
 
+        for sp, sp2, fit_dict in [(sp_center, sp_center2, fit_dict_centroid), (sp_sizes, sp_sizes2, fit_dict_rms)]:
+            title = sp.get_title()
+            sp.set_title('%s; Gap=%.2f mm' % (title, fit_dict['gap_fit']*1e3), fontsize=config.fontsize)
+            title = sp2.get_title()
+            sp2.set_title('%s; Center=%i $\mu$m' % (title, round(fit_dict['streaker_offset']*1e6)), fontsize=config.fontsize)
+
 def streaker_calibration_figure():
     fig = plt.figure()
     fig.canvas.set_window_title('Streaker center calibration')
-    fig.subplots_adjust(hspace=0.4)
+    fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 3)
-    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+6)))
+    plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+6)))
     clear_streaker_calibration(*plot_handles)
     return fig, plot_handles
 
@@ -413,7 +479,7 @@ def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_center2, sp_size
             (sp_current, 'Beam current', 't (fs)', 'Current (kA)'),
             ]:
         sp.clear()
-        sp.set_title(title)
+        sp.set_title(title, fontsize=config.fontsize)
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
         sp.grid(False)

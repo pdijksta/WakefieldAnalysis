@@ -44,14 +44,14 @@ tracker.set_simulator(calib2.meta_data)
 
 beam_profile = iap.profile_from_blmeas(blmeas_file, tt_halfrange, charge, tracker.energy_eV, True, 1)
 beam_profile.reshape(tracker.len_screen)
-beam_profile.cutoff2(tracker_kwargs['profile_cutoff'])
+beam_profile.cutoff2(5e-2)
 beam_profile.crop()
 beam_profile.reshape(tracker.len_screen)
 
 
 calib2.fit()
 
-calib2.forward_propagate(beam_profile, tt_halfrange, charge, tracker)
+calib2.forward_propagate(beam_profile, tt_halfrange, charge, tracker, type_='centroid')
 
 calib2.plot_streaker_calib()
 

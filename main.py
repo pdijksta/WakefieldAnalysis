@@ -38,16 +38,15 @@ import myplotstyle as ms
 
 #Problematic / cannot be done easily:
 # - save BPM data also
+# - One-sided plate
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
-# - One-sided plate
 
 # Not so important
 # - noise reduction from the image
 # - uJ instead of True, False
 # - non blocking daq
-# - Script to compare different scans
 
 # Done
 # - pulse energy from gas detector in pyscan

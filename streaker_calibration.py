@@ -49,9 +49,9 @@ def analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=None, f
 
 class StreakerCalibration:
 
-    def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, fit_gap=True, fit_order=False, order0_centroid=order0_centroid, order0_rms=order0_rms, proj_cutoff=0.03):
-        self.order0_rms = order0_rms
-        self.order0_centroid = order0_centroid
+    def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, fit_gap=True, fit_order=False, order_centroid=order0_centroid, order_rms=order0_rms, proj_cutoff=0.03):
+        self.order_rms = order_rms
+        self.order_centroid = order_centroid
         self.fit_gap = fit_gap
         self.fit_order = fit_order
         self.gap0 = gap0
@@ -232,12 +232,12 @@ class StreakerCalibration:
             yy_mean = self.rms
             yy_std = self.rms_std
             fit_func = self.beamsize_fit_func
-            order0 = order0_rms
+            order0 = self.order_rms
         elif type_ == 'centroid':
             yy_mean = self.centroids
             yy_std = self.centroids_std
             fit_func = self.streaker_calibration_fit_func
-            order0 = order0_centroid
+            order0 = self.order_centroid
 
         const0 = yy_mean[where0]
         offset0 = (offsets[0] + offsets[-1])/2
@@ -307,12 +307,23 @@ class StreakerCalibration:
         self.fit_type('beamsize')
         self.fit_type('centroid')
 
-    def forward_propagate(self, blmeas_profile, tt_halfrange, charge, tracker, type_='centroid'):
+    def forward_propagate(self, blmeas_profile, tt_halfrange, charge, tracker, type_='centroid', blmeas_cutoff=None):
         tracker.set_simulator(self.meta_data)
         streaker_offset = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['streaker_offset']
         gap = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['gap_fit']
         offsets = self.offsets
-        len_screen = len(blmeas_profile._xx)
+        if type(blmeas_profile) is iap.BeamProfile:
+            pass
+        else:
+            blmeas_profile = iap.profile_from_blmeas(blmeas_profile, tt_halfrange, charge, tracker.energy_eV, True)
+            if blmeas_cutoff is None:
+                blmeas_profile.cutoff2(tracker.profile_cutoff)
+            else:
+                blmeas_profile.cutoff2(blmeas_cutoff)
+            blmeas_profile.crop()
+            blmeas_profile.reshape(tracker.len_screen)
+
+        len_screen = tracker.len_screen
         gaps = np.array([10., 10.])
         gaps[self.n_streaker] = gap
         beam_offsets0 = np.array([0., 0.])
@@ -335,133 +346,130 @@ class StreakerCalibration:
 
     def plot_streaker_calib(self, plot_handles=None):
 
+        if plot_handles is None:
+            fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = streaker_calibration_figure()
+        else:
+            (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = plot_handles
+
         offsets = self.offsets
         fit_dict_centroid = self.fit_dicts_gap_order['centroid'][self.fit_gap][self.fit_order]
         fit_dict_rms = self.fit_dicts_gap_order['beamsize'][self.fit_gap][self.fit_order]
-
-        xx_fit = fit_dict_centroid['xx_fit']
-        xx_fit2 = fit_dict_centroid['xx_fit2']
-        centroid_mean = self.centroids
-        centroid_std = self.centroids_std
-        screen_x0 = 0
-        reconstruction = fit_dict_centroid['reconstruction']
-        reconstruction2 = fit_dict_centroid['reconstruction2']
-        rms_mean = self.rms
-        rms_std = self.rms_std
-        gap = fit_dict_centroid['gap_fit']
-        fit_semigap = gap/2
-
-
-        streaker_offset = fit_dict_centroid['streaker_offset']
         blmeas_profile = self.blmeas_profile
         forward_propagate_blmeas = (blmeas_profile is not None)
-        if self.sim_screens is not None:
-            sim_screens = self.sim_screens
-            len_screen = len(sim_screens[0])
-        else:
-            sim_screens = None
-            len_screen = int(1e3)
+        screen_x0 = 0
 
         meas_screens = []
         for n_proj, (x_axis, proj, offset) in enumerate(zip(self.plot_list_x, self.plot_list_y, offsets)):
             meas_screen = misc.proj_to_screen(proj, x_axis, False, screen_x0)
             meas_screen.cutoff2(3e-2)
             meas_screen.crop()
-            meas_screen.reshape(len_screen)
+            meas_screen.reshape(int(1e3))
             meas_screens.append(meas_screen)
 
-        if plot_handles is None:
-            fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = streaker_calibration_figure()
-        else:
-            (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = plot_handles
         rms_sim = np.zeros(len(offsets))
         centroid_sim = np.zeros(len(offsets))
-        for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
-            color = ms.colorprog(n_proj, offsets)
-            meas_screen.plot_standard(sp_proj, label='%.2f mm' % (offset*1e3), color=color)
-            if sim_screens is not None:
-                sim_screen = sim_screens[n_proj]
-                sim_screen.plot_standard(sp_proj, color=color, ls='--')
-                centroid_sim[n_proj] = sim_screen.mean()
-                rms_sim[n_proj] = sim_screen.rms()
+        if self.sim_screens is not None:
+            sim_screens = self.sim_screens
+            #len_screen = len(sim_screens[0])
+            for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
+                color = ms.colorprog(n_proj, offsets)
+                meas_screen.plot_standard(sp_proj, label='%.2f mm' % (offset*1e3), color=color)
+                if sim_screens is not None:
+                    sim_screen = sim_screens[n_proj]
+                    sim_screen.plot_standard(sp_proj, color=color, ls='--')
+                    centroid_sim[n_proj] = sim_screen.mean()
+                    rms_sim[n_proj] = sim_screen.rms()
+        else:
+            sim_screens = None
 
         if forward_propagate_blmeas:
             blmeas_profile.plot_standard(sp_current, color='black')
 
-        xx_plot = (offsets - streaker_offset)*1e3
-        xx_plot_fit = (xx_fit - streaker_offset)*1e3
-        sp_center.errorbar(xx_plot, (centroid_mean-screen_x0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
-        sp_center.plot(xx_plot_fit, (reconstruction-screen_x0)*1e3, label='Fit')
-        #initial_guess = meta_data['initial_guess']
-        #sp_center.plot(xx_plot_fit, (initial_guess-screen_x0)*1e3, label='Guess')
 
-        mask_pos, mask_neg = offsets > 0, offsets < 0
-        xx_plot2 = np.abs(fit_semigap*1e3 - np.abs(xx_plot))
-        for side_ctr, (mask2, label) in enumerate([(mask_pos, 'Positive'), (mask_neg, 'Negative')]):
-            sp_center2.errorbar(xx_plot2[mask2], np.abs(centroid_mean[mask2]-screen_x0)*1e3, yerr=centroid_std[mask2]*1e3, label=label, marker='o', ls='None')
+        for fit_dict, sp1, sp2, yy, yy_err, yy_sim in [
+                (fit_dict_centroid, sp_center, sp_center2, self.centroids, self.centroids_std, centroid_sim),
+                (fit_dict_rms, sp_sizes, sp_sizes2, self.rms, self.rms_std, rms_sim),
+                ]:
 
-        plot2_sim = []
-        for mask in mask_pos, mask_neg:
-            plot2_sim.extend([(a, np.abs(b)*1e3) for a, b in zip(xx_plot2[mask], centroid_sim[mask])])
-        plot2_sim.sort()
-        xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
-        sp_center2.plot(xx_plot_sim, yy_plot_sim, label='Simulated', ls='None', marker='o')
+            xx_fit = fit_dict['xx_fit']
+            xx_fit2 = fit_dict['xx_fit2']
+            reconstruction = fit_dict['reconstruction']
+            reconstruction2 = fit_dict['reconstruction2']
+            gap = fit_dict['gap_fit']
+            fit_semigap = gap/2
+            streaker_offset = fit_dict['streaker_offset']
 
-        xx_plot_fit2 = np.abs(fit_semigap - np.abs(xx_fit2 - streaker_offset))*1e3
-        yy_plot_fit2 = (np.abs(reconstruction2)-screen_x0)*1e3
-        xlims = sp_center2.get_xlim()
-        mask_fit = np.logical_and(xx_plot_fit2 > xlims[0], xx_plot_fit2 < xlims[1])
-        mask_fit = np.logical_and(mask_fit, xx_fit2 > 0)
-        sp_center2.plot(xx_plot_fit2[mask_fit], yy_plot_fit2[mask_fit], label='Fit')
-        sp_center2.set_xlim(*xlims)
+            xx_plot = (offsets - streaker_offset)
+            xx_plot_fit = (xx_fit - streaker_offset)
+            sp1.errorbar(xx_plot*1e3, (yy-screen_x0)*1e3, yerr=yy_err*1e3, label='Data', ls='None', marker='o')
+            sp1.plot(xx_plot_fit*1e3, (reconstruction-screen_x0)*1e3, label='Fit')
 
-        fit_semigap = fit_dict_rms['gap_fit']/2
-        xx_plot = offsets - fit_dict_rms['streaker_offset']
-        sp_sizes.errorbar(xx_plot*1e3, rms_mean*1e3, yerr=rms_std*1e3, label='Data', marker='o', ls='None')
-        xx_plot_fit = (fit_dict_rms['xx_fit']-fit_dict_rms['streaker_offset'])*1e3
-        try:
-            sp_sizes.plot(xx_plot_fit, fit_dict_rms['reconstruction']*1e3, label='Fit')
-        except:
-            import pdb; pdb.set_trace()
-        #sp_sizes.plot(xx_plot_fit, fit_dict_rms['initial_guess']*1e3, label='Guess')
-        if sim_screens is not None:
-            sp_sizes.plot(xx_plot*1e3, rms_sim*1e3, label='Simulated', marker='.', ls='None')
-
-        plot2_sim = []
-        for mask, label in [(offsets > 0, 'Positive'), (offsets < 0, 'Negative')]:
+            mask_pos, mask_neg = offsets > 0, offsets < 0
             xx_plot2 = np.abs(fit_semigap - np.abs(xx_plot))
-            sp_sizes2.errorbar(xx_plot2[mask]*1e3, np.abs(rms_mean[mask])*1e3, yerr=rms_std[mask]*1e3, label=label, marker='o', ls='None')
+            for mask2, label in [(mask_pos, 'Positive'), (mask_neg, 'Negative')]:
+                sp2.errorbar(xx_plot2[mask2]*1e6, np.abs(yy[mask2]-screen_x0)*1e3, yerr=yy_err[mask2]*1e3, label=label, marker='o', ls='None')
+
             if sim_screens is not None:
-                plot2_sim.extend([(a*1e3, b*1e3) for a, b in zip(xx_plot2[mask], rms_sim[mask])])
+                plot2_sim = []
+                for mask in mask_pos, mask_neg:
+                    plot2_sim.extend([(a, np.abs(b)) for a, b in zip(xx_plot2[mask], yy_sim[mask])])
+                plot2_sim.sort()
+                xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
+                xx_plot_sim = np.array(xx_plot_sim)
+                yy_plot_sim = np.array(yy_plot_sim)
+                sp2.plot(xx_plot_sim*1e6, yy_plot_sim*1e3, label='Simulated', ls='None', marker='o')
+                sp1.plot(xx_plot*1e3, yy_sim*1e3, label='Simulated', marker='.', ls='None')
 
-        if sim_screens is not None:
-            plot2_sim.sort()
-            xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
-            sp_sizes2.plot(xx_plot_sim, yy_plot_sim, label='Simulated', ls='None', marker='o')
+            xx_plot_fit2 = np.abs(fit_semigap - np.abs(xx_fit2 - streaker_offset))
+            yy_plot_fit2 = np.abs(reconstruction2)-screen_x0
+            xlims = sp_center2.get_xlim()
+            mask_fit = np.logical_and(xx_plot_fit2*1e6 > xlims[0], xx_plot_fit2*1e6 < xlims[1])
+            mask_fit = np.logical_and(mask_fit, xx_fit2 > 0)
+            sp2.plot(xx_plot_fit2[mask_fit]*1e6, yy_plot_fit2[mask_fit]*1e3, label='Fit')
+            sp2.set_xlim(*xlims)
 
-
-            xx_plot_fit2 = np.abs(fit_semigap - np.abs(fit_dict_rms['xx_fit2']-fit_dict_rms['streaker_offset']))*1e3
-            xlims = sp_sizes2.get_xlim()
-            mask_fit = np.logical_and(xx_plot_fit2 > xlims[0], xx_plot_fit2 < xlims[1])
-            mask_fit = np.logical_and(mask_fit, fit_dict_rms['xx_fit2'] > 0)
-            sp_sizes2.plot(xx_plot_fit2[mask_fit], fit_dict_rms['reconstruction2'][mask_fit]*1e3, label='Fit')
-            sp_sizes.legend()
-            sp_sizes2.legend()
-
-        if sim_screens is not None:
-            sp_center.plot(xx_plot*1e3, centroid_sim*1e3, label='Simulated', marker='.', ls='None')
-
-        sp_center.legend()
-        sp_center2.legend()
-
-        for sp, sp2, fit_dict in [(sp_center, sp_center2, fit_dict_centroid), (sp_sizes, sp_sizes2, fit_dict_rms)]:
-            title = sp.get_title()
-            sp.set_title('%s; Gap=%.2f mm' % (title, fit_dict['gap_fit']*1e3), fontsize=config.fontsize)
+            title = sp1.get_title()
+            sp1.set_title('%s; Gap=%.2f mm' % (title, fit_dict['gap_fit']*1e3), fontsize=config.fontsize)
             title = sp2.get_title()
             sp2.set_title('%s; Center=%i $\mu$m' % (title, round(fit_dict['streaker_offset']*1e6)), fontsize=config.fontsize)
+            sp1.legend()
+            sp2.legend()
 
-def streaker_calibration_figure():
-    fig = plt.figure()
+    def reconstruct_current(self, tracker, gauss_kwargs, type_='centroid'):
+        fit_dict = self.fit_dicts_gap_order[self.fit_gap][self.fit_order]
+        gap = fit_dict['gap_fit']
+        streaker_offset = fit_dict['streaker_offset']
+        gaps = [10e-3, 10e-3]
+        gaps[self.n_streaker] = gap
+        beam_offsets = [0., 0.]
+        gauss_dicts = []
+        for n_offset, offset in enumerate(self.offsets):
+            beam_offsets[self.n_streaker] = -(offset-streaker_offset)
+
+            projx = self.images[n_offset].astype(np.float64).sum(axis=-2)
+            median_proj = misc.get_median(projx)
+            x_axis = self.plot_list_x[n_offset]
+            meas_screen = iap.ScreenDistribution(x_axis, median_proj, subtract_min=True)
+            meas_screen.cutoff2(tracker.screen_cutoff)
+            meas_screen.crop()
+            meas_screen.reshape(tracker.len_screen)
+
+            gauss_kwargs = gauss_kwargs.copy()
+            gauss_kwargs['gaps'] = gaps
+            gauss_kwargs['beam_offsets'] = beam_offsets
+            gauss_kwargs['n_streaker'] = self.n_streaker
+            gauss_kwargs['meas_screen'] = meas_screen
+
+            gauss_dict = tracker.find_best_gauss(**gauss_kwargs)
+            gauss_dicts.append(gauss_dict)
+        return gauss_dicts
+
+    def plot_reconstruction(self, gauss_dicts, plot_handles=None):
+        pass
+
+
+def streaker_calibration_figure(figsize=[6.4, 4.8]):
+    fig = plt.figure(figsize=figsize)
     fig.canvas.set_window_title('Streaker center calibration')
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 3)
@@ -473,8 +481,8 @@ def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_center2, sp_size
     for sp, title, xlabel, ylabel in [
             (sp_center, 'Centroid shift', 'Streaker center (mm)', 'Beam X centroid (mm)'),
             (sp_sizes, 'Size increase', 'Streaker center (mm)', 'Beam X rms (mm)'),
-            (sp_center2, 'Centroid shift', 'Distance from jaw (mm)', 'Beam X centroid (mm)'),
-            (sp_sizes2, 'Size increase', 'Distance from jaw (mm)', 'Beam X rms (mm)'),
+            (sp_center2, 'Centroid shift', 'Distance from jaw ($\mu$m)', 'Beam X centroid (mm)'),
+            (sp_sizes2, 'Size increase', 'Distance from jaw ($\mu$m)', 'Beam X rms (mm)'),
             (sp_proj, 'Screen projections', 'x (mm)', 'Intensity (arb. units)'),
             (sp_current, 'Beam current', 't (fs)', 'Current (kA)'),
             ]:

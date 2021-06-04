@@ -7,11 +7,12 @@ import config
 import elegant_matrix
 import myplotstyle as ms
 
+config.fontsize = 8
+
+ms.set_fontsizes(config.fontsize)
 ms.closeall()
 
 elegant_matrix.set_tmp_dir('~/tmp_elegant/')
-
-
 hostname = gethostname()
 if hostname == 'desktop':
     data_dir = '/storage/data_2021-05-18/'
@@ -21,11 +22,9 @@ elif hostname == 'pubuntu':
     data_dir = '/mnt/data/data_2021-05-18/'
 
 data_dir2 = data_dir.replace('18', '19')
-
 blmeas_file = data_dir+'119325494_bunch_length_meas.h5'
 tt_halfrange = config.get_default_gauss_recon_settings()['tt_halfrange']
 charge = 200e-12
-
 streaker_calib_file = data_dir+'2021_05_18-17_08_40_Calibration_data_SARUN18-UDCP020.h5'
 
 streaker_calib_files = [

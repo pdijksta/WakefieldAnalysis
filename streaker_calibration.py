@@ -1,3 +1,4 @@
+import copy
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
@@ -60,6 +61,7 @@ class StreakerCalibration:
         self.beamline = beamline
 
         self.offsets = []
+        self.screen_x0_arr = []
         self.centroids = []
         self.centroids_std = []
         self.rms = []
@@ -94,6 +96,7 @@ class StreakerCalibration:
                     },
                 },
                 }
+        self.gauss_dicts_gap_order = copy.deepcopy(self.fit_dicts_gap_order)
 
         if offsets_range is not None:
             self.add_data(offsets_range, images, x_axis)
@@ -146,6 +149,7 @@ class StreakerCalibration:
         centroid_mean = np.mean(centroids, axis=1)
         screen_x0 = centroid_mean[where0]
         centroid_mean -= screen_x0
+        screen_x0_arr = np.array([screen_x0]*len(offsets), float)
         centroid_std = np.std(centroids, axis=1)
         rms_mean = np.mean(rms, axis=1)
         rms_std = np.std(rms, axis=1)
@@ -162,6 +166,7 @@ class StreakerCalibration:
         self.centroids_std = np.concatenate([self.centroids_std, centroid_std[mask]])[sort]
         self.rms = np.concatenate([self.rms, rms_mean[mask]])[sort]
         self.rms_std = np.concatenate([self.rms_std, rms_std[mask]])[sort]
+        self.screen_x0_arr = np.concatenate([self.screen_x0_arr, screen_x0_arr[mask]])[sort]
 
         plot_list_x = [x_axis - screen_x0] * len(plot_list_y)
         new_plot_list_x = self.plot_list_x + plot_list_x
@@ -176,7 +181,7 @@ class StreakerCalibration:
         if self.images is None:
             self.images = images[mask]
         else:
-            self.images = np.concatenate([self.images, images[mask]])
+            self.images = np.concatenate([self.images, images[mask]])[sort]
 
     def add_file(self, filename_or_dict):
         if type(filename_or_dict) is dict:
@@ -191,7 +196,7 @@ class StreakerCalibration:
         if 'meta_data_begin' in data_dict:
             self.meta_data = data_dict['meta_data_begin']
         result_dict = data_dict['pyscan_result']
-        images = result_dict['image'].astype(float).squeeze()
+        images = result_dict['image'].squeeze()
         if 'x_axis_m' in result_dict:
             x_axis = result_dict['x_axis_m']
         elif 'x_axis' in result_dict:
@@ -342,7 +347,7 @@ class StreakerCalibration:
         self.blmeas_profile = blmeas_profile
         self.sim_screen_dict[(gap, streaker_offset)] = sim_screens
         self.sim_screens = sim_screens
-        return sim_screens
+        return blmeas_profile, sim_screens
 
     def plot_streaker_calib(self, plot_handles=None):
 
@@ -384,7 +389,6 @@ class StreakerCalibration:
 
         if forward_propagate_blmeas:
             blmeas_profile.plot_standard(sp_current, color='black')
-
 
         for fit_dict, sp1, sp2, yy, yy_err, yy_sim in [
                 (fit_dict_centroid, sp_center, sp_center2, self.centroids, self.centroids_std, centroid_sim),
@@ -436,19 +440,27 @@ class StreakerCalibration:
             sp2.legend()
 
     def reconstruct_current(self, tracker, gauss_kwargs, type_='centroid'):
-        fit_dict = self.fit_dicts_gap_order[self.fit_gap][self.fit_order]
+        fit_dict = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]
         gap = fit_dict['gap_fit']
         streaker_offset = fit_dict['streaker_offset']
         gaps = [10e-3, 10e-3]
         gaps[self.n_streaker] = gap
-        beam_offsets = [0., 0.]
         gauss_dicts = []
+        offset_list = []
+
         for n_offset, offset in enumerate(self.offsets):
+            if offset == 0:
+                continue
+            beam_offsets = [0., 0.]
             beam_offsets[self.n_streaker] = -(offset-streaker_offset)
+            offset_list.append(beam_offsets[self.n_streaker])
 
             projx = self.images[n_offset].astype(np.float64).sum(axis=-2)
             median_proj = misc.get_median(projx)
             x_axis = self.plot_list_x[n_offset]
+            if x_axis[1] < x_axis[0]:
+                x_axis = x_axis[::-1]
+                median_proj = median_proj[::-1]
             meas_screen = iap.ScreenDistribution(x_axis, median_proj, subtract_min=True)
             meas_screen.cutoff2(tracker.screen_cutoff)
             meas_screen.crop()
@@ -460,11 +472,18 @@ class StreakerCalibration:
             gauss_kwargs['n_streaker'] = self.n_streaker
             gauss_kwargs['meas_screen'] = meas_screen
 
+            #plt.figure()
+            #plt.plot(meas_screen._xx, meas_screen._yy)
+            #plt.show()
+            #import pdb; pdb.set_trace()
+
             gauss_dict = tracker.find_best_gauss(**gauss_kwargs)
             gauss_dicts.append(gauss_dict)
-        return gauss_dicts
 
-    def plot_reconstruction(self, gauss_dicts, plot_handles=None):
+        self.gauss_dicts_gap_order[type_][self.fit_gap][self.fit_order] = gauss_dicts
+        return np.array(offset_list), gauss_dicts
+
+    def plot_reconstruction(self, plot_handles=None):
         pass
 
 

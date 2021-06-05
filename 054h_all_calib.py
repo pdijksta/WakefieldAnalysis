@@ -32,11 +32,9 @@ all_streaker_calib = [
         ]
 
 blmeas_file = data_dir+'119325494_bunch_length_meas.h5'
-
 tracker_kwargs = config.get_default_tracker_settings()
 gauss_kwargs = config.get_default_gauss_recon_settings()
 tracker = tracking.Tracker(**tracker_kwargs)
-
 
 for streaker_calib_files in all_streaker_calib:
     sc = streaker_calibration.StreakerCalibration('Aramis', 1, 10e-3)

@@ -707,6 +707,8 @@ class Tracker:
                #'final_profile': final_profile,
                'final_wake': best_wake,
                'meas_screen': meas_screen,
+               'gaps': np.array(gaps),
+               'beam_offsets': np.array(beam_offsets),
                }
         # Final step
         if not self_consistent:

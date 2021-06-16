@@ -1,0 +1,146 @@
+import argparse
+import numpy as np
+from socket import gethostname
+
+import elegant_matrix
+import streaker_calibration
+import config
+import tracking
+#import analysis
+import image_and_profile as iap
+import myplotstyle as ms
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--file_index', type=int, default=2)
+parser.add_argument('--method', type=str, default='centroid')
+parser.add_argument('--noshow', action='store_true')
+args = parser.parse_args()
+
+file_index = args.file_index
+method = args.method
+
+ms.closeall()
+elegant_matrix.set_tmp_dir('~/tmp_elegant/')
+ms.set_fontsizes(config.fontsize)
+
+hostname = gethostname()
+if hostname == 'desktop':
+    data_dir = '/storage/data_2021-05-18/'
+elif hostname == 'pc11292.psi.ch':
+    data_dir = '/sf/data/measurements/2021/05/18/'
+elif hostname == 'pubuntu':
+    data_dir = '/mnt/data/data_2021-05-18/'
+
+data_dir2 = data_dir.replace('18', '19')
+
+all_streaker_calib = [
+        (data_dir+'2021_05_18-17_08_40_Calibration_data_SARUN18-UDCP020.h5',),
+        #'2021_05_18-21_58_48_Calibration_data_SARUN18-UDCP020.h5', Bad saved data
+        (data_dir+'2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5',),
+        (data_dir+'2021_05_18-23_07_20_Calibration_SARUN18-UDCP020.h5', data_dir+'2021_05_18-23_32_12_Calibration_SARUN18-UDCP020.h5'), # Affected but ok
+        #'2021_05_19-00_13_25_Calibration_SARUN18-UDCP020.h5', # Bad data
+        #'2021_05_19-00_24_47_Calibration_SARUN18-UDCP020.h5', # Bad data maybe
+        (data_dir2+'2021_05_19-14_14_22_Calibration_SARUN18-UDCP020.h5', data_dir2+'2021_05_19-14_24_05_Calibration_SARUN18-UDCP020.h5',),
+        ]
+
+blmeas_file = data_dir+'119325494_bunch_length_meas.h5'
+tracker_kwargs = config.get_default_tracker_settings()
+tracker_kwargs['quad_wake'] = True
+tracker_kwargs['profile_cutoff'] = 0.03
+tracker_kwargs['bp_smoothen'] = 0
+gauss_kwargs = config.get_default_gauss_recon_settings()
+tt_halfrange = gauss_kwargs['tt_halfrange']
+tracker = tracking.Tracker(**tracker_kwargs)
+n_streaker = 1
+#offset_index = -1
+
+#streaker_calib_files = (data_dir2+'2021_05_19-14_14_22_Calibration_SARUN18-UDCP020.h5', data_dir2+'2021_05_19-14_24_05_Calibration_SARUN18-UDCP020.h5',)
+#streaker_calib_files = (data_dir+'2021_05_18-23_07_20_Calibration_SARUN18-UDCP020.h5', data_dir+'2021_05_18-23_32_12_Calibration_SARUN18-UDCP020.h5')
+#streaker_calib_files = (data_dir+'2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5',)
+
+streaker_calib_files = all_streaker_calib[file_index]
+
+sc = streaker_calibration.StreakerCalibration('Aramis', n_streaker, 10e-3, fit_gap=False, fit_order=False, proj_cutoff=tracker.screen_cutoff)
+for scf in streaker_calib_files:
+    sc.add_file(scf)
+
+streaker = config.streaker_names[sc.beamline][sc.n_streaker]
+self = sc
+
+gap_arr = np.arange(9.90, 10.0201, 0.01)*1e-3
+tracker.set_simulator(self.meta_data)
+gauss_kwargs['n_streaker'] = self.n_streaker
+gauss_kwargs['method'] = method
+gauss_kwargs['sig_t_range'] = np.exp(np.linspace(np.log(10), np.log(85), 15))*1e-15
+
+ms.figure('Gap reconstruction with current reconstruction', figsize=(20, 16))
+subplot = ms.subplot_factory(2,2)
+sp_ctr = 1
+
+sp_rms = subplot(sp_ctr, title='Beamsize', xlabel='$\Delta$d ($\mu$m)', ylabel='rms (fs)')
+sp_ctr += 1
+
+sp_overview = subplot(sp_ctr, title='Bunch duration', xlabel='Gap (mm)', ylabel='rms (mm)')
+sp_ctr += 1
+
+sp_std = subplot(sp_ctr, title='Relative error', xlabel='Gap (mm)', ylabel='rms std')
+sp_ctr += 1
+
+sp_fit = subplot(sp_ctr, title='Fit coefficient', xlabel='Gap (mm)', ylabel='fit param (fs/$\mu$m)')
+sp_ctr += 1
+
+#sp_chi = subplot(sp_ctr, title='Measurement - Propagation', xlabel='Gap (mm)', ylabel='Squared deviation')
+#sp_ctr += 1
+#sp_opt = sp_chi.twinx()
+#sp_opt.set_ylabel('Combined opt value (arb. units)')
+
+
+ny, nx = 2, 2
+subplot = ms.subplot_factory(ny, nx)
+sp_ctr = np.inf
+
+chi_sq_centroid = np.zeros_like(gap_arr)
+chi_sq_rms = np.zeros_like(gap_arr)
+opt_values = np.zeros_like(gap_arr)
+
+def chi_squared(meas, expected, weight=1):
+    return np.sum(((meas-expected)/weight)**2)
+
+blmeas_profile = iap.profile_from_blmeas(blmeas_file, tt_halfrange, gauss_kwargs['charge'], tracker.energy_eV, True)
+blmeas_profile.cutoff2(tracker.profile_cutoff)
+blmeas_profile.crop()
+blmeas_profile.reshape(tracker.len_screen)
+
+all_rms_arr = np.zeros([len(gap_arr), len(self.offsets)-1], np.float64)
+lin_fit = np.zeros(len(gap_arr))
+
+for gap_ctr, gap in enumerate(gap_arr):
+    sc.gap0 = gap
+    sc.fit()
+    streaker_offset = sc.fit_dicts_gap_order['centroid'][sc.fit_gap][sc.fit_order]['streaker_offset']
+    offset_list, gauss_dicts = sc.reconstruct_current(tracker, gauss_kwargs, plot_details=False)
+    distance_arr = gap/2. - np.abs(offset_list)
+    sc.plot_reconstruction(blmeas_profile=blmeas_profile, figsize=(20, 12))
+    ms.plt.suptitle('%.3f' % (gap*1e3))
+    print('%i out of %i done' % (gap_ctr+1, len(gap_arr)))
+
+    rms_arr = np.array([x['reconstructed_profile'].rms() for x in gauss_dicts])
+    all_rms_arr[gap_ctr] = rms_arr
+    d_arr2 = distance_arr - distance_arr.min()
+    sort = np.argsort(d_arr2)
+    _label = '%.3f' % (gap*1e3)
+    #sp_centroid.plot(d_arr2, centroid_arr, label=_label)
+    sp_rms.plot(d_arr2[sort]*1e6, rms_arr[sort]*1e15, label=_label, marker='.', color=ms.colorprog(gap_ctr, gap_arr))
+
+    fit = np.polyfit(d_arr2[sort], rms_arr[sort], 1)[0]
+    lin_fit[gap_ctr] = fit
+
+sp_overview.errorbar(gap_arr*1e3, all_rms_arr.mean(axis=-1)*1e15, yerr=all_rms_arr.std(axis=-1)*1e15)
+sp_std.plot(gap_arr*1e3, all_rms_arr.std(axis=-1)/all_rms_arr.mean(axis=-1), marker='.')
+sp_fit.plot(gap_arr*1e3, lin_fit*1e15/1e6, marker='.')
+
+sp_rms.legend()
+ms.saveall('./album061/%s_file_%i' % (method, file_index), empty_suptitle=False)
+if not args.noshow:
+    ms.show()
+

@@ -7,7 +7,7 @@ from h5_storage import loadH5Recursive
 import image_and_profile as iap
 import tracking
 import elegant_matrix
-import misc
+import misc2 as misc
 
 import myplotstyle as ms
 
@@ -15,7 +15,8 @@ plt.close('all')
 
 elegant_matrix.set_tmp_dir('~/tmp_elegant/')
 
-data_dir = '/mnt/data/data_2021-03-16/'
+#data_dir = '/mnt/data/data_2021-03-16/'
+data_dir = '/sf/data/measurements/2021/03/16/'
 x0 = 0.0005552048387736093
 profile_file = './backtrack_image_no_compensate.pkl'
 with open(profile_file, 'rb') as f:
@@ -174,7 +175,7 @@ sig_t_range = np.arange(20, 40.01, 5)*1e-15
 gaps = [10e-3, 10e-3]
 subtract_min = True
 fit_emittance = True
-archiver_dir = '/home/work/'
+archiver_dir = '/afs/psi.ch/intranet/SF/Beamdynamics/Philipp/data/'
 magnet_file = archiver_dir + 'archiver_api_data/2021-03-16.h5'
 timestamp = elegant_matrix.get_timestamp(2021, 3, 16, 20, 41, 39)
 beam_offsets = [-0.0, -0.004724]

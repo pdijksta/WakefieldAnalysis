@@ -24,7 +24,7 @@ class Profile:
         self._gf_xx = None
         self._gf_yy = None
 
-    def compare(self, other, ignore_range=100e-6):
+    def compare(self, other):
         xx_min = min(self._xx.min(), other._xx.min())
         xx_max = max(self._xx.max(), other._xx.max())
         xx = np.linspace(xx_min, xx_max, max(len(self._xx), len(other._xx)))
@@ -40,7 +40,8 @@ class Profile:
 
         diff = ((yy1-yy2)/weight)**2
 
-        diff[np.abs(xx)<ignore_range] = 0
+        if self.ignore_range is not None:
+            diff[np.abs(xx)<self.ignore_range] = 0
 
         #outp = np.nanmean(diff[np.nonzero(weight)])
         #import pdb; pdb.set_trace()
@@ -97,12 +98,14 @@ class Profile:
         index_arr = np.arange(len(yy))
         is0 = (yy == 0)
         zero_pos = np.logical_and(index_arr > index_max, is0)
-        nearest_zero_pos = index_arr[zero_pos][0]
         zero_neg = np.logical_and(index_arr < index_max, is0)
-        nearest_zero_neg = index_arr[zero_neg][-1]
+        if np.any(zero_pos):
+            nearest_zero_pos = index_arr[zero_pos][0]
+            yy[nearest_zero_pos:] = 0
+        if np.any(zero_neg):
+            nearest_zero_neg = index_arr[zero_neg][-1]
+            yy[:nearest_zero_neg] = 0
 
-        yy[:nearest_zero_neg] = 0
-        yy[nearest_zero_pos:] = 0
         self._yy = yy / np.sum(yy) * old_sum
 
 
@@ -184,7 +187,7 @@ class Profile:
         self._yy = self._yy[::-1]
 
 class ScreenDistribution(Profile):
-    def __init__(self, x, intensity, real_x=None, subtract_min=True):
+    def __init__(self, x, intensity, real_x=None, subtract_min=True, ignore_range=100e-6):
         super().__init__()
         self._xx = x
         assert np.all(np.diff(self._xx)>=0)
@@ -192,6 +195,7 @@ class ScreenDistribution(Profile):
         if subtract_min:
             self._yy = self._yy - np.min(self._yy)
         self.real_x = real_x
+        self.ignore_range = ignore_range
 
     @property
     def x(self):
@@ -256,6 +260,7 @@ class BeamProfile(Profile):
         if np.any(np.isnan(current)):
             raise ValueError('nans in current')
 
+        self.ignore_range = None
         self._xx = time
         assert np.all(np.diff(self._xx)>=0)
         self._yy = current / current.sum() * charge
@@ -276,18 +281,13 @@ class BeamProfile(Profile):
         super().scale_yy(scale_factor)
 
     def calc_wake(self, gap, beam_offset, struct_length):
-
         if abs(beam_offset) > gap/2.:
             raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_offset))
-
         if (gap, beam_offset, struct_length) in self.wake_dict:
             return self.wake_dict[(gap, beam_offset, struct_length)]
-
         wf_calc = wf_model.WakeFieldCalculator((self.time - self.time.min())*c, self.current, self.energy_eV, struct_length)
         wf_dict = wf_calc.calc_all(gap/2., R12=0., beam_offset=beam_offset, calc_lin_dipole=False, calc_dipole=True, calc_quadrupole=True, calc_long_dipole=True)
-
         self.wake_dict[(gap, beam_offset, struct_length)] = wf_dict
-
         return wf_dict
 
     def get_x_t(self, gap, beam_offset, struct_length, r12):
@@ -301,6 +301,7 @@ class BeamProfile(Profile):
             raise ValueError('Nan in t!')
         return tt, xx
 
+
     def write_sdds(self, filename, gap, beam_offset, struct_length):
         s0 = (self.time - self.time[0])*c
         new_s = np.linspace(0, s0.max()*1.1, int(len(s0)*1.1))
@@ -311,7 +312,6 @@ class BeamProfile(Profile):
             w_wxd = wf_model.wxd(new_s, gap/2., beam_offset)*struct_length
         w_wxd_deriv = np.zeros_like(w_wxd)
         return wf_model.write_sdds(filename, new_s/c, w_wld, w_wxd, w_wxd_deriv)
-
 
     def wake_effect_on_screen(self, wf_dict, r12):
         wake = wf_dict['dipole']['wake_potential']
@@ -381,8 +381,6 @@ class BeamProfile(Profile):
         elif center == 'Mean':
             mean = np.sum(self._xx*self._yy) / np.sum(self._yy)
             center_index = np.argmin((self._xx - mean)**2)
-
-
         else:
             raise ValueError
 
@@ -731,4 +729,31 @@ class Image:
         if revert_x:
             xlim = sp.get_xlim()
             sp.set_xlim(*xlim[::-1])
+
+def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_streaker, bins=(150, 100)):
+    gaps = [10e-3, 10e-3]
+    gaps[n_streaker] = gap
+    beam_offsets = [0, 0]
+    beam_offsets[n_streaker] = beam_offset
+    #wf_calc = beamprofile.calc_wake(semigap*2, beam_offset, struct_length)
+    forward_dict = tracker.matrix_forward(beamprofile, gaps, beam_offsets)
+    beam = forward_dict['beam_at_screen']
+    r12 = tracker.calcR12()[n_streaker]
+    _, wf_x = beamprofile.get_x_t(gap, beam_offset, struct_length, r12)
+    wf_t = beamprofile.time
+    dxdt = np.diff(wf_x)/np.diff(wf_t)
+    dx_dt_t = wf_t[:-1]
+    beam_t = beam[-2]
+    hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam[0], bins=bins)
+    t_axis = (xedges[1:] + xedges[:-1])/2.
+    x_axis = (yedges[1:] + yedges[:-1])/2.
+    x_axis2 = np.ones_like(hist)*x_axis
+    current_t = hist.sum(axis=1)
+    mean_x = np.sum(hist*x_axis, axis=1) / current_t
+    mean_x2 = np.ones_like(hist)*mean_x[:,np.newaxis]
+    beamsize_sq = np.sum(hist*(x_axis2 - mean_x2)**2, axis=1) / current_t
+    beamsize = np.sqrt(beamsize_sq)
+    streaking_strength = np.abs(np.interp(t_axis, dx_dt_t, dxdt))
+    resolution = beamsize / streaking_strength
+    return t_axis, resolution
 

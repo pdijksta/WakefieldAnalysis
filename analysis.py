@@ -24,14 +24,15 @@ except ImportError:
     from . import lasing
     from . import config
 
-def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=None):
 
-    gauss_dict = tracker.find_best_gauss(**kwargs)
-    #import pickle
-    #with open('/tmp/tmp_gauss_dict.pkl', 'wb') as f:
-    #    pickle.dump((gauss_dict, self.tracker_args, kwargs), f)
+def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None):
+    gauss_dict = tracker.find_best_gauss2(**kwargs)
+    if not do_plot:
+        return gauss_dict
+    plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_file, do_plot, figsize)
 
-    print('Do plotting')
+def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None):
+
     best_profile = gauss_dict['reconstructed_profile']
     best_screen = gauss_dict['reconstructed_screen']
     opt_func_values = gauss_dict['opt_func_values']
@@ -39,18 +40,24 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
     opt_func_profiles = gauss_dict['opt_func_profiles']
     opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
     meas_screen = gauss_dict['meas_screen']
+    gauss_sigma = gauss_dict['gauss_sigma']
 
     if plot_handles is None:
-        fig, (sp_screen, sp_profile, sp_opt) = reconstruction_figure()
+        fig, (sp_screen, sp_profile, sp_opt, sp_moments) = reconstruction_figure(figsize)
         plt.suptitle('Optimization')
     else:
-        sp_screen, sp_profile, sp_opt = plot_handles
+        sp_screen, sp_profile, sp_opt, sp_moments = plot_handles
 
     meas_screen.plot_standard(sp_screen, color='black', lw=3)
+
+    rms_arr = np.zeros(len(opt_func_screens))
+    centroid_arr = rms_arr.copy()
 
     for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
         screen.plot_standard(sp_screen, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
         profile.plot_standard(sp_profile, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value), center='Gauss')
+        rms_arr[opt_ctr] = screen.rms()
+        centroid_arr[opt_ctr] = screen.mean()
 
     best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
     best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Gauss')
@@ -68,18 +75,24 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
                 print(e)
                 print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
 
-    for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-        blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
+        for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
+            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
 
+    color = sp_moments.plot(opt_func_sigmas*1e15, np.abs(centroid_arr)*1e3, marker='.', label='Reconstructed centroid')[0].get_color()
+    sp_moments.axhline(np.abs(meas_screen.mean())*1e3, label='Measured centroid', color=color)
+    color = sp_moments.plot(opt_func_sigmas*1e15, rms_arr*1e3, marker='.', label='Reconstructed rms')[0].get_color()
+    sp_moments.axhline(meas_screen.rms()*1e3, label='Measured rms', color=color)
 
+    sp_moments.legend()
     sp_screen.legend()
     sp_profile.legend()
 
     yy_opt = opt_func_values[:,1]
     sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)
     sp_opt.set_ylim(0,1.1*yy_opt.max())
-    if plot_handles is None:
-        plt.show()
+
+    for sp_ in sp_opt, sp_moments:
+        sp_.axvline(gauss_sigma*1e15, color='black')
 
     return gauss_dict
 
@@ -164,26 +177,21 @@ def clear_screen_calibration(sp_proj):
         sp.set_ylabel(ylabel)
         sp.grid(True)
 
-def reconstruction_figure():
-    fig = plt.figure()
+def reconstruction_figure(figsize=None):
+    fig = plt.figure(figsize=figsize)
     fig.canvas.set_window_title('Current reconstruction')
     fig.subplots_adjust(hspace=0.4)
-    sp_ctr = 1
     subplot = ms.subplot_factory(2,2)
-    sp_screen = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_profile = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_opt = subplot(sp_ctr)
-    sp_ctr += 1
-    clear_reconstruction(sp_screen, sp_profile, sp_opt)
-    return fig, (sp_screen, sp_profile, sp_opt)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+4)]
+    clear_reconstruction(*subplots)
+    return fig, subplots
 
-def clear_reconstruction(sp_screen, sp_profile, sp_opt):
+def clear_reconstruction(sp_screen, sp_profile, sp_opt, sp_moments):
     for sp, title, xlabel, ylabel in [
             (sp_screen, 'Screen', 'x (mm)', 'Intensity (arb. units)'),
             (sp_profile, 'Profile', 't (fs)', 'Current (kA)'),
             (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
+            (sp_moments, 'Moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -367,9 +375,6 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
 
     sp_wake.plot(wake_t*1e15, wake_x*1e3)
     wake_profile.plot_standard(sp_profile)
-
-    if plot_handles is None:
-        plt.show()
 
     if type(input_dict['file_or_dict_on']) is dict:
         del input_dict['file_or_dict_on']

@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import bisect
 import copy
 import functools
 import numpy as np
@@ -30,7 +31,7 @@ class Tracker:
         if magnet_file:
             self.set_simulator(magnet_file, energy_eV, timestamp)
 
-        self.timestamp = timestamp
+        self._timestamp = timestamp
         self.struct_lengths = struct_lengths
         self.n_particles = n_particles
         self.n_emittances = n_emittances
@@ -51,11 +52,23 @@ class Tracker:
         self.wake2d = False
         self.hist_bins_2d = (500, 500)
         self.split_streaker = 0
+        self._r12 = None
+        self._disp = None
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
         elif forward_method == 'elegant':
             self.forward = self.elegant_forward
+
+    @property
+    def timestamp(self):
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, t):
+        self._timestamp = t
+        self._r12 = None
+        self._disp = None
 
     def set_simulator(self, magnet_file, energy_eV='file', timestamp=None):
         self.simulator = elegant_matrix.get_simulator(magnet_file)
@@ -66,22 +79,25 @@ class Tracker:
                 self.energy_eV = self.simulator.get_data('SARBD01-MBND100:ENERGY-OP', timestamp)*1e6
         else:
             self.energy_eV = energy_eV
+        self._r12 is None
+        self._disp is None
 
-    #@functools.lru_cache(1)
     def calcR12(self):
-        outp = {}
-        for n_streaker in (0, 1):
-            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), self.timestamp)
-            outp[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
-        return outp
+        self.calcDisp()
+        return self._r12
 
-    #@functools.lru_cache(1)
+    @functools.lru_cache(1)
     def calcDisp(self):
-        outp = {}
-        for n_streaker in (0, 1):
-            mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), self.timestamp)
-            outp[n_streaker] = disp_dict['SARBD02.DSCR050']
-        return outp
+        if self._disp is None or self._r12 is None:
+            outp_disp = {}
+            outp_r12 = {}
+            for n_streaker in (0, 1):
+                mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), self.timestamp)
+                outp_disp[n_streaker] = disp_dict['SARBD02.DSCR050']
+                outp_r12[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
+            self._disp = outp_disp
+            self._r12 = outp_r12
+        return self._disp
 
 
     def fit_emittance(self, target_beamsize, assumed_screen_res, tt_halfrange):
@@ -529,7 +545,7 @@ class Tracker:
             plt.show()
             raise
         bp.reshape(self.len_screen)
-        bp.cutoff(self.profile_cutoff)
+        bp.cutoff2(self.profile_cutoff)
         bp.crop()
         if np.any(np.isnan(bp.time)) or np.any(np.isnan(bp.current)):
             raise ValueError('NaNs in beam profile')
@@ -642,7 +658,7 @@ class Tracker:
                 'best_profile': profiles[best_index],
                 }
 
-    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True):
+    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares'):
 
         opt_func_values = []
         opt_func_screens = []
@@ -651,16 +667,20 @@ class Tracker:
         opt_func_sigmas = []
         gauss_profiles = []
         gauss_wakes = []
+        sig_t_list = []
 
+        #meas_screen = copy.deepcopy(meas_screen)
         meas_screen.reshape(self.len_screen)
         meas_screen.cutoff(self.screen_cutoff)
         meas_screen.crop()
         meas_screen.reshape(self.len_screen)
 
+        prec = 0.5e-15
 
-        @functools.lru_cache(50)
         def gaussian_baf(sig_t):
-
+            sig_t = np.round(sig_t/prec)*prec
+            if sig_t in sig_t_list:
+                return
             assert 1e-15 < sig_t < 1e-12
 
             bp_gauss = iap.get_gaussian_profile(sig_t, float(tt_halfrange), int(self.len_screen), float(charge), float(self.energy_eV))
@@ -675,28 +695,184 @@ class Tracker:
             diff = screen.compare(meas_screen)
             bp_out = baf['beam_profile']
 
-            opt_func_values.append((float(sig_t), diff))
-            opt_func_screens.append(screen)
-            opt_func_profiles.append(bp_out)
-            opt_func_sigmas.append(sig_t)
-            opt_func_screens_no_smoothen.append(baf['screen_no_smoothen'])
-            gauss_profiles.append(bp_gauss)
-            gauss_wakes.append(baf['wake_dict'])
+            index = bisect.bisect(sig_t_list, sig_t)
+            sig_t_list.insert(index, sig_t)
+            opt_func_values.insert(index, (float(sig_t), diff))
+            opt_func_screens.insert(index, screen)
+            opt_func_profiles.insert(index, bp_out)
+            opt_func_sigmas.insert(index, sig_t)
+            opt_func_screens_no_smoothen.insert(index, baf['screen_no_smoothen'])
+            gauss_profiles.insert(index, bp_gauss)
+            gauss_wakes.insert(index, baf['wake_dict'])
 
-        for sig_t in sig_t_range:
-            gaussian_baf(float(sig_t))
+        def get_index_min(output='index'):
+            sig_t_arr = np.array(sig_t_list)
+            if method == 'centroid':
+                centroid_meas = meas_screen.mean()
+                centroid_sim = np.array([x.mean() for x in opt_func_screens])
+                index_min = np.argmin(np.abs(centroid_sim - centroid_meas))
+                sort = np.argsort(centroid_sim)
+                t_min = np.interp(centroid_meas, centroid_sim[sort], sig_t_arr[sort])
+            elif method == 'rms' or method == 'beamsize':
+                rms_meas = meas_screen.rms()
+                rms_sim = np.array([x.rms() for x in opt_func_screens])
+                index_min = np.argmin(np.abs(rms_sim - rms_meas))
+                sort = np.argsort(rms_sim)
+                t_min = np.interp(rms_meas, rms_sim[sort], sig_t_arr[sort])
+            else:
+                raise ValueError('Method %s unknown' % method)
+
+            if output == 'index':
+                return index_min.squeeze()
+            elif output == 't_sig':
+                return t_min
+
+        sig_t_arr = np.exp(np.linspace(np.log(sig_t_range.min()), np.log(sig_t_range.max()), 5))
+        for sig_t in sig_t_arr:
+            gaussian_baf(sig_t)
+
+        for _ in range(3):
+            sig_t_min = get_index_min(output='t_sig')
+            gaussian_baf(sig_t_min)
+        #sig_t_range2 = np.linspace(sig_t_min-2e-15, sig_t_min+2e-15, 5)
+        #for sig_t in sig_t_range2:
+        #    gaussian_baf(float(sig_t))
+        index_min = get_index_min()
+        if index_min == 0:
+            print('Warning! index at left border!')
+        if index_min == len(sig_t_list)-1:
+            print('Warning! index at right border!')
 
         opt_func_values = np.array(opt_func_values)
-
-        index_min = np.argmin(opt_func_values[:, 1])
+        opt_value = opt_func_values[index_min, 1]
         best_screen = opt_func_screens[index_min]
         best_profile = opt_func_profiles[index_min]
-        best_sig_t = sig_t_range[index_min]
+        best_sig_t = sig_t_list[index_min]
         best_gauss = gauss_profiles[index_min]
         best_wake = gauss_wakes[index_min]
 
         output = {
                'gauss_sigma': best_sig_t,
+               'opt_value': opt_value,
+               'reconstructed_screen': best_screen,
+               'reconstructed_screen_no_smoothen': opt_func_screens_no_smoothen[index_min],
+               'reconstructed_profile': best_profile,
+               'best_gauss': best_gauss,
+               'best_gauss_wake': gauss_wakes[index_min],
+               ## Removed because ambiguous names
+               #'final_screen': final_screen,
+               #'final_profile': final_profile,
+               'final_wake': best_wake,
+               'meas_screen': meas_screen,
+               'gaps': np.array(gaps),
+               'beam_offsets': np.array(beam_offsets),
+               }
+        # Final step
+        if not self_consistent:
+            baf = self.back_and_forward(meas_screen, best_profile, gaps, beam_offsets, n_streaker)
+            final_screen = baf['screen']
+            final_profile = baf['beam_profile']
+            final_wake = baf['wake_dict']
+            output['final_self_consistent_screen'] = final_screen
+            output['final_self_consistent_profile'] = final_profile
+            output['final_self_consistent_wake'] = final_wake
+
+
+        if details:
+            output.update({
+                   'opt_func_values': opt_func_values,
+                   'opt_func_screens': opt_func_screens,
+                   'opt_func_profiles': opt_func_profiles,
+                   'opt_func_sigmas': np.array(opt_func_sigmas),
+                   'opt_func_wakes': gauss_wakes,
+                   })
+
+        return output
+
+
+    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares'):
+
+        opt_func_values = []
+        opt_func_screens = []
+        opt_func_screens_no_smoothen = []
+        opt_func_profiles = []
+        opt_func_sigmas = []
+        gauss_profiles = []
+        gauss_wakes = []
+        sig_t_list = []
+
+        #meas_screen = copy.deepcopy(meas_screen)
+        meas_screen.reshape(self.len_screen)
+        meas_screen.cutoff(self.screen_cutoff)
+        meas_screen.crop()
+        meas_screen.reshape(self.len_screen)
+
+        def gaussian_baf(sig_t):
+            if sig_t in sig_t_list:
+                return
+            assert 1e-15 < sig_t < 1e-12
+
+            bp_gauss = iap.get_gaussian_profile(sig_t, float(tt_halfrange), int(self.len_screen), float(charge), float(self.energy_eV))
+
+            if self_consistent:
+                bp_back0 = self.track_backward2(meas_screen, bp_gauss, gaps, beam_offsets, n_streaker)
+            else:
+                bp_back0 = bp_gauss
+
+            baf = self.back_and_forward(meas_screen, bp_back0, gaps, beam_offsets, n_streaker)
+            screen = copy.deepcopy(baf['screen'])
+            diff = screen.compare(meas_screen)
+            bp_out = baf['beam_profile']
+
+            index = bisect.bisect(sig_t_list, sig_t)
+            sig_t_list.insert(index, sig_t)
+            opt_func_values.insert(index, (float(sig_t), diff))
+            opt_func_screens.insert(index, screen)
+            opt_func_profiles.insert(index, bp_out)
+            opt_func_sigmas.insert(index, sig_t)
+            opt_func_screens_no_smoothen.insert(index, baf['screen_no_smoothen'])
+            gauss_profiles.insert(index, bp_gauss)
+            gauss_wakes.insert(index, baf['wake_dict'])
+
+        def get_index_min():
+            if method == 'least_squares':
+                opt_func_values2 = np.array(opt_func_values)
+                index_min = np.argmin(opt_func_values2[:, 1])
+            elif method == 'centroid':
+                centroid_meas = meas_screen.mean()
+                centroid_sim = np.array([x.mean() for x in opt_func_screens])
+                index_min = np.argmin(np.abs(centroid_sim - centroid_meas))
+            elif method == 'rms' or method == 'beamsize':
+                rms_meas = meas_screen.rms()
+                rms_sim = np.array([x.rms() for x in opt_func_screens])
+                index_min = np.argmin(np.abs(rms_sim - rms_meas))
+            return index_min.squeeze()
+
+        for sig_t in sig_t_range:
+            gaussian_baf(float(sig_t))
+
+        index_min = get_index_min()
+        sig_t_min = sig_t_list[index_min]
+        sig_t_range2 = np.linspace(sig_t_min-2e-15, sig_t_min+2e-15, 5)
+        for sig_t in sig_t_range2:
+            gaussian_baf(float(sig_t))
+        index_min = get_index_min()
+        if index_min == 0:
+            print('Warning! index at left border!')
+        if index_min == len(sig_t_list)-1:
+            print('Warning! index at right border!')
+
+        opt_func_values = np.array(opt_func_values)
+        opt_value = opt_func_values[index_min, 1]
+        best_screen = opt_func_screens[index_min]
+        best_profile = opt_func_profiles[index_min]
+        best_sig_t = sig_t_list[index_min]
+        best_gauss = gauss_profiles[index_min]
+        best_wake = gauss_wakes[index_min]
+
+        output = {
+               'gauss_sigma': best_sig_t,
+               'opt_value': opt_value,
                'reconstructed_screen': best_screen,
                'reconstructed_screen_no_smoothen': opt_func_screens_no_smoothen[index_min],
                'reconstructed_profile': best_profile,

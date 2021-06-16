@@ -58,6 +58,5 @@ for fit_gap in [True, False]:
     gap = sc.fit_dicts_gap_order['centroid'][sc.fit_gap][sc.fit_order]['gap_fit']
     ms.plt.suptitle('Gaussian reconstruction; gap=%.3f mm' % (gap*1e3))
 
-
 ms.show()
 

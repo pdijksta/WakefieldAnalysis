@@ -80,8 +80,6 @@ for ctr, (streaker_calib_file, one_sided) in enumerate(all_streaker_calib):
     #calib_dict2 = analysis.analyze_streaker_calibration(input_dict, do_plot=False, fit_order=False, fit_gap=False, debug=True)
 
 
-
-
     meta_data = calib_dict['meta_data']
     print('%s %i %i' % (streaker_calib_file, meta_data['streaker_offset']*1e6, meta_data['fit_dict_rms']['streaker_offset']*1e6))
     offsets = meta_data['offsets']
@@ -115,8 +113,6 @@ for ctr, (streaker_calib_file, one_sided) in enumerate(all_streaker_calib):
     sp_res.plot(tt*1e15, res*1e15)
 
 sp_res.set_ylim(0, 20)
-
-
 
 sp_center.legend()
 sp_one_sided.legend()

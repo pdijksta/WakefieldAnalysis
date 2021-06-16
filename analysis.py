@@ -1,11 +1,9 @@
 """
 No SwissFEL / PSI specific imports in this file.
 """
-import itertools
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
 
 try:
     import tracking
@@ -26,302 +24,64 @@ except ImportError:
     from . import lasing
     from . import config
 
-def plt_show():
-    plt.pause(.1)
-    plt.draw()
-    plt.show(block=False)
+def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=None):
 
-class Reconstruction:
-    def __init__(self, screen_x0, streaker_means):
-        self.input_data = {
-                'screen_x0': screen_x0,
-                'streaker_means': streaker_means,
-                }
+    gauss_dict = tracker.find_best_gauss(**kwargs)
+    #import pickle
+    #with open('/tmp/tmp_gauss_dict.pkl', 'wb') as f:
+    #    pickle.dump((gauss_dict, self.tracker_args, kwargs), f)
 
-    def add_tracker(self, tracker_args):
-        self.tracker = tracking.Tracker(**tracker_args)
-        self.input_data['tracker_kwargs'] = tracker_args
+    print('Do plotting')
+    best_profile = gauss_dict['reconstructed_profile']
+    best_screen = gauss_dict['reconstructed_screen']
+    opt_func_values = gauss_dict['opt_func_values']
+    opt_func_screens = gauss_dict['opt_func_screens']
+    opt_func_profiles = gauss_dict['opt_func_profiles']
+    opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
+    meas_screen = gauss_dict['meas_screen']
 
-    def prepare_rec_gauss_args(self, kwargs):
-        """
-        kwargs are getting prepared for input to the find_best_gauss procedure.
-        """
-        kwargs = copy.deepcopy(kwargs)
-        kwargs['meas_screen']._xx = kwargs['meas_screen']._xx - self.input_data['screen_x0']
-        streaker_offsets = np.array(kwargs['streaker_offsets'])
-        kwargs['beam_offsets'] = -(streaker_offsets - np.array(self.input_data['streaker_means']))
-        del kwargs['streaker_offsets']
-        kwargs['meas_screen'].cutoff(self.input_data['tracker_kwargs']['screen_cutoff'])
-        kwargs['meas_screen'].crop()
-
-        # Only allow one streaker at the moment
-        for n in (0,1):
-            if n != kwargs['n_streaker']:
-                kwargs['beam_offsets'][n] = 0
-
-        return kwargs
-
-    def current_profile_rec_gauss(self, kwargs, do_plot, plot_handles=None, blmeas_file=None, debug=False):
-
-        kwargs_save = copy.deepcopy(kwargs)
-        del kwargs_save['meas_screen']
-        kwargs_save['meas_screen_x'] = kwargs['meas_screen'].x
-        kwargs_save['meas_screen_intensity'] = kwargs['meas_screen'].intensity
-        self.input_data['gaussian_reconstruction'] = kwargs_save
-
-        if debug:
-            import matplotlib
-            matplotlib.use('TKAgg')
-
-            ms.figure('Debug find_best_gauss')
-            subplot = ms.subplot_factory(1,1)
-            sp = subplot(1)
-            meas_screen = kwargs['meas_screen']
-            meas_screen.plot_standard(sp)
-            plt_show()
-            import pdb; pdb.set_trace()
-
-        gauss_dict = self.tracker.find_best_gauss(**kwargs)
-        #import pickle
-        #with open('/tmp/tmp_gauss_dict.pkl', 'wb') as f:
-        #    pickle.dump((gauss_dict, self.tracker_args, kwargs), f)
-
-        self.gauss_dict = gauss_dict
-
-        print('Do plotting')
-        if do_plot:
-            best_profile = gauss_dict['reconstructed_profile']
-            best_screen = gauss_dict['reconstructed_screen']
-            opt_func_values = gauss_dict['opt_func_values']
-            opt_func_screens = gauss_dict['opt_func_screens']
-            opt_func_profiles = gauss_dict['opt_func_profiles']
-            opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
-            meas_screen = gauss_dict['meas_screen']
-
-            if plot_handles is None:
-                fig, (sp_screen, sp_profile, sp_opt) = reconstruction_figure()
-                plt.suptitle('Optimization')
-            else:
-                sp_screen, sp_profile, sp_opt = plot_handles
-
-            meas_screen.plot_standard(sp_screen, color='black', lw=3)
-
-            for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
-                screen.plot_standard(sp_screen, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
-                profile.plot_standard(sp_profile, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value), center='Gauss')
-
-            best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
-            best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Gauss')
-
-            if blmeas_file is not None:
-                blmeas_profiles = []
-                for zero_crossing in (1, 2):
-                    try:
-                        blmeas_profile = iap.profile_from_blmeas(blmeas_file, kwargs['tt_halfrange'], kwargs['charge'], self.tracker.energy_eV, True, zero_crossing)
-                        blmeas_profile.cutoff2(5e-2)
-                        blmeas_profile.crop()
-                        blmeas_profile.reshape(int(1e3))
-                        blmeas_profiles.append(blmeas_profile)
-                    except KeyError as e:
-                        print(e)
-                        print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
-
-                for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-                    blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
-
-
-            sp_screen.legend()
-            sp_profile.legend()
-
-            yy_opt = opt_func_values[:,1]
-            sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)
-            sp_opt.set_ylim(0,1.1*yy_opt.max())
-            if plot_handles is None:
-                plt_show()
-
-def streaker_calibration_fit_func(offsets, streaker_offset, strength, order, const, semigap):
-    wall0, wall1 = -semigap, semigap
-    c1 = np.abs((offsets-streaker_offset-wall0))**(-order)
-    c2 = np.abs((offsets-streaker_offset-wall1))**(-order)
-    return const + (c1 - c2)*strength
-
-def analyze_streaker_calibration(filename_or_dict, do_plot=True, plot_handles=None, fit_order=False, force_screen_center=None, forward_propagate_blmeas=False, tracker=None, blmeas=None, beamline='Aramis', charge=200e-12):
-    if type(filename_or_dict) is dict:
-        data_dict = filename_or_dict
-    elif type(filename_or_dict) is str:
-        data_dict = h5_storage.loadH5Recursive(filename_or_dict)
+    if plot_handles is None:
+        fig, (sp_screen, sp_profile, sp_opt) = reconstruction_figure()
+        plt.suptitle('Optimization')
     else:
-        raise ValueError(type(filename_or_dict))
+        sp_screen, sp_profile, sp_opt = plot_handles
 
-    result_dict = data_dict['pyscan_result']
+    meas_screen.plot_standard(sp_screen, color='black', lw=3)
 
-    if 'image' in result_dict:
-        images = result_dict['image'].astype(float).squeeze()
-        proj_x = np.sum(images, axis=-2).squeeze()
-    elif 'projx' in result_dict:
-        proj_x = result_dict['projx']
+    for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
+        screen.plot_standard(sp_screen, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
+        profile.plot_standard(sp_profile, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value), center='Gauss')
 
-    if 'x_axis_m' in result_dict:
-        x_axis = result_dict['x_axis_m']
-    else:
-        x_axis = result_dict['x_axis']
+    best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
+    best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Gauss')
 
-    offsets = data_dict['streaker_offsets'].squeeze()
-    n_images = int(data_dict['n_images'])
+    if blmeas_file is not None:
+        blmeas_profiles = []
+        for zero_crossing in (1, 2):
+            try:
+                blmeas_profile = iap.profile_from_blmeas(blmeas_file, kwargs['tt_halfrange'], kwargs['charge'], tracker.energy_eV, True, zero_crossing)
+                blmeas_profile.cutoff2(5e-2)
+                blmeas_profile.crop()
+                blmeas_profile.reshape(int(1e3))
+                blmeas_profiles.append(blmeas_profile)
+            except KeyError as e:
+                print(e)
+                print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
 
-    centroids = np.zeros([len(offsets), n_images])
-
-    plot_list = []
-    if n_images > 1:
-        for n_o, n_i in itertools.product(range(len(offsets)), range(n_images)):
-            proj = proj_x[n_o,n_i]
-            proj -= np.median(proj)
-            proj[np.abs(proj)< np.abs(proj).max()*0.02] = 0
-            if n_i == 0:
-                plot_list.append(proj)
-            centroids[n_o,n_i] = np.sum(proj*x_axis) / np.sum(proj)
-        centroid_mean = np.mean(centroids, axis=1)
-        centroid_std = np.std(centroids, axis=1)
-    elif n_images == 1:
-        for n_o in range(len(offsets)):
-            proj = proj_x[n_o]
-            proj -= np.median(proj)
-            proj[np.abs(proj)< np.abs(proj).max()*0.05] = 0
-            centroids[n_o] = np.sum(proj_x[n_o]*x_axis) / np.sum(proj_x[n_o])
-            plot_list.append(proj)
-        centroid_mean = centroids.squeeze()
-        centroid_std = None
-
-    streaker = data_dict['streaker']
-    if 'meta_data_end' in data_dict:
-        key = 'meta_data_end'
-    else:
-        key = 'meta_data'
-    meta_data0 = data_dict[key]
-    semigap = meta_data0[streaker+':GAP']/2.*1e-3
+    for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
+        blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
 
 
-    if force_screen_center is None:
-        where0 = np.argwhere(offsets == 0).squeeze()
-        const0 = centroid_mean[where0]
-    else:
-        const0 = force_screen_center
-    delta_offset0 = (offsets.min() + offsets.max())/2
-    order0 = 3
-    wall0, wall1 = -semigap+delta_offset0, semigap+delta_offset0
+    sp_screen.legend()
+    sp_profile.legend()
 
-    s01 = (centroid_mean[0] - const0) / (np.abs((offsets[0]-wall0))**(-order0) - np.abs((offsets[0]-wall1))**(-order0))
-    s02 = (centroid_mean[-1] - const0) / (np.abs((offsets[-1]-wall0))**(-order0) - np.abs((offsets[-1]-wall1))**(-order0))
-    strength0 = (s01 + s02) / 2
+    yy_opt = opt_func_values[:,1]
+    sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)
+    sp_opt.set_ylim(0,1.1*yy_opt.max())
+    if plot_handles is None:
+        plt.show()
 
-    p0 = [delta_offset0, strength0]
-    if fit_order:
-        p0.append(order0)
-
-    def fit_func(*args):
-        if fit_order:
-            return streaker_calibration_fit_func(*args, const0, semigap)
-        else:
-            return streaker_calibration_fit_func(*args, order0, const0, semigap)
-
-    try:
-        p_opt, p_cov = curve_fit(fit_func, offsets, centroid_mean, p0, sigma=centroid_std)
-    except RuntimeError:
-        print('Streaker calibration did not converge')
-        p_opt = p0
-    xx_fit = np.linspace(offsets.min(), offsets.max(), int(1e3))
-    reconstruction = fit_func(xx_fit, *p_opt)
-    initial_guess = fit_func(xx_fit, *p0)
-    streaker_offset = p_opt[0]
-
-    meas_screens = []
-    for n_proj, (proj, offset) in enumerate(zip(plot_list, offsets)):
-        meas_screen = misc.proj_to_screen(proj, x_axis, False, const0)
-        len_screen = len(meas_screen.x)
-        meas_screen.cutoff2(3e-2)
-        meas_screen.crop()
-        meas_screen.reshape(len_screen)
-        meas_screens.append(meas_screen)
-
-    meta_data = {
-            'p_opt': p_opt,
-            'p0': p0,
-            'centroids': centroids,
-            'centroid_mean': centroid_mean,
-            'centroid_std': centroid_std,
-            'offsets': offsets,
-            'semigap': semigap,
-            'streaker_offset': streaker_offset,
-            'reconstruction': reconstruction,
-            }
-
-
-    if forward_propagate_blmeas:
-        blmeas_profile = iap.profile_from_blmeas(blmeas, 200e-15, charge, tracker.energy_eV)
-        blmeas_profile.cutoff2(5e-2)
-        blmeas_profile.crop()
-        blmeas_profile.reshape(len_screen)
-
-        streaker_names = config.streaker_names[beamline]
-        gaps = [meta_data0[x+':GAP']*1e-3 for x in streaker_names.values()]
-        streaker_offsets0 = []
-        n_streaker_var = None
-        for n_streaker, streaker in streaker_names.items():
-            if streaker == data_dict['streaker']:
-                n_streaker_var = n_streaker
-                streaker_offsets0.append(None)
-            else:
-                streaker_offsets0.append(meta_data0[streaker+':CENTER']*1e-3)
-        assert n_streaker_var is not None
-
-        sim_screens = []
-        for s_offset in offsets:
-            streaker_offsets = streaker_offsets0[:]
-            streaker_offsets[n_streaker_var] = -(s_offset-streaker_offset)
-            forward_dict = tracker.matrix_forward(blmeas_profile, gaps, streaker_offsets)
-            sim_screen = forward_dict['screen']
-            sim_screen.cutoff2(3e-2)
-            sim_screen.crop()
-            sim_screen.reshape(len_screen)
-            sim_screens.append(sim_screen)
-        meta_data['sim_screens'] = sim_screens
-    else:
-        sim_screens = None
-
-    if do_plot:
-
-        if plot_handles is None:
-            fig, (sp_center, sp_proj, sp_current) = streaker_calibration_figure()
-        else:
-            (sp_center, sp_proj, sp_current) = plot_handles
-        screen = data_dict['screen']
-        sp_center.set_title(screen)
-
-        xx_plot = (offsets - streaker_offset)*1e3
-        xx_plot_fit = (xx_fit - streaker_offset)*1e3
-        sp_center.errorbar(xx_plot, (centroid_mean-const0)*1e3, yerr=centroid_std*1e3, label='Data', ls='None', marker='o')
-        sp_center.plot(xx_plot_fit, (reconstruction-const0)*1e3, label='Fit')
-        sp_center.plot(xx_plot_fit, (initial_guess-const0)*1e3, label='Guess')
-        sp_center.legend()
-
-        for n_proj, (meas_screen, offset) in enumerate(zip(meas_screens, offsets)):
-            color = ms.colorprog(n_proj, offsets)
-            meas_screen.plot_standard(sp_proj, label='%.2f mm' % (offset*1e3), color=color)
-            if sim_screens is not None:
-                sim_screen = sim_screens[n_proj]
-                sim_screen.plot_standard(sp_proj, color=color, ls='--')
-
-        sp_proj.legend()
-
-        if forward_propagate_blmeas:
-            blmeas_profile.plot_standard(sp_current, color='black')
-
-    output = {
-            'raw_data': data_dict,
-            'meta_data': meta_data,
-            }
-
-    return output
+    return gauss_dict
 
 def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None):
     if type(filename_or_dict) is dict:
@@ -336,7 +96,9 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
         x_axis = screen_data['x_axis_m']
     else:
         print(screen_data['x_axis'].shape)
-        x_axis = screen_data['x_axis'][0]*1e-6
+        x_axis = screen_data['x_axis'].squeeze()*1e-6
+        if len(x_axis.shape) == 2:
+            x_axis = x_axis[0]
 
     assert len(x_axis.squeeze().shape) == 1
 
@@ -359,9 +121,6 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
 
     projx_median -= projx_median.min()
     x0 = gaussfit.GaussFit(x_axis, projx_median).mean
-    #x02 = np.sum(projx_median*x_axis) / np.sum(projx_median)
-    #x0 = x02
-    #import pdb; pdb.set_trace()
     output = {
             'raw_data': data_dict,
             'x0': x0,
@@ -418,7 +177,6 @@ def reconstruction_figure():
     sp_opt = subplot(sp_ctr)
     sp_ctr += 1
     clear_reconstruction(sp_screen, sp_profile, sp_opt)
-
     return fig, (sp_screen, sp_profile, sp_opt)
 
 def clear_reconstruction(sp_screen, sp_profile, sp_opt):
@@ -433,113 +191,61 @@ def clear_reconstruction(sp_screen, sp_profile, sp_opt):
         sp.set_ylabel(ylabel)
         sp.grid(True)
 
-def streaker_calibration_figure():
-    fig = plt.figure()
-    fig.canvas.set_window_title('Streaker center calibration')
-    sp_ctr = 1
-    subplot = ms.subplot_factory(2, 2)
-    sp_center = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_proj = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_current = subplot(sp_ctr)
-    clear_streaker_calibration(sp_center, sp_proj, sp_current)
-    return fig, (sp_center, sp_proj, sp_current)
-
-def clear_streaker_calibration(sp_center, sp_proj, sp_current):
-    for sp, title, xlabel, ylabel in [
-            (sp_center, 'Screen center', 'Streaker center [mm]', 'Beam X centroid [mm]'),
-            (sp_proj, 'Screen projections', 'x (mm)', 'Intensity (arb. units)'),
-            (sp_current, 'Beam current', 't (fs)', 'Current (kA)'),
-            ]:
-        sp.clear()
-        sp.set_title(title)
-        sp.set_xlabel(xlabel)
-        sp.set_ylabel(ylabel)
-        sp.grid(False)
-
 def lasing_figures():
-
     output = []
-
     fig = plt.figure()
     fig.canvas.set_window_title('Lasing reconstruction')
     subplot = ms.subplot_factory(3,3, grid=False)
-    sp_ctr = 1
-
-    sp_profile = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_wake = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_off = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_on = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_off_cut = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_on_cut = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_off_tE = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_on_tE = subplot(sp_ctr)
-    sp_ctr += 1
-
-    output.append((fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)))
+    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+8)))
+    output.append((fig, plot_handles))
     fig.subplots_adjust(hspace=0.5, wspace=0.3)
 
-
     fig = plt.figure()
+    fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,2, grid=False)
-    sp_ctr = 1
-
-    sp_power = subplot(sp_ctr)
-    sp_ctr += 1
-
-    sp_current = subplot(sp_ctr)
-    sp_ctr += 1
-    output.append((fig, (sp_power, sp_current)))
-
+    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+4)))
+    output.append((fig, plot_handles))
     clear_lasing(output)
-
     return output
 
 def clear_lasing(plot_handles):
     (_, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
-    (_, (sp_power, sp_current)) = plot_handles[1]
+    (_, (sp_power, sp_current, sp_centroid, sp_slice_size)) = plot_handles[1]
 
     for sp, title, xlabel, ylabel in [
             (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
             (sp_wake, 'Wake', 't (fs)', 'x (mm)'),
-            (sp_off, 'Lasing off', 'x (mm)', 'y (mm)'),
-            (sp_on, 'Lasing on', 'x (mm)', 'y (mm)'),
-            (sp_off_cut, 'Lasing off', 'x (mm)', 'y (mm)'),
-            (sp_on_cut, 'Lasing on', 'x (mm)', 'y (mm)'),
-            (sp_off_tE, 'Lasing off', 't (fs)', '$\Delta$ E (MeV)'),
-            (sp_on_tE, 'Lasing off', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_off, 'Lasing off raw', 'x (mm)', 'y (mm)'),
+            (sp_on, 'Lasing on raw', 'x (mm)', 'y (mm)'),
+            (sp_off_cut, 'Lasing off cut', 'x (mm)', 'y (mm)'),
+            (sp_on_cut, 'Lasing on cut', 'x (mm)', 'y (mm)'),
+            (sp_off_tE, 'Lasing off tE', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_on_tE, 'Lasing on tE', 't (fs)', '$\Delta$ E (MeV)'),
             (sp_power, 'Power', 't (fs)', 'P (GW)'),
             (sp_current, 'Current', 't (fs)', 'I (arb. units)'),
+            (sp_centroid, 'Slice centroids', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_slice_size, 'Slice sizes', 't (fs)', '$\sigma_E$ (MeV)'),
             ]:
         sp.clear()
         sp.set_title(title)
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
 
-def reconstruct_lasing(file_on, file_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy):
+def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy, n_slices, len_profile):
 
-    dict_on = h5_storage.loadH5Recursive(file_on)
+    if type(file_or_dict_on) is dict:
+        dict_on = file_or_dict_on
+    else:
+        dict_on = h5_storage.loadH5Recursive(file_or_dict_on)
     dict_on_p = dict_on['pyscan_result']
-    dict_on_m = dict_on['meta_data']
+    dict_on_m = dict_on['meta_data_end']
 
-    dict_off = h5_storage.loadH5Recursive(file_off)
+    if type(file_or_dict_off) is dict:
+        dict_off = file_or_dict_off
+    else:
+        dict_off = h5_storage.loadH5Recursive(file_or_dict_off)
     dict_off_p = dict_off['pyscan_result']
-    dict_off_m = dict_off['meta_data']
+    dict_off_m = dict_off['meta_data_end']
 
     if energy_eV == 'file':
         if 'SARBD01-MBND100:ENERGY-OP' in dict_on_m:
@@ -551,8 +257,8 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
 
     input_dict = {
-            'file_on': file_on,
-            'file_off': file_off,
+            'file_or_dict_on': file_or_dict_on,
+            'file_or_dict_off': file_or_dict_off,
             'screen_center': screen_center,
             'structure_center': structure_center,
             'structure_length': structure_length,
@@ -600,16 +306,17 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
 
     projx0_on = images0_on.sum(axis=-2)
     median_index = misc.get_median(projx0_on, output='index')
+
     median_image_on = iap.Image(images0_on[median_index], x_axis0, y_axis0, x_offset=screen_center)
 
-    # TODO
-    n_slices = 50
-    len_profile = 2000
-
     current_dict = h5_storage.loadH5Recursive(file_current)
-    wake_profile_dict = current_dict['gaussian_reconstruction']['reconstructed_profile']
-    wake_profile = iap.BeamProfile.from_dict(wake_profile_dict)
-    wake_profile.cutoff2(0.2)
+    if 'gaussian_reconstruction' in current_dict:
+        wake_profile_dict = current_dict['gaussian_reconstruction']['reconstructed_profile']
+        wake_profile = iap.BeamProfile.from_dict(wake_profile_dict)
+    else:
+        wake_profile = iap.profile_from_blmeas(current_dict, 200e-15, charge, energy_eV, True)
+
+    wake_profile.cutoff2(0.1)
     wake_profile.crop()
     wake_profile.reshape(len_profile)
 
@@ -621,7 +328,7 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
         plot_handles = lasing_figures()
 
     (fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
-    (fig, (sp_power, sp_current)) = plot_handles[1]
+    (fig, (sp_power, sp_current, sp_centroid, sp_slice_size)) = plot_handles[1]
 
     slice_time = lasing_dict['slice_time']
     all_slice_dict = lasing_dict['all_slice_dict']
@@ -631,26 +338,43 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
     sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_off']['slice_current'], label='Off')
     sp_current.plot(slice_time*1e15, all_slice_dict['Lasing_on']['slice_current'], label='On')
 
-    sp_power.plot(slice_time*1e15, power_from_Eloss/1e9, label='$\Delta$E')
-    sp_power.plot(slice_time*1e15, power_from_Espread/1e9, label='$\Delta\sigma_E$')
-
-    sp_current.legend()
-    sp_power.legend()
-
-    median_image_off.plot_img_and_proj(sp_off)
-    median_image_on.plot_img_and_proj(sp_on)
-
     lasing_dict['all_images']['Lasing_off']['image_tE'].plot_img_and_proj(sp_off_tE)
     lasing_dict['all_images']['Lasing_on']['image_tE'].plot_img_and_proj(sp_on_tE)
 
     lasing_dict['all_images']['Lasing_off']['image_cut'].plot_img_and_proj(sp_off_cut)
     lasing_dict['all_images']['Lasing_on']['image_cut'].plot_img_and_proj(sp_on_cut)
 
+    for key, sp_tE in [('Lasing_off',sp_off_tE), ('Lasing_on',sp_on_tE)]:
+        slice_sigma = all_slice_dict[key]['slice_sigma']
+        slice_centroid = all_slice_dict[key]['slice_mean']
+        sp_slice_size.plot(slice_time*1e15, slice_sigma/1e6, label=key)
+        sp_centroid.plot(slice_time*1e15, slice_centroid/1e6, label=key)
+
+        lims = sp_tE.get_ylim()
+        sp_tE.errorbar(slice_time*1e15, slice_centroid/1e6, yerr=slice_sigma/1e6, ls='None', marker='+', color='red')
+        sp_tE.set_ylim(*lims)
+
+    sp_power.plot(slice_time*1e15, power_from_Eloss/1e9, label='$\Delta$E')
+    sp_power.plot(slice_time*1e15, power_from_Espread/1e9, label='$\Delta\sigma_E$')
+
+    sp_current.legend()
+    sp_power.legend()
+    sp_slice_size.legend()
+    sp_centroid.legend()
+
+    median_image_off.plot_img_and_proj(sp_off)
+    median_image_on.plot_img_and_proj(sp_on)
+
     sp_wake.plot(wake_t*1e15, wake_x*1e3)
     wake_profile.plot_standard(sp_profile)
 
     if plot_handles is None:
-        plt_show()
+        plt.show()
+
+    if type(input_dict['file_or_dict_on']) is dict:
+        del input_dict['file_or_dict_on']
+    if type(input_dict['file_or_dict_off']) is dict:
+        del input_dict['file_or_dict_off']
 
     output = {
             'input': input_dict,
@@ -658,4 +382,87 @@ def reconstruct_lasing(file_on, file_off, screen_center, structure_center, struc
             }
     #import pdb; pdb.set_trace()
     return output
+
+def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs, rec_mode, kwargs_recon, screen_x0, streaker_centers, blmeas_file=None, plot_handles=None):
+
+    tracker = tracking.Tracker(**tracker_kwargs)
+
+    if type(data_file_or_dict) is dict:
+        screen_data = data_file_or_dict
+    else:
+        screen_data = h5_storage.loadH5Recursive(data_file_or_dict)
+
+    if 'meta_data' in screen_data:
+        meta_data = screen_data['meta_data']
+    elif 'meta_data_begin' in screen_data:
+        meta_data = screen_data['meta_data_begin']
+    else:
+        print(screen_data.keys())
+        raise ValueError
+
+    if 'pyscan_result' in screen_data:
+        pyscan_data = screen_data['pyscan_result']
+    else:
+        pyscan_data = screen_data
+
+    x_axis = pyscan_data['x_axis_m']
+    projx = pyscan_data['image'].sum(axis=-2)
+    if rec_mode == 'Median':
+        median_projx = misc.get_median(projx)
+    elif rec_mode == 'All':
+        raise NotImplementedError
+
+    tracker.set_simulator(meta_data)
+
+    if x_axis[1] < x_axis[0]:
+        x_axis = x_axis[::-1]
+        median_projx = median_projx[::-1]
+
+    meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
+    kwargs_recon['meas_screen'] = meas_screen
+
+    print('Analysing reconstruction')
+
+    kwargs = copy.deepcopy(kwargs_recon)
+
+    gaps, streaker_offsets = get_gap_and_offset(meta_data, beamline)
+
+    kwargs['meas_screen']._xx = kwargs['meas_screen']._xx - screen_x0
+    kwargs['beam_offsets'] = -(streaker_offsets - streaker_centers)
+    kwargs['gaps'] = gaps
+    kwargs['meas_screen'].cutoff2(tracker.screen_cutoff)
+    kwargs['meas_screen'].crop()
+    kwargs['meas_screen'].reshape(tracker.len_screen)
+
+    # Only allow one streaker at the moment
+    for n in (0,1):
+        if n != kwargs['n_streaker']:
+            kwargs['beam_offsets'][n] = 0
+
+    gauss_dict = current_profile_rec_gauss(tracker, kwargs, plot_handles, blmeas_file)
+
+    output_dict = {
+            'input': {
+                'data_file_or_dict': data_file_or_dict,
+                'n_streaker': n_streaker,
+                'beamline': beamline,
+                'tracker_kwargs': tracker_kwargs,
+                'rec_mode': rec_mode,
+                'kwargs_recon': kwargs_recon,
+                'screen_x0': screen_x0,
+                'streaker_centers': streaker_centers,
+                'blmeas_file': blmeas_file,
+                },
+            'gauss_dict': gauss_dict,
+            }
+
+    return output_dict
+
+def get_gap_and_offset(meta_data, beamline):
+    gaps, offsets = [], []
+    for streaker in config.streaker_names[beamline].values():
+        gaps.append(meta_data[streaker+':GAP']*1e-3)
+        offsets.append(meta_data[streaker+':CENTER']*1e-3)
+
+    return np.array(gaps), np.array(offsets)
 

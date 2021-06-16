@@ -64,7 +64,8 @@ def saveH5Recursive(h5_filename, data_dict):
             for key, val in dict_or_data.items():
                 try:
                     recurse_save(new_group, val, key)
-                except ValueError:
+                except ValueError as e:
+                    print(e)
                     print('I called recurse_save with None')
                     #import pdb; pdb.set_trace()
         else:
@@ -107,7 +108,12 @@ def saveH5Recursive(h5_filename, data_dict):
                 if mydata.shape == ():
                     add_dataset(group, inner_key, mydata, 'unknown')
                 elif len(mydata.shape) == 1:
-                    add_dataset(group, inner_key, mydata, 'unknown')
+                    try:
+                        add_dataset(group, inner_key, mydata, 'unknown')
+                    except Exception as e:
+                        print(e)
+                        print('Error for key', inner_key)
+                        print(group, inner_key)
                 else:
                     for i in range(mydata.shape[0]):
                         for j in range(mydata.shape[1]):
@@ -154,13 +160,14 @@ def loadH5Recursive(h5_file):
             #    print('Could not store key %s with type %s in dict' % (key, dtype))
             #    return
             if dtype in (np.dtype('int64'), np.dtype('int32'), np.dtype('int16'), np.dtype('int8'), np.dtype('uint32'), np.dtype('uint16'), np.dtype('uint8'), np.dtype('uint64')):
-                saved_dict_curr[key] = np.array(group_or_val[()], int).squeeze()
+                saved_dict_curr[key] = np.array(group_or_val[()], dtype).squeeze()
                 if saved_dict_curr[key].size == 1:
                     saved_dict_curr[key] = int(saved_dict_curr[key])
             elif dtype == np.dtype('bool'):
                 try:
                     saved_dict_curr[key] = bool(group_or_val[()])
-                except:
+                except Exception as e:
+                    print(e)
                     print('Could not store key %s with type %s in dict (1)' % (key, dtype))
             elif dtype in (np.dtype('float64'), np.dtype('float32')):
                 saved_dict_curr[key] = np.array(group_or_val[()]).squeeze()

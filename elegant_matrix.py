@@ -174,6 +174,8 @@ class simulator:
         elif type(file_or_dict) is dict:
             self.data_type = 1
             self.mag_data = file_or_dict
+        else:
+            raise ValueError(type(file_or_dict))
 
     def get_data_quad(self, mag_name, timestamp=0):
         if self.data_type == 0:

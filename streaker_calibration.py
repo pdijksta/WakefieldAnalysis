@@ -599,7 +599,12 @@ class StreakerCalibration:
         rms = []
         lin_fit = []
 
+        precision = 5e-6
+
         def one_gap(gap):
+            gap = np.round(gap/precision)*precision
+            if gap in gaps:
+                return
             self.gap0 = gap
             self.fit_type('centroid')
             offset_list, gauss_dicts = self.reconstruct_current(tracker, gauss_kwargs, plot_details=False)
@@ -627,10 +632,10 @@ class StreakerCalibration:
         for gap in [gap_arr.min(), gap_arr.mean(), gap_arr.max()]:
             one_gap(gap)
 
+        for _ in range(3):
+            gap = get_gap()
+            one_gap(gap)
         gap = get_gap()
-        one_gap(gap)
-        gap = get_gap()
-        self.gap0 = gap
         output = {
                 'gap': gap,
                 'gap_arr': np.array(gaps),
@@ -638,7 +643,6 @@ class StreakerCalibration:
                 'all_rms': np.array(rms),
                 }
         return output
-
 
 def gauss_recon_figure(figsize=None):
     if figsize is None:

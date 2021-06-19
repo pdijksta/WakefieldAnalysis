@@ -253,6 +253,23 @@ class StartMain(QtWidgets.QMainWindow):
         print('Dispersion:', disp)
         return r12, disp
 
+    def get_gauss_kwargs(self):
+        start, stop, step = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), float(self.SigTfsStep.text())
+        stop += 1e-3*step # assert that stop is part of array
+        sig_t_range = np.arange(start, stop, step)*1e-15
+        tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
+        n_streaker = int(self.StreakerSelect.currentText())
+        charge = float(self.Charge.text())*1e-12
+        self_consistent = self.SelfConsistentCheck.isChecked()
+        kwargs_recon = {
+                'sig_t_range': sig_t_range,
+                'tt_halfrange': tt_halfrange,
+                'n_streaker': n_streaker,
+                'charge': charge,
+                'self_consistent': self_consistent,
+                }
+        return kwargs_recon
+
     def get_tracker_kwargs(self, magnet_dict=None):
         tmp_dir = os.path.expanduser(self.TmpDir.text())
         assert os.path.isdir(tmp_dir)
@@ -399,23 +416,9 @@ class StartMain(QtWidgets.QMainWindow):
         else:
             blmeas_file = None
 
-        start, stop, step = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), float(self.SigTfsStep.text())
-        stop += 1e-3*step # assert that stop is part of array
-        sig_t_range = np.arange(start, stop, step)*1e-15
-        tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
-        n_streaker = int(self.StreakerSelect.currentText())
-        charge = float(self.Charge.text())*1e-12
-        self_consistent = self.SelfConsistentCheck.isChecked()
-        kwargs_recon = {
-                'sig_t_range': sig_t_range,
-                'tt_halfrange': tt_halfrange,
-                'n_streaker': n_streaker,
-                'charge': charge,
-                'self_consistent': self_consistent,
-                }
-
+        gauss_kwargs = self.get_gauss_kwargs()
         tracker_kwargs = self.get_tracker_kwargs()
-        self.current_rec_dict = analysis.reconstruct_current(filename, self.n_streaker, self.beamline, tracker_kwargs, rec_mode, kwargs_recon, self.screen_x0, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
+        self.current_rec_dict = analysis.reconstruct_current(filename, self.n_streaker, self.beamline, tracker_kwargs, rec_mode, gauss_kwargs, self.screen_x0, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
 
         self.rec_canvas.draw()
         self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
@@ -482,14 +485,20 @@ class StartMain(QtWidgets.QMainWindow):
 
     def _analyze_streaker_calib(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
+        tracker = self.get_tracker(result_dict['meta_data_begin'])
         if forward_blmeas:
-            tracker = self.get_tracker(result_dict['meta_data_begin'])
             blmeasfile = self.ForwardBlmeasFilename.text()
         else:
-            tracker = None
             blmeasfile = None
 
-        full_dict = sc.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=self.beamline)
+        streaker = result_dict['streaker']
+        gap0 = result_dict['meta_data_begin'][streaker+':GAP']*1e-3
+        gap_arr = [gap0-100e-6, gap0+50e-6]
+        gauss_kwargs = self.get_tracker_kwargs()
+        gap = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs)
+        n_streaker, beamline = analysis.get_beamline_n_streaker(streaker)
+
+        full_dict = sc.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=beamline)
         return full_dict
 
     def load_calibration(self):

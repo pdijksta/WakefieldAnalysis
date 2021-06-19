@@ -471,3 +471,9 @@ def get_gap_and_offset(meta_data, beamline):
 
     return np.array(gaps), np.array(offsets)
 
+def get_beamline_n_streaker(streaker):
+    for beamline, d in config.streaker_names.items():
+        for n_streaker, streaker2 in d.items():
+            if streaker == streaker2:
+                return beamline, n_streaker
+

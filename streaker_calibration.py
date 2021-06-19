@@ -594,6 +594,9 @@ class StreakerCalibration:
         return output
 
     def gap_reconstruction2(self, gap_arr, tracker, gauss_kwargs):
+        """
+        Optimized version
+        """
 
         gaps = []
         rms = []

@@ -50,6 +50,22 @@ def analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=None, f
     sc.plot_streaker_calib(plot_handles)
     return sc.get_result_dict()
 
+def analyze_streaker_calibration2(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handles=None, forward_propagate_blmeas=False, blmeas=None, charge=None, tt_halfrange=None):
+    meta_data = result_dict['meta_data_begin']
+    streaker = result_dict['streaker']
+    beamline, n_streaker = analysis.get_beamline_n_streaker(streaker)
+    gap0 = meta_data[streaker+':GAP']*1e-3
+    gap_arr = np.array([gap0-150e-6, gap0+50e-6])
+    if charge is None:
+        charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
+    if tt_halfrange is None:
+        tt_halfrange = config.get_default_gauss_recon_settings()['tt_halfrange']
+
+    sc = StreakerCalibration(beamline, n_streaker, gap0, file_or_dict=result_dict, fit_gap=True, fit_order=False)
+    sc.fit()
+    gap_recon = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs)
+    return gap_recon
+
 class StreakerCalibration:
 
     def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, fit_gap=True, fit_order=False, order_centroid=order0_centroid, order_rms=order0_rms, proj_cutoff=0.03):
@@ -254,6 +270,8 @@ class StreakerCalibration:
     def fit_type(self, type_):
 
         offsets = self.offsets
+        if len(offsets) == 0:
+            raise ValueError('No data!')
         semigap = self.gap0/2.
         where0 = np.argwhere(offsets == 0).squeeze()
 
@@ -472,20 +490,31 @@ class StreakerCalibration:
             sp1.legend()
             sp2.legend()
 
-    def reconstruct_current(self, tracker, gauss_kwargs, type_='centroid', plot_details=False):
+    def reconstruct_current(self, tracker, gauss_kwargs, type_='centroid', plot_details=False, force_gap=None, force_streaker_offset=None):
         fit_dict = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]
-        gap = fit_dict['gap_fit']
-        streaker_offset = fit_dict['streaker_offset']
+
+        if force_gap is not None:
+            gap = force_gap
+        else:
+            gap = fit_dict['gap_fit']
+        if force_streaker_offset is not None:
+            streaker_offset = force_streaker_offset
+        else:
+            streaker_offset = fit_dict['streaker_offset']
+        print('Streaker offset', '%i' % (streaker_offset*1e6))
+
         gaps = [10e-3, 10e-3]
         gaps[self.n_streaker] = gap
         gauss_dicts = []
         offset_list = []
 
+        print(self.offsets)
         for n_offset, offset in enumerate(self.offsets):
             if offset == 0:
                 continue
             beam_offsets = [0., 0.]
             beam_offsets[self.n_streaker] = -(offset-streaker_offset)
+            print(beam_offsets[self.n_streaker])
             offset_list.append(beam_offsets[self.n_streaker])
 
             projx = self.images[n_offset].astype(np.float64).sum(axis=-2)
@@ -593,7 +622,7 @@ class StreakerCalibration:
                 }
         return output
 
-    def gap_reconstruction2(self, gap_arr, tracker, gauss_kwargs):
+    def gap_reconstruction2(self, gap_arr, tracker, gauss_kwargs, streaker_offset):
         """
         Optimized version
         """
@@ -609,8 +638,7 @@ class StreakerCalibration:
             if gap in gaps:
                 return
             self.gap0 = gap
-            self.fit_type('centroid')
-            offset_list, gauss_dicts = self.reconstruct_current(tracker, gauss_kwargs, plot_details=False)
+            offset_list, gauss_dicts = self.reconstruct_current(tracker, gauss_kwargs, plot_details=False, force_gap=gap, force_streaker_offset=streaker_offset)
             distance_arr = gap/2. - np.abs(offset_list)
 
             rms_arr = np.array([x['reconstructed_profile'].rms() for x in gauss_dicts])
@@ -696,4 +724,29 @@ def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_center2, sp_size
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
         sp.grid(False)
+
+def gap_recon_figure(figsize=None):
+    if figsize is None:
+        figsize = [6.4, 4.8]
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.set_window_title('Streaker gap reconstruction')
+    fig.subplots_adjust(hspace=0.4, wspace=0.4)
+    subplot = ms.subplot_factory(2, 2, grid=False)
+    plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+4)))
+    clear_gap_recon(*plot_handles)
+    return fig, plot_handles
+
+def clear_gap_recon(sp_rms, sp_overview, sp_std, sp_fit):
+    for sp, title, xlabel, ylabel in [
+            (sp_rms, 'Beamsize', '$\Delta$d ($\mu$m)', 'rms (fs)'),
+            (sp_overview, 'Bunch duration', 'Gap (mm)', 'rms (mm)'),
+            (sp_std, 'Relative error', 'Gap (mm)', 'rms std'),
+            (sp_fit, 'Fit coefficient', 'Gap (mm)', 'fit param (fs/$\mu$m)'),
+            ]:
+        sp.clear()
+        sp.set_title(title, fontsize=config.fontsize)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(False)
+
 

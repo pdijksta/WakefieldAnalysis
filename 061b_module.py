@@ -60,9 +60,12 @@ n_streaker = 1
 
 streaker_calib_files = all_streaker_calib[file_index]
 
-sc = streaker_calibration.StreakerCalibration('Aramis', n_streaker, 10e-3, fit_gap=False, fit_order=False, proj_cutoff=tracker.screen_cutoff)
+sc = streaker_calibration.StreakerCalibration('Aramis', n_streaker, 10e-3, fit_gap=True, fit_order=False, proj_cutoff=tracker.screen_cutoff)
 for scf in streaker_calib_files:
     sc.add_file(scf)
+s_dict = sc.fit_type('centroid')
+streaker_offset = s_dict['streaker_offset']
+sc.fit_gap = False
 
 streaker = config.streaker_names[sc.beamline][sc.n_streaker]
 self = sc
@@ -73,29 +76,14 @@ gauss_kwargs['n_streaker'] = self.n_streaker
 gauss_kwargs['method'] = method
 gauss_kwargs['sig_t_range'] = np.exp(np.linspace(np.log(10), np.log(85), 15))*1e-15
 
-ms.figure('Gap reconstruction with current reconstruction', figsize=(20, 16))
-subplot = ms.subplot_factory(2,2)
-sp_ctr = 1
+fig, (sp_rms, sp_overview, sp_std, sp_fit) = sc.gap_recon_figure(figsize=(20,16))
 
-sp_rms = subplot(sp_ctr, title='Beamsize', xlabel='$\Delta$d ($\mu$m)', ylabel='rms (fs)')
-sp_ctr += 1
-
-sp_overview = subplot(sp_ctr, title='Bunch duration', xlabel='Gap (mm)', ylabel='rms (mm)')
-sp_ctr += 1
-
-sp_std = subplot(sp_ctr, title='Relative error', xlabel='Gap (mm)', ylabel='rms std')
-sp_ctr += 1
-
-sp_fit = subplot(sp_ctr, title='Fit coefficient', xlabel='Gap (mm)', ylabel='fit param (fs/$\mu$m)')
-sp_ctr += 1
-
-gap_recon_dict = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs)
+gap_recon_dict = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset)
 gap_arr = gap_recon_dict['gap_arr']
 all_rms_arr = gap_recon_dict['all_rms']
 lin_fit = gap_recon_dict['lin_fit']
 
 for gap_ctr, gap in enumerate(gap_arr):
-    streaker_offset = sc.fit_dicts_gap_order['centroid'][sc.fit_gap][sc.fit_order]['streaker_offset']
     distance_arr = gap/2. - np.abs(sc.offsets[sc.offsets != 0] - streaker_offset)
     d_arr2 = distance_arr - distance_arr.min()
     sort = np.argsort(d_arr2)

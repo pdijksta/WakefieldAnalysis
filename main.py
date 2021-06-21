@@ -206,13 +206,16 @@ class StartMain(QtWidgets.QMainWindow):
             return tab_index, canvas
 
         self.reconstruction_fig, self.reconstruction_plot_handles = analysis.reconstruction_figure()
-        self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'Rec plots')
+        self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'I Rec.')
 
         self.streaker_calib_fig, self.streaker_calib_plot_handles = sc.streaker_calibration_figure()
-        self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Cal. plots')
+        self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Calib.')
+
+        self.gap_recon_fig, self.gap_recon_plot_handles = sc.gap_recon_figure()
+        self.gap_recon_tab_index, self.gap_recon_canvas = get_new_tab(self.gap_recon_fig, 'Gap rec.')
 
         self.screen_calib_fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
-        self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(self.screen_calib_fig, 'Screen plots')
+        self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(self.screen_calib_fig, 'Screen')
 
         self.lasing_plot_handles = analysis.lasing_figures()
         self.lasing_figs = [x[0] for x in self.lasing_plot_handles]
@@ -492,10 +495,10 @@ class StartMain(QtWidgets.QMainWindow):
             blmeasfile = None
 
         streaker = result_dict['streaker']
-        gap0 = result_dict['meta_data_begin'][streaker+':GAP']*1e-3
-        gap_arr = [gap0-100e-6, gap0+50e-6]
-        gauss_kwargs = self.get_tracker_kwargs()
-        gap = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs)
+        #gap0 = result_dict['meta_data_begin'][streaker+':GAP']*1e-3
+        #gap_arr = [gap0-100e-6, gap0+50e-6]
+        #gauss_kwargs = self.get_tracker_kwargs()
+        #gap = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs)
         n_streaker, beamline = analysis.get_beamline_n_streaker(streaker)
 
         full_dict = sc.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=beamline)

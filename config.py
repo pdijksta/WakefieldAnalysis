@@ -43,17 +43,17 @@ get_default_tracker_settings = lambda: {
         'magnet_file': None,
         'timestamp': None,
         'struct_lengths': np.array([1., 1.]),
-        'n_particles': int(1e5),
+        'n_particles': int(50e3),
         'n_emittances': np.array([500, 500])*1e-9,
         'screen_bins': 500,
         'screen_cutoff': 2e-2,
         'smoothen': 20e-6,
         'profile_cutoff': 1e-2,
-        'len_screen': 5000,
+        'len_screen': 2000,
         'quad_wake': False,
         'bp_smoothen': 1e-15,
         'override_quad_beamsize': False,
-        'quad_x_beamsize': np.array([10, 10])*1e-6,
+        'quad_x_beamsize': np.array([10., 10.])*1e-6,
         }
 
 get_default_gauss_recon_settings = lambda: {
@@ -61,6 +61,7 @@ get_default_gauss_recon_settings = lambda: {
         'sig_t_range': np.arange(20, 40.001, 5)*1e-15,
         'tt_halfrange': 200e-15,
         'charge': 200e-12,
+        'method': 'centroid'
         }
 
 tmp_elegant_dir = '~/tmp_elegant'

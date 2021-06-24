@@ -1,4 +1,4 @@
-#import itertools
+import itertools
 import time
 import numpy as np
 import logging
@@ -256,7 +256,6 @@ def get_axis(screen):
 
     return x_axis, y_axis
 
-
 def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=True, include_meta_data=True, x_axis=None, y_axis=None, dry_run=False):
 
     if print_:
@@ -336,8 +335,9 @@ def get_aramis_quad_strengths():
 def get_meta_data(screen):
     all_streakers = config.all_streakers
     meta_dict = {}
-    meta_dict.update({x+':GAP': caget(x+':GAP.RBV') for x in all_streakers})
-    meta_dict.update({x+':CENTER': caget(x+':CENTER.RBV') for x in all_streakers})
+    for streaker, suffix1, suffix2 in itertools.product(all_streakers, [':GAP', ':CENTER'], ['', '.RBV']):
+        pv = streaker+suffix1+suffix2
+        meta_dict[pv] = caget(pv)
     meta_dict.update({x: caget(x) for x in config.beamline_chargepv.values()})
 
     energy_pv = screen+':ENERGY-OP'

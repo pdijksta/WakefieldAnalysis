@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -377,9 +377,9 @@
      <widget class="QPushButton" name="ClearCalibPlots">
       <property name="geometry">
        <rect>
-        <x>590</x>
-        <y>430</y>
-        <width>121</width>
+        <x>710</x>
+        <y>390</y>
+        <width>151</width>
         <height>41</height>
        </rect>
       </property>
@@ -427,14 +427,14 @@
        </font>
       </property>
       <property name="text">
-       <string>Clear plots</string>
+       <string>Clear calib plots</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_19">
       <property name="geometry">
        <rect>
         <x>40</x>
-        <y>330</y>
+        <y>300</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -450,7 +450,7 @@
       <property name="geometry">
        <rect>
         <x>310</x>
-        <y>280</y>
+        <y>250</y>
         <width>191</width>
         <height>16</height>
        </rect>
@@ -607,7 +607,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>330</y>
+        <y>300</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -639,7 +639,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>310</y>
+        <y>280</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -807,7 +807,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>330</y>
+        <y>300</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -855,7 +855,7 @@
       <property name="geometry">
        <rect>
         <x>230</x>
-        <y>310</y>
+        <y>280</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -908,7 +908,7 @@
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>560</y>
+        <y>610</y>
         <width>321</width>
         <height>20</height>
        </rect>
@@ -924,7 +924,7 @@
       <property name="geometry">
        <rect>
         <x>190</x>
-        <y>590</y>
+        <y>640</y>
         <width>601</width>
         <height>25</height>
        </rect>
@@ -940,13 +940,173 @@
       <property name="geometry">
        <rect>
         <x>360</x>
-        <y>560</y>
+        <y>610</y>
         <width>91</width>
         <height>16</height>
        </rect>
       </property>
       <property name="text">
        <string>Filename</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="GapReconstruction">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>560</y>
+        <width>131</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="palette">
+       <palette>
+        <active>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </active>
+        <inactive>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </inactive>
+        <disabled>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </disabled>
+       </palette>
+      </property>
+      <property name="font">
+       <font>
+        <family>Sans Serif</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Gap reconstruction</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="ClearGapRecPlots">
+      <property name="geometry">
+       <rect>
+        <x>710</x>
+        <y>450</y>
+        <width>151</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="palette">
+       <palette>
+        <active>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </active>
+        <inactive>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </inactive>
+        <disabled>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>183</red>
+            <green>157</green>
+            <blue>92</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </disabled>
+       </palette>
+      </property>
+      <property name="font">
+       <font>
+        <family>Sans Serif</family>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Clear gap rec plots</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_22">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>340</y>
+        <width>161</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Gap delta [um]</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="StreakerGapDelta0">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>340</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>0</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="StreakerGapDelta1">
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>340</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>0</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2227,7 +2387,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>1</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2243,7 +2403,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>500</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2259,7 +2419,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>500</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2275,7 +2435,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>1</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2291,7 +2451,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>1e5</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2307,7 +2467,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>500</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2414,7 +2574,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>5000</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2430,7 +2590,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>1e-2</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2446,7 +2606,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>30</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2462,7 +2622,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>2e-2</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2494,7 +2654,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>10</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2510,7 +2670,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>10</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2581,7 +2741,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>1</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2610,7 +2770,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>20</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2642,7 +2802,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>40</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2664,7 +2824,7 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="SigTfsStep">
+     <widget class="QLineEdit" name="SigTSize">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -2674,7 +2834,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>5</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2690,7 +2850,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>Step</string>
+       <string>Size</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2719,7 +2879,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>400</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2793,7 +2953,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>200</string>
+       <string/>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

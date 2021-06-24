@@ -1,4 +1,9 @@
 from collections import OrderedDict
+import h5_storage
+import image_and_profile as iap
+import analysis
+import tracking
+import config
 import numpy as np
 
 try:
@@ -127,4 +132,90 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
             }
 
     return output
+
+class LasingReconstruction:
+    def __init__(self):
+        pass
+
+class LasingReconstructionImages:
+    def __init__(self, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, profile=None):
+        self.screen_x0 = screen_x0
+        self.beamline = beamline
+        self.n_streaker = n_streaker
+        self.streaker_offset = streaker_offset
+        self.gap = gap
+        self.profile = profile
+        self.profiles = None
+        self.tracker = tracking.Tracker(**tracker_kwargs)
+
+    def add_file(self, filename):
+        data_dict = h5_storage.loadH5Recursive(filename)
+        self.add_dict(data_dict)
+
+    def add_dict(self, data_dict):
+        meta_data = data_dict['meta_data_begin']
+        self.tracker.set_simulator(meta_data)
+        images = data_dict['pyscan_result']['image'].astype(float)
+        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(float)
+        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(float)
+        self.add_images(meta_data, images, x_axis, y_axis)
+
+    def add_images(self, meta_data, images, x_axis, y_axis):
+        self.meta_data = meta_data
+        self.x_axis0 = x_axis
+        self.x_axis = x_axis - self.screen_x0
+        self.y_axis = y_axis
+        self.raw_images = images
+        self.raw_image_objs = []
+        self.meas_screens = []
+        for n_image, img in enumerate(images):
+            image = iap.Image(img, self.x_axis, y_axis)
+            self.raw_image_objs.append(image)
+            screen = iap.ScreenDistribution(image.x_axis, image.image.sum(axis=-2))
+            self.meas_screens.append(screen)
+
+    def get_current_profiles(self, kwargs_recon, blmeas_file=None, do_plot=False):
+        data_dict = {
+                'meta_data_begin': self.meta_data,
+                'pyscan_result': {
+                    'image': self.raw_images,
+                    'x_axis_m': self.x_axis0,
+                    'y_axis_m': self.y_axis,
+                    }
+                }
+
+        streaker_offsets = [0., 0.]
+        streaker_offsets[self.n_streaker] = self.streaker_offset
+
+        output_dicts = analysis.reconstruct_current(data_dict, self.n_streaker, self.beamline, self.tracker, 'All', kwargs_recon, self.screen_x0, streaker_offsets, blmeas_file, do_plot=do_plot)
+        self.profiles = [x['gauss_dict']['reconstructed_profile'] for x in output_dicts]
+
+    def set_median_profile(self):
+        rms = [x.rms() for x in self.profiles]
+        index_median = np.argsort(rms)[len(rms)//2]
+        self.profile = self.profiles[index_median]
+
+    def calc_wake(self):
+        streaker = config.streaker_names[self.beamline][self.n_streaker]
+        beam_offset = -(self.meta_data[streaker+':CENTER']*1e-3 - self.streaker_offset)
+        streaker_length = config.streaker_lengths[streaker]
+        r12 = self.tracker.calcR12()[self.n_streaker]
+        wake_t, wake_x = self.profile.get_x_t(self.gap, beam_offset, streaker_length, r12)
+        self.wake_t, self.wake_x = wake_t, wake_x
+
+    def cut_images(self):
+        x_min, x_max = self.wake_x.min(), self.wake_x.max()
+        self.cut_images = []
+        for img in self.raw_image_objs:
+            cut_img = img.cut(x_min, x_max)
+            self.cut_images.append(cut_img)
+
+    def convert_axes(self):
+        dispersion = self.tracker.calcDisp()[self.n_streaker]
+        self.images_tE = []
+        for img in self.cut_images:
+            img_t = img.x_to_t(self.wake_x, self.wake_t)
+            img_tE = img_t.y_to_eV(dispersion, self.tracker.energy_eV)
+            self.images_tE.append(img_tE)
+
 

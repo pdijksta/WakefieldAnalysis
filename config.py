@@ -9,6 +9,11 @@ streaker_names = {
             ]),
         }
 
+streaker_lengths = {
+        'SARUN18-UDCP010': 1.,
+        'SARUN18-UDCP020': 1.,
+        }
+
 beamline_quads = {
         'Aramis': ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030'],
         'Athos': ['SATMA02.MQUA050', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030'],
@@ -43,7 +48,7 @@ get_default_tracker_settings = lambda: {
         'magnet_file': None,
         'timestamp': None,
         'struct_lengths': np.array([1., 1.]),
-        'n_particles': int(50e3),
+        'n_particles': int(100e3),
         'n_emittances': np.array([500, 500])*1e-9,
         'screen_bins': 500,
         'screen_cutoff': 2e-2,
@@ -58,10 +63,11 @@ get_default_tracker_settings = lambda: {
 
 get_default_gauss_recon_settings = lambda: {
         'self_consistent': True,
-        'sig_t_range': np.exp(np.linspace(np.log(10), np.log(85), 15))*1e-15,
+        'sig_t_range': np.exp(np.linspace(np.log(7), np.log(75), 15))*1e-15,
         'tt_halfrange': 200e-15,
         'charge': 200e-12,
-        'method': 'centroid'
+        'method': 'centroid',
+        'delta_gap': (0., 0.)
         }
 
 tmp_elegant_dir = '~/tmp_elegant'

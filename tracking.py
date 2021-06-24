@@ -658,7 +658,7 @@ class Tracker:
                 'best_profile': profiles[best_index],
                 }
 
-    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares'):
+    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.)):
 
         opt_func_values = []
         opt_func_screens = []
@@ -668,6 +668,7 @@ class Tracker:
         gauss_profiles = []
         gauss_wakes = []
         sig_t_list = []
+        gaps = [gaps[0]+delta_gap[0], gaps[1]+delta_gap[1]]
 
         #meas_screen = copy.deepcopy(meas_screen)
         meas_screen.reshape(self.len_screen)

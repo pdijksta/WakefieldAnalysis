@@ -30,6 +30,7 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
     if not do_plot:
         return gauss_dict
     plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_file, do_plot, figsize)
+    return gauss_dict
 
 def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None):
 
@@ -55,12 +56,12 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
 
     for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
         screen.plot_standard(sp_screen, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
-        profile.plot_standard(sp_profile, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value), center='Gauss')
+        profile.plot_standard(sp_profile, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value), center='Mean')
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 
     best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
-    best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Gauss')
+    best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')
 
     if blmeas_file is not None:
         blmeas_profiles = []
@@ -76,7 +77,7 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
                 print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
 
         for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='Blmeas %i' % zero_crossing)
+            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='TDC %i %.1f fs' % (zero_crossing, blmeas_profile.rms()))
 
     color = sp_moments.plot(opt_func_sigmas*1e15, np.abs(centroid_arr)*1e3, marker='.', label='Reconstructed centroid')[0].get_color()
     sp_moments.axhline(np.abs(meas_screen.mean())*1e3, label='Measured centroid', color=color)
@@ -108,7 +109,7 @@ def analyze_screen_calibration(filename_or_dict, do_plot=True, plot_handles=None
     if 'x_axis_m' in screen_data:
         x_axis = screen_data['x_axis_m']
     else:
-        print(screen_data['x_axis'].shape)
+        #print(screen_data['x_axis'].shape)
         x_axis = screen_data['x_axis'].squeeze()*1e-6
         if len(x_axis.shape) == 2:
             x_axis = x_axis[0]
@@ -388,9 +389,14 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
     #import pdb; pdb.set_trace()
     return output
 
-def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs, rec_mode, kwargs_recon, screen_x0, streaker_centers, blmeas_file=None, plot_handles=None):
+def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs_or_tracker, rec_mode, kwargs_recon, screen_x0, streaker_centers, blmeas_file=None, plot_handles=None, do_plot=True):
 
-    tracker = tracking.Tracker(**tracker_kwargs)
+    if type(tracker_kwargs_or_tracker) is dict:
+        tracker = tracking.Tracker(**tracker_kwargs_or_tracker)
+    elif type(tracker_kwargs_or_tracker) is tracking.Tracker:
+        tracker = tracker_kwargs_or_tracker
+    else:
+        raise ValueError(type(tracker_kwargs_or_tracker))
 
     if type(data_file_or_dict) is dict:
         screen_data = data_file_or_dict
@@ -414,54 +420,70 @@ def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs,
     projx = pyscan_data['image'].sum(axis=-2)
     if rec_mode == 'Median':
         median_projx = misc.get_median(projx)
+        proj_list = [median_projx]
     elif rec_mode == 'All':
-        raise NotImplementedError
+        proj_list = projx
 
     tracker.set_simulator(meta_data)
 
     if x_axis[1] < x_axis[0]:
+        revert = True
         x_axis = x_axis[::-1]
-        median_projx = median_projx[::-1]
+    else:
+        revert = False
 
-    meas_screen = tracking.ScreenDistribution(x_axis, median_projx)
-    kwargs_recon['meas_screen'] = meas_screen
+    output_dicts = []
+    for proj in proj_list:
+        if revert:
+            proj = proj[::-1]
 
-    print('Analysing reconstruction')
+        meas_screen = tracking.ScreenDistribution(x_axis, proj)
+        kwargs_recon['meas_screen'] = meas_screen
 
-    kwargs = copy.deepcopy(kwargs_recon)
+        print('Analysing reconstruction')
 
-    gaps, streaker_offsets = get_gap_and_offset(meta_data, beamline)
+        kwargs = copy.deepcopy(kwargs_recon)
 
-    kwargs['meas_screen']._xx = kwargs['meas_screen']._xx - screen_x0
-    kwargs['beam_offsets'] = -(streaker_offsets - streaker_centers)
-    kwargs['gaps'] = gaps
-    kwargs['meas_screen'].cutoff2(tracker.screen_cutoff)
-    kwargs['meas_screen'].crop()
-    kwargs['meas_screen'].reshape(tracker.len_screen)
+        gaps, streaker_offsets = get_gap_and_offset(meta_data, beamline)
 
-    # Only allow one streaker at the moment
-    for n in (0,1):
-        if n != kwargs['n_streaker']:
-            kwargs['beam_offsets'][n] = 0
+        kwargs['meas_screen']._xx = kwargs['meas_screen']._xx - screen_x0
+        kwargs['beam_offsets'] = -(streaker_offsets - streaker_centers)
+        kwargs['gaps'] = gaps
+        kwargs['meas_screen'].cutoff2(tracker.screen_cutoff)
+        kwargs['meas_screen'].crop()
+        kwargs['meas_screen'].reshape(tracker.len_screen)
+        kwargs['n_streaker'] = n_streaker
 
-    gauss_dict = current_profile_rec_gauss(tracker, kwargs, plot_handles, blmeas_file)
+        # Only allow one streaker at the moment
+        for n in (0,1):
+            if n != kwargs['n_streaker']:
+                kwargs['beam_offsets'][n] = 0
 
-    output_dict = {
-            'input': {
-                'data_file_or_dict': data_file_or_dict,
-                'n_streaker': n_streaker,
-                'beamline': beamline,
-                'tracker_kwargs': tracker_kwargs,
-                'rec_mode': rec_mode,
-                'kwargs_recon': kwargs_recon,
-                'screen_x0': screen_x0,
-                'streaker_centers': streaker_centers,
-                'blmeas_file': blmeas_file,
-                },
-            'gauss_dict': gauss_dict,
-            }
+        gauss_dict = current_profile_rec_gauss(tracker, kwargs, plot_handles, blmeas_file, do_plot=do_plot)
 
-    return output_dict
+
+        output_dict = {
+                'input': {
+                    'data_file_or_dict': data_file_or_dict,
+                    'n_streaker': n_streaker,
+                    'beamline': beamline,
+                    'tracker_kwargs': tracker_kwargs_or_tracker,
+                    'rec_mode': rec_mode,
+                    'kwargs_recon': kwargs_recon,
+                    'screen_x0': screen_x0,
+                    'streaker_centers': streaker_centers,
+                    'blmeas_file': blmeas_file,
+                    },
+                'gauss_dict': gauss_dict,
+                }
+        output_dicts.append(output_dict)
+
+    if rec_mode == 'Median':
+        return output_dict
+    elif rec_mode == 'All':
+        return output_dicts
+    else:
+        print(rec_mode)
 
 def get_gap_and_offset(meta_data, beamline):
     gaps, offsets = [], []

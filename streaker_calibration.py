@@ -50,7 +50,7 @@ def analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=None, f
     sc.plot_streaker_calib(plot_handles)
     return sc.get_result_dict()
 
-def analyze_streaker_calibration2(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handles=None, forward_propagate_blmeas=False, blmeas=None, charge=None, tt_halfrange=None):
+def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handles=None, charge=None):
     meta_data = result_dict['meta_data_begin']
     streaker = result_dict['streaker']
     beamline, n_streaker = analysis.get_beamline_n_streaker(streaker)
@@ -58,13 +58,21 @@ def analyze_streaker_calibration2(result_dict, tracker, gauss_kwargs, do_plot=Tr
     gap_arr = np.array([gap0-150e-6, gap0+50e-6])
     if charge is None:
         charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
-    if tt_halfrange is None:
-        tt_halfrange = config.get_default_gauss_recon_settings()['tt_halfrange']
 
     sc = StreakerCalibration(beamline, n_streaker, gap0, file_or_dict=result_dict, fit_gap=True, fit_order=False)
-    sc.fit()
-    gap_recon = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs)
-    return gap_recon
+    streaker_offset = sc.fit_type('centroid')['streaker_offset']
+    gap_recon = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset)
+    delta_gap = gap_recon['gap'] - gap0
+    sc.plot_gap_reconstruction(gap_recon, streaker_offset, plot_handles=plot_handles)
+    return {
+            'streaker': streaker,
+            'beamline': beamline,
+            'n_streaker': n_streaker,
+            'result': gap_recon,
+            'delta_gap': delta_gap,
+            'gap': gap_recon['gap'],
+            'gap0': gap0
+            }
 
 class StreakerCalibration:
 
@@ -501,20 +509,20 @@ class StreakerCalibration:
             streaker_offset = force_streaker_offset
         else:
             streaker_offset = fit_dict['streaker_offset']
-        print('Streaker offset', '%i' % (streaker_offset*1e6))
+        #print('Streaker offset', '%i' % (streaker_offset*1e6))
 
         gaps = [10e-3, 10e-3]
         gaps[self.n_streaker] = gap
         gauss_dicts = []
         offset_list = []
 
-        print(self.offsets)
+        #print(self.offsets)
         for n_offset, offset in enumerate(self.offsets):
             if offset == 0:
                 continue
             beam_offsets = [0., 0.]
             beam_offsets[self.n_streaker] = -(offset-streaker_offset)
-            print(beam_offsets[self.n_streaker])
+            #print(beam_offsets[self.n_streaker])
             offset_list.append(beam_offsets[self.n_streaker])
 
             projx = self.images[n_offset].astype(np.float64).sum(axis=-2)
@@ -557,7 +565,7 @@ class StreakerCalibration:
 
         if blmeas_profile is not None:
             for _sp in sp_profile_pos, sp_profile_neg:
-                blmeas_profile.plot_standard(_sp, color='black', label='TDC', lw=3, center=center)
+                blmeas_profile.plot_standard(_sp, color='black', lw=3, center=center, label='TDC %i fs' % round(blmeas_profile.rms()*1e15))
 
         #gap = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['gap_fit']
         #streaker_center = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['streaker_offset']
@@ -591,6 +599,8 @@ class StreakerCalibration:
 
     def gap_reconstruction(self, gap_arr, tracker, gauss_kwargs):
 
+        gauss_kwargs = copy.deepcopy(gauss_kwargs)
+        gauss_kwargs['delta_gap'] = (0., 0.)
         all_rms_arr = np.zeros([len(gap_arr), len(self.offsets)-1], np.float64)
         lin_fit = np.zeros(len(gap_arr), np.float64)
         all_gauss = []
@@ -622,16 +632,16 @@ class StreakerCalibration:
                 }
         return output
 
-    def gap_reconstruction2(self, gap_arr, tracker, gauss_kwargs, streaker_offset):
+    def gap_reconstruction2(self, gap_arr, tracker, gauss_kwargs, streaker_offset, precision=1e-6):
         """
         Optimized version
         """
+        #print('method', gauss_kwargs['method'])
 
         gaps = []
         rms = []
         lin_fit = []
-
-        precision = 5e-6
+        lin_fit_const = []
 
         def one_gap(gap):
             gap = np.round(gap/precision)*precision
@@ -644,12 +654,13 @@ class StreakerCalibration:
             rms_arr = np.array([x['reconstructed_profile'].rms() for x in gauss_dicts])
             d_arr2 = distance_arr - distance_arr.min()
             sort = np.argsort(d_arr2)
-            fit = np.polyfit(d_arr2[sort], rms_arr[sort], 1)[0]
+            fit = np.polyfit(d_arr2[sort], rms_arr[sort], 1)
 
             index = bisect.bisect(gaps, gap)
             gaps.insert(index, gap)
             rms.insert(index, rms_arr)
-            lin_fit.insert(index, fit)
+            lin_fit.insert(index, fit[0])
+            lin_fit_const.insert(index, fit[1])
 
         def get_gap():
             lin_fit2 = np.array(lin_fit)
@@ -657,7 +668,7 @@ class StreakerCalibration:
             sort = np.argsort(lin_fit2)
             gap = np.interp(0, lin_fit2[sort], gaps2[sort], left=np.nan, right=np.nan)
             if np.isnan(gap):
-                gap = np.interp(0, lin_fit2, gaps2)
+                gap = np.interp(0, lin_fit2[sort], gaps2[sort])
                 raise ValueError('Gap interpolated to %e. Gap_arr limits: %e, %e' % (gap, gap_arr.min(), gap_arr.max()))
             return gap
         for gap in [gap_arr.min(), gap_arr.mean(), gap_arr.max()]:
@@ -671,9 +682,48 @@ class StreakerCalibration:
                 'gap': gap,
                 'gap_arr': np.array(gaps),
                 'lin_fit': np.array(lin_fit),
+                'lin_fit_const': np.array(lin_fit_const),
                 'all_rms': np.array(rms),
+                'input': {
+                    'gap_arr': gap_arr,
+                    'gauss_kwargs': gauss_kwargs,
+                    'streaker_offset': streaker_offset,
+                    },
                 }
         return output
+
+    def plot_gap_reconstruction(self, gap_recon_dict, streaker_offset, plot_handles=None, figsize=None):
+        if plot_handles is None:
+            fig, plot_handles = gap_recon_figure(figsize=figsize)
+        (sp_rms, sp_overview, sp_std, sp_fit) = plot_handles
+
+        gap_arr = gap_recon_dict['gap_arr']
+        all_rms_arr = gap_recon_dict['all_rms']
+        lin_fit = gap_recon_dict['lin_fit']
+        lin_fit_const = gap_recon_dict['lin_fit_const']
+
+        for gap_ctr, gap in enumerate(gap_arr):
+            distance_arr = gap/2. - np.abs(self.offsets[self.offsets != 0] - streaker_offset)
+            d_arr2 = distance_arr - distance_arr.min()
+            sort = np.argsort(d_arr2)
+            _label = '%.3f' % (gap*1e3)
+            #sp_centroid.plot(d_arr2, centroid_arr, label=_label)
+            rms_arr = all_rms_arr[gap_ctr]
+            color = ms.colorprog(gap_ctr, gap_arr)
+            sp_rms.plot(d_arr2[sort]*1e6, rms_arr[sort]*1e15, label=_label, marker='.', color=color)
+            fit_yy = lin_fit_const[gap_ctr] + lin_fit[gap_ctr]*d_arr2[sort]
+            sp_rms.plot(d_arr2[sort]*1e6, fit_yy*1e15, color=color, ls='--')
+
+
+        sp_overview.errorbar(gap_arr*1e3, all_rms_arr.mean(axis=-1)*1e15, yerr=all_rms_arr.std(axis=-1)*1e15)
+        sp_std.plot(gap_arr*1e3, all_rms_arr.std(axis=-1)/all_rms_arr.mean(axis=-1), marker='.')
+        sp_fit.plot(gap_arr*1e3, lin_fit*1e15/1e6, marker='.')
+
+        sp_fit.axhline(0, color='black', ls='--')
+        sp_fit.axvline(gap_recon_dict['gap']*1e3, color='black', ls='--')
+
+        sp_rms.legend()
+
 
 def gauss_recon_figure(figsize=None):
     if figsize is None:
@@ -738,10 +788,10 @@ def gap_recon_figure(figsize=None):
 
 def clear_gap_recon(sp_rms, sp_overview, sp_std, sp_fit):
     for sp, title, xlabel, ylabel in [
-            (sp_rms, 'Beamsize', '$\Delta$d ($\mu$m)', 'rms (fs)'),
-            (sp_overview, 'Bunch duration', 'Gap (mm)', 'rms (mm)'),
-            (sp_std, 'Relative error', 'Gap (mm)', 'rms std'),
-            (sp_fit, 'Fit coefficient', 'Gap (mm)', 'fit param (fs/$\mu$m)'),
+            (sp_rms, 'Rms bunch duration', '$\Delta$d ($\mu$m)', 'rms (fs)'),
+            (sp_overview, 'Rms bunch duration', 'Gap (mm)', 'rms (fs)'),
+            (sp_std, 'Relative beamsized error', 'Gap (mm)', r'$\Delta \tau / \tau$'),
+            (sp_fit, 'Fit coefficient', 'Gap (mm)', r'$\Delta \tau / \Delta$Gap (fs/$\mu$m)'),
             ]:
         sp.clear()
         sp.set_title(title, fontsize=config.fontsize)

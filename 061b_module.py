@@ -76,28 +76,11 @@ gauss_kwargs['n_streaker'] = self.n_streaker
 gauss_kwargs['method'] = method
 gauss_kwargs['sig_t_range'] = np.exp(np.linspace(np.log(10), np.log(85), 15))*1e-15
 
-fig, (sp_rms, sp_overview, sp_std, sp_fit) = sc.gap_recon_figure(figsize=(20,16))
 
 gap_recon_dict = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset)
-gap_arr = gap_recon_dict['gap_arr']
-all_rms_arr = gap_recon_dict['all_rms']
-lin_fit = gap_recon_dict['lin_fit']
 
-for gap_ctr, gap in enumerate(gap_arr):
-    distance_arr = gap/2. - np.abs(sc.offsets[sc.offsets != 0] - streaker_offset)
-    d_arr2 = distance_arr - distance_arr.min()
-    sort = np.argsort(d_arr2)
-    _label = '%.3f' % (gap*1e3)
-    #sp_centroid.plot(d_arr2, centroid_arr, label=_label)
-    rms_arr = all_rms_arr[gap_ctr]
-    sp_rms.plot(d_arr2[sort]*1e6, rms_arr[sort]*1e15, label=_label, marker='.', color=ms.colorprog(gap_ctr, gap_arr))
+sc.plot_gap_reconstruction(gap_recon_dict, streaker_offset, figsize=(20,16))
 
-
-sp_overview.errorbar(gap_arr*1e3, all_rms_arr.mean(axis=-1)*1e15, yerr=all_rms_arr.std(axis=-1)*1e15)
-sp_std.plot(gap_arr*1e3, all_rms_arr.std(axis=-1)/all_rms_arr.mean(axis=-1), marker='.')
-sp_fit.plot(gap_arr*1e3, lin_fit*1e15/1e6, marker='.')
-
-sp_rms.legend()
 ms.saveall('./album061/%s_file_%i' % (method, file_index), empty_suptitle=False)
 if not args.noshow:
     ms.show()

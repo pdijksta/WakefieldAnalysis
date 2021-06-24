@@ -116,7 +116,9 @@ class StartMain(QtWidgets.QMainWindow):
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
         self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
+        self.GapReconstruction.clicked.connect(self.gap_reconstruction)
         self.ClearCalibPlots.clicked.connect(self.clear_calib_plots)
+        self.ClearGapRecPlots.clicked.connect(self.clear_gap_recon_plots)
         self.LoadCalibration.clicked.connect(self.load_calibration)
         self.CalibrateScreen.clicked.connect(self.calibrate_screen)
         self.ClearScreenPlots.clicked.connect(self.clear_screen_plots)
@@ -179,9 +181,10 @@ class StartMain(QtWidgets.QMainWindow):
         self.QuadBeamsize2.setText('%.2f' % (ds['quad_x_beamsize'][1]*1e6))
         self.SigTfsStart.setText('%i' % round(gs['sig_t_range'][0]*1e15))
         self.SigTfsStop.setText('%i' % round(gs['sig_t_range'][-1]*1e15))
-        self.SigTfsStep.setText('%i' % round((gs['sig_t_range'][1]-gs['sig_t_range'][0])*1e15))
+        self.SigTSize.setText('%i' % len(gs['sig_t_range']))
         self.TmpDir.setText(config.tmp_elegant_dir)
         self.ScreenBins.setText('%i' % ds['screen_bins'])
+        self.ScreenLength.setText('%i' % ds['len_screen'])
         self.ScreenCutoff.setText('%.4f' % ds['screen_cutoff'])
         self.ProfileCutoff.setText('%.4f' % ds['profile_cutoff'])
         self.ProfileExtent.setText('%i' % round(gs['tt_halfrange']*2*1e15))
@@ -228,6 +231,11 @@ class StartMain(QtWidgets.QMainWindow):
             self.rec_canvas.draw()
             print('Cleared reconstruction plot')
 
+    def clear_gap_recon_plots(self):
+        if self.gap_recon_plot_handles is not None:
+            sc.clear_gap_recon(*self.gap_recon_plot_handles)
+            self.gap_recon_canvas.draw()
+
     def clear_calib_plots(self):
         if self.streaker_calib_plot_handles is not None:
             sc.clear_streaker_calibration(*self.streaker_calib_plot_handles)
@@ -257,19 +265,21 @@ class StartMain(QtWidgets.QMainWindow):
         return r12, disp
 
     def get_gauss_kwargs(self):
-        start, stop, step = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), float(self.SigTfsStep.text())
-        stop += 1e-3*step # assert that stop is part of array
-        sig_t_range = np.arange(start, stop, step)*1e-15
+        start, stop, size = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), float(self.SigTSize.text())
+        sig_t_range = np.exp(np.linspace(np.log(start), np.log(stop), size))*1e-15
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
         n_streaker = int(self.StreakerSelect.currentText())
         charge = float(self.Charge.text())*1e-12
         self_consistent = self.SelfConsistentCheck.isChecked()
+        delta_gap = (float(self.StreakerGapDelta0.text())*1e-6, float(self.StreakerGapDelta1.text())*1e-6)
         kwargs_recon = {
                 'sig_t_range': sig_t_range,
                 'tt_halfrange': tt_halfrange,
                 'n_streaker': n_streaker,
                 'charge': charge,
                 'self_consistent': self_consistent,
+                'method': 'centroid',
+                'delta_gap': delta_gap,
                 }
         return kwargs_recon
 
@@ -480,7 +490,7 @@ class StartMain(QtWidgets.QMainWindow):
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Calibration_%s.h5' % streaker.replace('.','_')
         streaker_offset = full_dict['meta_data']['streaker_offset']
-        self.updateCalibration(streaker_offset)
+        self.updateStreakerCenter(streaker_offset)
 
         elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (streaker, streaker_offset*1e6)
         self.elog_and_H5(elog_text, [self.streaker_calib_fig], 'Streaker center calibration', basename, full_dict)
@@ -499,10 +509,29 @@ class StartMain(QtWidgets.QMainWindow):
         #gap_arr = [gap0-100e-6, gap0+50e-6]
         #gauss_kwargs = self.get_tracker_kwargs()
         #gap = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs)
-        n_streaker, beamline = analysis.get_beamline_n_streaker(streaker)
+        beamline, n_streaker = analysis.get_beamline_n_streaker(streaker)
 
         full_dict = sc.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=beamline)
         return full_dict
+
+    def gap_reconstruction(self):
+        self.clear_gap_recon_plots()
+
+        filename = self.LoadCalibrationFilename.text().strip()
+        saved_dict = h5_storage.loadH5Recursive(filename)
+
+        if 'raw_data' in saved_dict:
+            saved_dict = saved_dict['raw_data']
+
+        tracker = self.get_tracker(saved_dict['meta_data_begin'])
+        gauss_kwargs = self.get_gauss_kwargs()
+        gap_recon_dict = sc.reconstruct_gap(saved_dict, tracker, gauss_kwargs, plot_handles=self.gap_recon_plot_handles)
+        n_streaker = gap_recon_dict['n_streaker']
+        delta_gap = gap_recon_dict['delta_gap']
+        gap = gap_recon_dict['gap']
+        self.updateDeltaGap(delta_gap, n_streaker)
+        print('Reconstructed gap: %.3f mm' % (gap*1e3))
+        self.gap_recon_canvas.draw()
 
     def load_calibration(self):
         self.clear_calib_plots()
@@ -514,12 +543,14 @@ class StartMain(QtWidgets.QMainWindow):
         full_dict = self._analyze_streaker_calib(saved_dict)
 
         streaker_offset = full_dict['meta_data']['streaker_offset']
-        self.updateCalibration(streaker_offset)
+        self.updateStreakerCenter(streaker_offset)
         #self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
         if self.streaker_calib_canvas is not None:
             self.streaker_calib_canvas.draw()
 
-    def updateCalibration(self, streaker_offset):
+    def updateStreakerCenter(self, streaker_offset, n_streaker=None):
+        if n_streaker is None:
+            n_streaker = self.n_streaker
         if self.n_streaker == 0:
             widget = self.StreakerDirect0
         elif self.n_streaker == 1:
@@ -527,7 +558,19 @@ class StartMain(QtWidgets.QMainWindow):
         old = float(widget.text())
         widget.setText('%.3f' % (streaker_offset*1e6))
         new = float(widget.text())
-        print('Updated calibration for streaker %i. Old: %.3f um New: %.3f um' % (self.n_streaker, old, new))
+        print('Updated center calibration for streaker %i. Old: %.3f um New: %.3f um' % (self.n_streaker, old, new))
+
+    def updateDeltaGap(self, delta_gap, n_streaker=None):
+        if n_streaker is None:
+            n_streaker = self.n_streaker
+        if self.n_streaker == 0:
+            widget = self.StreakerGapDelta0
+        elif self.n_streaker == 1:
+            widget = self.StreakerGapDelta1
+        old = float(widget.text())
+        widget.setText('%.3f' % (delta_gap*1e6))
+        new = float(widget.text())
+        print('Updated gap calibration for streaker %i. Old: %.3f um New: %.3f um' % (self.n_streaker, old, new))
 
     def obtain_reconstruction(self):
         n_images = int(self.ReconNumberImages.text())
@@ -607,7 +650,6 @@ class StartMain(QtWidgets.QMainWindow):
             energy_eV = meta_data['SARBD01-MBND100:ENERGY-OP']*1e6
         elif 'SARBD01-MBND100:P-SET' in meta_data:
             energy_eV = meta_data['SARBD01-MBND100:P-SET']*1e6
-
         return energy_eV
 
     def reconstruct_lasing(self):
@@ -685,7 +727,6 @@ class StartMain(QtWidgets.QMainWindow):
             print('ELOG entry saved.')
         else:
             print('Save to ELOG is not checked in GUI')
-
         return filename
 
 if __name__ == '__main__':

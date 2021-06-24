@@ -477,7 +477,7 @@ def get_average_profile(p_list):
     return xx_interp, yy_mean
 
 class Image:
-    def __init__(self, image, x_axis, y_axis, x_unit='m', y_unit='m', subtract_median=False, x_offset=0):
+    def __init__(self, image, x_axis, y_axis, x_unit='m', y_unit='m', subtract_median=False, x_offset=0, xlabel='x (mm)', ylabel='y (mm)'):
 
         if x_axis.size <=1:
             raise ValueError('Size of x_axis is %i' % x_axis.size)
@@ -494,17 +494,20 @@ class Image:
             image = image - np.median(image)
             np.clip(image, 0, None, out=image)
 
-
         self.image = image
         self.x_axis = x_axis - x_offset
         self.y_axis = y_axis
         self.x_unit = x_unit
         self.y_unit = y_unit
+        self.xlabel = xlabel
+        self.ylabel = ylabel
 
-    def child(self, new_i, new_x, new_y, x_unit=None, y_unit=None):
+    def child(self, new_i, new_x, new_y, x_unit=None, y_unit=None, xlabel=None, ylabel=None):
         x_unit = self.x_unit if x_unit is None else x_unit
         y_unit = self.y_unit if y_unit is None else y_unit
-        return Image(new_i, new_x, new_y, x_unit, y_unit)
+        xlabel = self.xlabel if xlabel is None else xlabel
+        ylabel = self.ylabel if ylabel is None else ylabel
+        return Image(new_i, new_x, new_y, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
 
     def cut(self, x_min, x_max):
         x_axis = self.x_axis
@@ -563,10 +566,15 @@ class Image:
                 p0 = gf0.popt
             else:
                 p0 = None
-            gf = GaussFit(y_axis, intensity, fit_const=True, p0=p0)
-            slice_mean.append(gf.mean)
-            slice_sigma.append(abs(gf.sigma))
-            slice_gf.append(gf)
+            try:
+                gf = GaussFit(y_axis, intensity, fit_const=True, p0=p0, raise_=True)
+                slice_mean.append(gf.mean)
+                slice_sigma.append(abs(gf.sigma))
+                slice_gf.append(gf)
+            except RuntimeError:
+                slice_mean.append(np.nan)
+                slice_sigma.append(np.nan)
+                slice_gf.append(None)
 
             # Debug bad gaussfits
             #if 101e-15 < self.x_axis[n_slice] < 104e-15:
@@ -586,27 +594,27 @@ class Image:
         proj = proj / np.sum(proj) * charge
         current = proj / (self.x_axis[1] - self.x_axis[0])
 
-        output = {
+        slice_dict = {
                 'slice_x': self.x_axis,
                 'slice_mean': np.array(slice_mean),
                 'slice_sigma': np.array(slice_sigma),
-                'slice_gf': np.array(slice_gf),
+                'slice_gf': slice_gf,
                 'slice_intensity': proj,
                 'slice_current': current,
                 }
         if intensity_cutoff:
             mask = proj > proj.max()*intensity_cutoff
-            for key, value in output.items():
+            for key, value in slice_dict.items():
                 if hasattr(value, 'shape') and value.shape == mask.shape:
-                    output[key] = value[mask]
-        return output
+                    slice_dict[key] = value[mask]
+        return slice_dict
 
     def y_to_eV(self, dispersion, energy_eV, ref_y=None):
         if ref_y is None:
             ref_y = GaussFit(self.y_axis, np.sum(self.image, axis=-1)).mean
             #print('y_to_eV', ref_y*1e6, ' [um]')
         E_axis = (self.y_axis-ref_y) * dispersion * energy_eV
-        return self.child(self.image, self.x_axis, E_axis, y_unit='eV'), ref_y
+        return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
         if wake_time[1] < wake_time[0]:
@@ -633,7 +641,7 @@ class Image:
         new_img = new_img / new_img.sum() * self.image.sum()
 
 
-        output = self.child(new_img, new_t_axis, self.y_axis, x_unit='s')
+        output = self.child(new_img, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
 
         if debug:
             ms.figure('Debug x_to_t')
@@ -662,7 +670,7 @@ class Image:
 
             sp = subplot(sp_ctr, title='Image new 0', xlabel='t [fs]', ylabel=' y [mm]', grid=False)
             sp_ctr += 1
-            new_obj0 = self.child(new_img0, new_t_axis, self.y_axis, x_unit='s')
+            new_obj0 = self.child(new_img0, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
             new_obj0.plot_img_and_proj(sp)
 
         #ms.plt.show()

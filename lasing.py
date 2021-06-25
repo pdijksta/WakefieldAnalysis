@@ -147,12 +147,14 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
     return output
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3):
+    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean='slice_mean', key_sigma='slice_sigma'):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
         self.current_cutoff = current_cutoff
         self.pulse_energy = pulse_energy
+        self.key_mean = key_mean
+        self.key_sigma = key_sigma
 
         self.generate_all_slice_dict()
         self.lasing_analysis()
@@ -166,8 +168,8 @@ class LasingReconstruction:
             all_current = all_mean.copy()
 
             for ctr, slice_dict in enumerate(images.slice_dicts):
-                all_mean[ctr] = slice_dict['slice_mean']
-                all_sigma[ctr] = slice_dict['slice_sigma']
+                all_mean[ctr] = slice_dict[self.key_mean]
+                all_sigma[ctr] = slice_dict[self.key_sigma]
                 all_x[ctr] = slice_dict['slice_x']
                 all_current[ctr] = slice_dict['slice_current']
 
@@ -219,13 +221,14 @@ class LasingReconstruction:
         for ctr in range(n_images):
             on_loss = all_slice_dict['Lasing On']['loss'][ctr,mask]
             on_spread = all_slice_dict['Lasing On']['spread'][ctr,mask]
+            current = all_slice_dict['Lasing On']['current'][ctr, mask]
 
             loss = off_loss_mean - on_loss
             power_loss = power_Eloss(mean_current, loss)
             all_loss[ctr] = power_loss
 
             sq_increase = on_spread**2 - off_spread_mean**2
-            power_spread = power_Espread(slice_time, mean_current, sq_increase, self.pulse_energy)
+            power_spread = power_Espread(slice_time, current, sq_increase, self.pulse_energy)
             all_spread[ctr] = power_spread
         lasing_dict['all_Eloss'] = all_loss
         lasing_dict['all_Espread'] = all_spread
@@ -251,16 +254,17 @@ class LasingReconstruction:
             sp_slice_sigma = dummy_plot()
 
         if plot_loss:
-            sp_lasing_loss = subplot(sp_ctr, title='Energy loss', xlabel='t (fs)', ylabel='Power (GW)')
+            sp_lasing_loss = subplot(sp_ctr, title='Energy loss power profile', xlabel='t (fs)', ylabel='Power (GW)')
             sp_ctr += 1
         else:
             sp_lasing_loss = dummy_plot()
         if plot_spread:
-            sp_lasing_spread = subplot(sp_ctr, title='Energy spread', xlabel='t (fs)', ylabel='Power (GW)')
+            sp_lasing_spread = subplot(sp_ctr, title='Energy spread power profile', xlabel='t (fs)', ylabel='Power (GW)')
             sp_ctr += 1
         else:
             sp_lasing_spread = dummy_plot()
 
+        current_center = []
         for title, ls, mean_color in [('Lasing Off', None, 'black'), ('Lasing On', '--', 'red')]:
             all_slice_dict = self.all_slice_dict[title]
             mean_slice_dict = self.mean_slice_dict[title]
@@ -281,16 +285,24 @@ class LasingReconstruction:
             sp_slice_mean.errorbar(xx_plot*1e15, mean_mean/1e6, yerr=mean_std/1e6, color=mean_color, ls=ls, lw=3, label=title)
             sp_slice_sigma.errorbar(xx_plot*1e15, sigma_mean/1e6, yerr=sigma_std/1e6, color=mean_color, ls=ls, lw=3, label=title)
             sp_current.errorbar(mean_slice_dict['t']['mean']*1e15, current_mean/1e3, yerr=current_std/1e3, label=title, color=mean_color)
+            current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
+
+        self.images_off.profile.plot_standard(sp_current, center_float=np.mean(current_center), label='Reconstructed')
         sp_current.axhline(self.current_cutoff/1e3, color='black', ls='--')
         sp_current.legend()
         sp_slice_mean.legend()
         sp_slice_sigma.legend()
 
         lasing_dict = self.lasing_dict
-        for key, label, sp in [('Eloss', '$\Delta E$', sp_lasing_loss), ('Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
+        for key, label, sp in [
+                ('Eloss', '$\Delta E$', sp_lasing_loss),
+                ('Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
             xx_plot = lasing_dict[key]['time']*1e15
             yy_plot = lasing_dict[key]['power']/1e9
             yy_err = lasing_dict[key]['power_err']/1e9
+            #sp.errorbar(xx_plot, yy_plot, yerr=yy_err, label=label, color='red', lw=3)
+            yy_plot = lasing_dict['all_'+key].mean(axis=0)/1e9
+            yy_err = lasing_dict['all_'+key].std(axis=0)/1e9
             sp.errorbar(xx_plot, yy_plot, yerr=yy_err, label=label, color='black', lw=3)
         sp_lasing_loss.legend()
         sp_lasing_spread.legend()
@@ -301,7 +313,7 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImages:
-    def __init__(self, n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=200e-12):
+    def __init__(self, n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=200e-12, subtract_median=False):
         self.screen_x0 = screen_x0
         self.beamline = beamline
         self.n_streaker = n_streaker
@@ -310,8 +322,10 @@ class LasingReconstructionImages:
         self.charge = charge
         self.gap = gap
         self.profile = profile
-        self.tracker = tracking.Tracker(**tracker_kwargs)
         self.recon_kwargs = recon_kwargs
+        self.subtract_median = subtract_median
+
+        self.tracker = tracking.Tracker(**tracker_kwargs)
         self.do_recon_plot = False
 
     def add_file(self, filename):
@@ -335,6 +349,9 @@ class LasingReconstructionImages:
         self.raw_image_objs = []
         self.meas_screens = []
         for n_image, img in enumerate(images):
+            if self.subtract_median:
+                img = img - np.median(img)
+                img[img<0] = 0
             image = iap.Image(img, self.x_axis, y_axis)
             self.raw_image_objs.append(image)
             screen = iap.ScreenDistribution(image.x_axis, image.image.sum(axis=-2))
@@ -411,13 +428,15 @@ class LasingReconstructionImages:
         self.slice_x()
         self.fit_slice()
 
-    def plot_images(self, type_, title=''):
+    def plot_images(self, type_, title='', **kwargs):
         if type_ == 'raw':
             images = self.raw_image_objs
         elif type_ == 'cut':
             images = self.cut_images
         elif type_ == 'tE':
             images = self.images_tE
+        elif type_ == 'slice':
+            images = self.images_sliced
 
         sp_ctr = np.inf
         ny, nx = 3, 3
@@ -429,5 +448,8 @@ class LasingReconstructionImages:
                 sp_ctr = 1
             sp = subplot(sp_ctr, title='Image %i' % n_image, xlabel=image.xlabel, ylabel=image.ylabel)
             sp_ctr += 1
-            image.plot_img_and_proj(sp)
+            slice_dict = None
+            if type_ in ('tE', 'slice') and hasattr(self, 'slice_dicts'):
+                slice_dict = self.slice_dicts[n_image]
+            image.plot_img_and_proj(sp, slice_dict=slice_dict, **kwargs)
 

@@ -233,6 +233,12 @@ class ScreenDistribution(Profile):
     def from_dict(dict_):
         return ScreenDistribution(dict_['x'], dict_['intensity'], dict_['real_x'])
 
+class AnyProfile(Profile):
+    def __init__(self, xx, yy):
+        super().__init__()
+        self.xx = self._xx = xx
+        self.yy = self._yy = yy
+
 
 def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
     """
@@ -348,7 +354,7 @@ class BeamProfile(Profile):
 
         self._xx = self._xx - self._xx[center_index]
 
-    def plot_standard(self, sp, norm=True, center=None, center_max=False, **kwargs):
+    def plot_standard(self, sp, norm=True, center=None, center_max=False, center_float=None, **kwargs):
         """
         center can be one of 'Max', 'Left', 'Right', 'Left_fit', 'Right_fit', 'Gauss'
         """
@@ -384,7 +390,10 @@ class BeamProfile(Profile):
         else:
             raise ValueError
 
-        if center_index is None:
+        if center_float is not None:
+            mean = np.sum(self._xx*self._yy) / np.sum(self._yy)
+            xx = (self.time - (mean - center_float))*1e15
+        elif center_index is None:
             xx = self.time*1e15
         else:
             xx = (self.time - self.time[center_index])*1e15
@@ -548,7 +557,7 @@ class Image:
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1):
+    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, use_rms=True, noise_cut=0.1):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -558,6 +567,10 @@ class Image:
         slice_mean = []
         slice_sigma = []
         slice_gf = []
+        slice_rms = []
+        slice_mean_rms = []
+        slice_cut_rms = []
+        slice_cut_mean = []
         for n_slice in range(n_slices):
             intensity = self.image[:,n_slice]
             if smoothen_first:
@@ -568,13 +581,33 @@ class Image:
                 p0 = None
             try:
                 gf = GaussFit(y_axis, intensity, fit_const=True, p0=p0, raise_=True)
-                slice_mean.append(gf.mean)
-                slice_sigma.append(abs(gf.sigma))
-                slice_gf.append(gf)
             except RuntimeError:
                 slice_mean.append(np.nan)
                 slice_sigma.append(np.nan)
                 slice_gf.append(None)
+                slice_rms.append(np.nan)
+            else:
+                slice_mean.append(gf.mean)
+                slice_sigma.append(abs(gf.sigma))
+                slice_gf.append(gf)
+                where_max = y_axis[np.argmax(intensity)]
+                mask_rms = np.logical_and(
+                        y_axis > where_max - abs(gf.sigma)*rms_sigma,
+                        y_axis < where_max + abs(gf.sigma)*rms_sigma)
+                y_rms = y_axis[mask_rms]
+                data_rms = intensity[mask_rms]
+                mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
+                rms = np.sqrt(np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms))
+                slice_rms.append(rms)
+                slice_mean_rms.append(mean_rms)
+                profile = AnyProfile(y_axis, intensity-intensity.min())
+                profile.cutoff2(noise_cut)
+                profile.crop()
+                slice_cut_rms.append(profile.rms())
+                slice_cut_mean.append(profile.mean())
+
+
+
 
             # Debug bad gaussfits
             #if 101e-15 < self.x_axis[n_slice] < 104e-15:
@@ -594,13 +627,18 @@ class Image:
         proj = proj / np.sum(proj) * charge
         current = proj / (self.x_axis[1] - self.x_axis[0])
 
+
         slice_dict = {
                 'slice_x': self.x_axis,
                 'slice_mean': np.array(slice_mean),
                 'slice_sigma': np.array(slice_sigma),
+                'slice_rms': np.array(slice_rms),
+                'slice_mean_rms': np.array(slice_mean_rms),
                 'slice_gf': slice_gf,
                 'slice_intensity': proj,
                 'slice_current': current,
+                'slice_cut_rms': np.array(slice_cut_rms),
+                'slice_cut_mean': np.array(slice_cut_mean),
                 }
         if intensity_cutoff:
             mask = proj > proj.max()*intensity_cutoff
@@ -686,7 +724,7 @@ class Image:
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -704,6 +742,7 @@ class Image:
         if y_factor is None:
             y_factor = unit_to_factor(self.y_unit)
 
+
         x_axis, y_axis, image = self.x_axis, self.y_axis, self.image
         extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[0]*y_factor, y_axis[-1]*y_factor]
 
@@ -714,6 +753,15 @@ class Image:
             log = image
 
         sp.imshow(log, aspect='auto', extent=extent, origin='lower')
+
+        plot_slice = slice_dict is not None and self.x_unit == 's' and self.y_unit == 'eV'
+        if plot_slice:
+            old_lim = sp.get_xlim(), sp.get_ylim()
+            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_mean']*y_factor, yerr=slice_dict['slice_sigma']*y_factor, color='red', ls='None', marker='.')
+            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_mean_rms']*y_factor, yerr=slice_dict['slice_rms']*y_factor, color='blue', ls='None', marker='.')
+            sp.set_xlim(*old_lim[0])
+            sp.set_ylim(*old_lim[1])
+
         if plot_proj:
             proj = image.sum(axis=-2)
             proj_plot = (y_axis.min() +(y_axis.max()-y_axis.min()) * proj/proj.max()*0.3)*y_factor
@@ -764,4 +812,52 @@ def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_str
     streaking_strength = np.abs(np.interp(t_axis, dx_dt_t, dxdt))
     resolution = beamsize / streaking_strength
     return t_axis, resolution
+
+def plot_slice_dict(slice_dict):
+    subplot = ms.subplot_factory(3, 3)
+    sp_ctr = np.inf
+    for n_slice, slice_gf in enumerate(slice_dict['slice_gf']):
+        slice_sigma = slice_dict['slice_sigma'][n_slice]
+        slice_rms = slice_dict['slice_rms'][n_slice]
+        slice_cut = slice_dict['slice_cut_rms'][n_slice]
+        if sp_ctr > 9:
+            ms.figure('Investigate slice')
+            sp_ctr = 1
+        sp = subplot(sp_ctr, title='Slice %i, $\sigma$=%.1e, rms=%.1e, cut=%.1e' % (n_slice, slice_sigma, slice_rms, slice_cut))
+        sp_ctr += 1
+        slice_gf.plot_data_and_fit(sp)
+        sp.legend()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

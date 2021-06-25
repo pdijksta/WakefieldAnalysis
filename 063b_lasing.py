@@ -36,10 +36,13 @@ lasing_on_file2 = data_dir1+'2021_05_18-21_41_35_Lasing_True_SARBD02-DSCR050.h5'
 lasing_off_file2 = data_dir1+'2021_05_18-21_45_00_Lasing_False_SARBD02-DSCR050.h5'
 
 screen_x00 = 4250e-6
-screen_x02 = 89802e-6
+screen_x02 = 898.02e-6
 
 streaker_offset0 = 374e-6
 streaker_offset2 = 364e-6
+
+plot_repair = True
+
 
 for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, streaker_offset in [
         (lasing_on_fileF, lasing_off_fileF, 625e-6, True, screen_x00, streaker_offset0),
@@ -50,8 +53,6 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
     lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)
     lasing_on_dict = h5_storage.loadH5Recursive(lasing_on_file)
 
-
-    plot_repair = False
 
     if repair_data:
 
@@ -137,18 +138,18 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
     las_rec_images = {}
 
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-        rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge)
+        rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
 
         rec_obj.add_dict(data_dict)
         if main_ctr == 1:
             rec_obj.profile = las_rec_images['Lasing Off'].profile
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
-        rec_obj.plot_images('tE', title)
         rec_obj.plot_images('raw', title)
+        rec_obj.plot_images('tE', title)
 
-    las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy)
-    las_rec.plot()
+    las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3)
+    las_rec.plot(plot_loss=False)
 
 ms.show()
 

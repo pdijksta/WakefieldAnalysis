@@ -63,7 +63,11 @@ def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handl
     streaker_offset = sc.fit_type('centroid')['streaker_offset']
     gap_recon = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset)
     delta_gap = gap_recon['gap'] - gap0
-    sc.plot_gap_reconstruction(gap_recon, streaker_offset, plot_handles=plot_handles)
+    sc.fit_gap=False
+    sc.gap0 = gap_recon['gap']
+    streaker_offset = sc.fit_type('centroid')['streaker_offset']
+    if do_plot:
+        sc.plot_gap_reconstruction(gap_recon, streaker_offset, plot_handles=plot_handles)
     return {
             'streaker': streaker,
             'beamline': beamline,
@@ -71,7 +75,9 @@ def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handl
             'result': gap_recon,
             'delta_gap': delta_gap,
             'gap': gap_recon['gap'],
-            'gap0': gap0
+            'gap0': gap0,
+            'streaker_offset': streaker_offset,
+            'screen_x0': sc.screen_x0_arr
             }
 
 class StreakerCalibration:

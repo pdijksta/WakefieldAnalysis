@@ -557,7 +557,7 @@ class Image:
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, use_rms=True, noise_cut=0.1):
+    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1, max_rms=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -600,6 +600,9 @@ class Image:
                 rms = np.sqrt(np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms))
                 slice_rms.append(rms)
                 slice_mean_rms.append(mean_rms)
+
+                intensity = intensity.copy()
+                intensity[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
                 profile = AnyProfile(y_axis, intensity-intensity.min())
                 profile.cutoff2(noise_cut)
                 profile.crop()
@@ -640,6 +643,15 @@ class Image:
                 'slice_cut_rms': np.array(slice_cut_rms),
                 'slice_cut_mean': np.array(slice_cut_mean),
                 }
+        if max_rms is not None:
+            for key_mean, key_std in [
+                    ('slice_mean', 'slice_sigma'),
+                    ('slice_mean_rms', 'slice_rms'),
+                    ('slice_cut_mean', 'slice_cut_rms')]:
+                mask = slice_dict[key_std] > max_rms
+                slice_dict[key_std][mask] = np.nan
+                slice_dict[key_mean][mask] = np.nan
+
         if intensity_cutoff:
             mask = proj > proj.max()*intensity_cutoff
             for key, value in slice_dict.items():
@@ -754,11 +766,11 @@ class Image:
 
         sp.imshow(log, aspect='auto', extent=extent, origin='lower')
 
-        plot_slice = slice_dict is not None and self.x_unit == 's' and self.y_unit == 'eV'
-        if plot_slice:
+        if slice_dict is not None:
             old_lim = sp.get_xlim(), sp.get_ylim()
-            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_mean']*y_factor, yerr=slice_dict['slice_sigma']*y_factor, color='red', ls='None', marker='.')
             sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_mean_rms']*y_factor, yerr=slice_dict['slice_rms']*y_factor, color='blue', ls='None', marker='.')
+            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_cut_mean']*y_factor, yerr=slice_dict['slice_cut_rms']*y_factor, color='green', ls='None', marker='.')
+            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_mean']*y_factor, yerr=slice_dict['slice_sigma']*y_factor, color='red', ls='None', marker='.')
             sp.set_xlim(*old_lim[0])
             sp.set_ylim(*old_lim[1])
 
@@ -827,37 +839,4 @@ def plot_slice_dict(slice_dict):
         sp_ctr += 1
         slice_gf.plot_data_and_fit(sp)
         sp.legend()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

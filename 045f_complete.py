@@ -171,10 +171,10 @@ for ctr, (image, label) in enumerate([(image_off, 'Lasing_off'), (image_on, 'Las
 
     slice_x = slice_dict['slice_x']
     slice_mean = slice_dict['slice_mean']
-    slice_sigma = slice_dict['slice_sigma']
+    slice_sigma = slice_dict['slice_sigma_sq']
 
     for sp in sp0, sp1:
-        sp.errorbar(slice_x*1e15, slice_mean*1e-6, yerr=slice_sigma*1e-6, ls='None', marker='_', color='red')
+        sp.errorbar(slice_x*1e15, slice_mean*1e-6, yerr=np.sqrt(slice_sigma)*1e-6, ls='None', marker='_', color='red')
 
 
 ms.figure('Lasing reconstruction', figsize=(12, 8))

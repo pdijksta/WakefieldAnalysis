@@ -557,7 +557,7 @@ class Image:
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1, max_rms=None):
+    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -597,7 +597,13 @@ class Image:
                 y_rms = y_axis[mask_rms]
                 data_rms = intensity[mask_rms]
                 mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
-                rms = np.sqrt(np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms))
+                rms = np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms)
+
+                slice_gf.append(gf)
+                slice_mean.append(gf.mean)
+                slice_sigma.append(gf.sigma**2)
+                slice_rms.append(rms)
+                slice_mean_rms.append(mean_rms)
 
                 intensity = intensity.copy()
                 intensity[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
@@ -605,16 +611,8 @@ class Image:
                 profile.cutoff2(noise_cut)
                 profile.crop()
 
-                slice_mean.append(gf.mean)
-                slice_sigma.append(abs(gf.sigma))
-                slice_gf.append(gf)
-                slice_rms.append(rms)
-                slice_mean_rms.append(mean_rms)
-                slice_cut_rms.append(profile.rms())
+                slice_cut_rms.append(profile.rms()**2)
                 slice_cut_mean.append(profile.mean())
-
-
-
 
             # Debug bad gaussfits
             #if 101e-15 < self.x_axis[n_slice] < 104e-15:
@@ -638,23 +636,15 @@ class Image:
         slice_dict = {
                 'slice_x': self.x_axis,
                 'slice_mean': np.array(slice_mean),
-                'slice_sigma': np.array(slice_sigma),
-                'slice_rms': np.array(slice_rms),
+                'slice_sigma_sq': np.array(slice_sigma),
+                'slice_rms_sq': np.array(slice_rms),
                 'slice_mean_rms': np.array(slice_mean_rms),
                 'slice_gf': slice_gf,
                 'slice_intensity': proj,
                 'slice_current': current,
-                'slice_cut_rms': np.array(slice_cut_rms),
+                'slice_cut_rms_sq': np.array(slice_cut_rms),
                 'slice_cut_mean': np.array(slice_cut_mean),
                 }
-        if max_rms is not None:
-            for key_mean, key_std in [
-                    ('slice_mean', 'slice_sigma'),
-                    ('slice_mean_rms', 'slice_rms'),
-                    ('slice_cut_mean', 'slice_cut_rms')]:
-                mask = slice_dict[key_std] > max_rms
-                slice_dict[key_std][mask] = np.nan
-                slice_dict[key_mean][mask] = np.nan
 
         if intensity_cutoff:
             mask = proj > proj.max()*intensity_cutoff
@@ -772,9 +762,10 @@ class Image:
 
         if slice_dict is not None:
             old_lim = sp.get_xlim(), sp.get_ylim()
-            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_mean_rms']*y_factor, yerr=slice_dict['slice_rms']*y_factor, color='blue', ls='None', marker='.')
-            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_cut_mean']*y_factor, yerr=slice_dict['slice_cut_rms']*y_factor, color='green', ls='None', marker='.')
-            sp.errorbar(slice_dict['slice_x']*x_factor, slice_dict['slice_mean']*y_factor, yerr=slice_dict['slice_sigma']*y_factor, color='red', ls='None', marker='.')
+            for key_mean, key_sigma, color in [('slice_mean_rms', 'slice_rms_sq', 'blue'), ('slice_cut_mean', 'slice_cut_rms_sq', 'green'), ('slice_mean', 'slice_sigma_sq', 'red')]:
+                sp.errorbar(
+                        slice_dict['slice_x']*x_factor,
+                        slice_dict[key_mean]*y_factor, yerr=np.sqrt(slice_dict[key_sigma])*y_factor, color='blue', ls='None', marker='.')
             sp.set_xlim(*old_lim[0])
             sp.set_ylim(*old_lim[1])
 
@@ -833,9 +824,9 @@ def plot_slice_dict(slice_dict):
     subplot = ms.subplot_factory(3, 3)
     sp_ctr = np.inf
     for n_slice, slice_gf in enumerate(slice_dict['slice_gf']):
-        slice_sigma = slice_dict['slice_sigma'][n_slice]
-        slice_rms = slice_dict['slice_rms'][n_slice]
-        slice_cut = slice_dict['slice_cut_rms'][n_slice]
+        slice_sigma = slice_dict['slice_sigma_sq'][n_slice]
+        slice_rms = slice_dict['slice_rms_sq'][n_slice]
+        slice_cut = slice_dict['slice_cut_rms_sq'][n_slice]
         if sp_ctr > 9:
             ms.figure('Investigate slice')
             sp_ctr = 1

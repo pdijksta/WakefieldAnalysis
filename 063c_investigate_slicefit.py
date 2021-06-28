@@ -58,16 +58,16 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
         rec_obj.plot_images('raw', title)
         rec_obj.plot_images('tE', title, log=False)
 
-    las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3, key_mean='slice_mean_rms', key_sigma='slice_rms')
+    las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3, key_mean='slice_mean_rms', key_sigma='slice_rms_sq')
     las_rec.plot(plot_loss=False)
     ms.plt.suptitle('RMS')
 
-    las_rec2 = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3, key_mean='slice_mean', key_sigma='slice_sigma')
+    las_rec2 = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3, key_mean='slice_mean', key_sigma='slice_sigma_sq')
     las_rec2.plot(plot_loss=False)
     ms.plt.suptitle('GF')
 
-    las_rec2 = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms')
-    las_rec2.plot(plot_loss=False)
+    las_rec2 = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms_sq')
+    las_rec2.plot(plot_loss=True)
     ms.plt.suptitle('CUT')
 
 slice_dict = las_rec_images['Lasing On'].slice_dicts[4]

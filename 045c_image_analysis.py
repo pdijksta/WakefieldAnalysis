@@ -50,7 +50,7 @@ if plot_gaussfits:
         sp.plot(gf.xx, gf.reconstruction)
 
 slice_mean = slice_dict['slice_mean']
-slice_std = slice_dict['slice_sigma']
+slice_std = np.sqrt(slice_dict['slice_sigma'])
 for sp_ in sp_re, sp0:
     sp_.errorbar(new_img.x_axis*1e15, slice_mean*1e3, yerr=slice_std*1e3, ls='None', marker='_', color='red')
 

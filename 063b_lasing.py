@@ -149,7 +149,7 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
         rec_obj.plot_images('tE', title)
 
     las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3)
-    las_rec.plot(plot_loss=False)
+    las_rec.plot(plot_loss=True)
 
 ms.show()
 

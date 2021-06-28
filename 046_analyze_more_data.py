@@ -96,7 +96,7 @@ for ctr, (data_file, label) in enumerate([(lasing_off_file, 'Lasing Off'), (data
         slice_dict = image_t_reduced.fit_slice(charge=charge, smoothen_first=True, smoothen=1e6)
         full_slice_dict[label][n_image, 0] = slice_dict['slice_x']
         full_slice_dict[label][n_image, 1] = slice_dict['slice_mean']
-        full_slice_dict[label][n_image, 2] = slice_dict['slice_sigma']
+        full_slice_dict[label][n_image, 2] = slice_dict['slice_sigma_sq']
         full_slice_dict[label][n_image, 3] = slice_dict['slice_current']
         full_slice_dict[label][n_image, 4, 0] = ref_y
 

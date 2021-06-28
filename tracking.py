@@ -468,11 +468,12 @@ class Tracker:
         q_wake_x = wake_effect['quad']
         charge = wake_effect['charge']
 
-        if np.all(np.diff(wake_x) <= 0):
+        diff_x = np.diff(wake_x)
+        if np.all(diff_x <= 0):
             wake_x = wake_x[::-1]
             q_wake_x = q_wake_x[::-1]
             wake_time = wake_time[::-1]
-        elif np.all(np.diff(wake_x) >= 0):
+        elif np.all(diff_x >= 0):
             pass
         else:
             raise ValueError('Wake x is not monotonous')
@@ -669,6 +670,7 @@ class Tracker:
         gauss_wakes = []
         sig_t_list = []
         gaps = [gaps[0]+delta_gap[0], gaps[1]+delta_gap[1]]
+        print('gaps, beam_offsets g', gaps[1], beam_offsets[1])
 
         #meas_screen = copy.deepcopy(meas_screen)
         meas_screen.reshape(self.len_screen)

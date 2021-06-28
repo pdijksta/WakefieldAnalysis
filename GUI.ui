@@ -2210,7 +2210,7 @@
      <widget class="QLineEdit" name="LasingEnergyInput">
       <property name="geometry">
        <rect>
-        <x>350</x>
+        <x>140</x>
         <y>480</y>
         <width>121</width>
         <height>26</height>
@@ -2226,24 +2226,21 @@
      <widget class="QLabel" name="label_72">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>20</x>
         <y>480</y>
-        <width>281</width>
+        <width>121</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
        <string>Pulse energy [uJ]</string>
       </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
      </widget>
      <widget class="QLabel" name="label_70">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>530</y>
+        <y>520</y>
         <width>121</width>
         <height>20</height>
        </rect>
@@ -2258,7 +2255,7 @@
      <widget class="QLineEdit" name="LasingReconstructionNSlices">
       <property name="geometry">
        <rect>
-        <x>350</x>
+        <x>140</x>
         <y>520</y>
         <width>121</width>
         <height>26</height>

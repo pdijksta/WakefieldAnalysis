@@ -77,9 +77,9 @@ if False:
     streaker_offset = calib_dict['streaker_offset']
     screen_x0_arr = calib_dict['screen_x0']
     screen_x0 = screen_x0_arr[0]
-    gap = calib_dict['gap']
+    delta_gap = calib_dict['delta_gap']
 else:
-    gap = 9.9929e-3
+    delta_gap = 9.9929e-3 - 10e-3
     screen_x0 = 898e-6
     streaker_offset = 363.7e-6
 
@@ -102,7 +102,7 @@ for lasing_on_file, lasing_off_file in zip(lasing_on_files, lasing_off_files):
     las_rec_images = {}
 
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-        rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, recon_kwargs=gauss_kwargs, charge=charge, subtract_median=True)
+        rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=gauss_kwargs, charge=charge, subtract_median=True)
 
         rec_obj.add_dict(data_dict)
         if main_ctr == 1:

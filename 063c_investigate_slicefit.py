@@ -36,7 +36,7 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
         ]:
     n_streaker = 1
     beamline = 'Aramis'
-    gap = 10e-3 - 62e-6
+    delta_gap = -62e-6
     tracker_kwargs = config.get_default_tracker_settings()
     recon_kwargs = config.get_default_gauss_recon_settings()
     n_slices = 50
@@ -48,7 +48,7 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
     lasing_on_dict = h5_storage.loadH5Recursive(lasing_on_file)
 
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-        rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
+        rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
 
         rec_obj.add_dict(data_dict)
         if main_ctr == 1:

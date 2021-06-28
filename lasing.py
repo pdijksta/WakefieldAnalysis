@@ -335,7 +335,9 @@ class LasingReconstruction:
             current_std = mean_slice_dict['current']['std']
             #import pdb; pdb.set_trace()
             sp_slice_mean.errorbar(xx_plot*1e15, mean_mean/1e6, yerr=mean_std/1e6, color=mean_color, ls=ls, lw=3, label=title)
-            sp_slice_sigma.errorbar(xx_plot*1e15, np.sqrt(sigma_mean)/1e6, yerr=np.sqrt(sigma_std)/1e6, color=mean_color, ls=ls, lw=3, label=title)
+            _yy = np.sqrt(sigma_mean)
+            _yy_err = sigma_std/(2*_yy)
+            sp_slice_sigma.errorbar(xx_plot*1e15, _yy/1e6, yerr=_yy_err/1e6, color=mean_color, ls=ls, lw=3, label=title)
             sp_current.errorbar(mean_slice_dict['t']['mean']*1e15, current_mean/1e3, yerr=current_std/1e3, label=title, color=mean_color)
             current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
 
@@ -365,14 +367,16 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImages:
-    def __init__(self, n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.1):
+    def __init__(self, n_slices, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.1):
+        self.delta_gap = delta_gap
+        recon_kwargs['delta_gap'] = [0, 0]
+        recon_kwargs['delta_gap'][n_streaker] = delta_gap
         self.screen_x0 = screen_x0
         self.beamline = beamline
         self.n_streaker = n_streaker
         self.streaker_offset = streaker_offset
         self.n_slices = n_slices
         self.charge = charge
-        self.gap = gap
         self.profile = profile
         self.recon_kwargs = recon_kwargs
         self.subtract_median = subtract_median
@@ -394,8 +398,6 @@ class LasingReconstructionImages:
         self.add_images(meta_data, images, x_axis, y_axis)
         if self.charge is None:
             self.charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
-        if self.gap is None:
-            self.gap = meta_data[config.streaker_names[self.beamline][self.n_streaker]+':GAP']*1e-3
 
     def add_images(self, meta_data, images, x_axis, y_axis):
         self.meta_data = meta_data
@@ -440,9 +442,11 @@ class LasingReconstructionImages:
     def calc_wake(self):
         streaker = config.streaker_names[self.beamline][self.n_streaker]
         beam_offset = -(self.meta_data[streaker+':CENTER']*1e-3 - self.streaker_offset)
+        gap = self.meta_data[streaker+':GAP']*1e-3 + self.delta_gap
         streaker_length = config.streaker_lengths[streaker]
         r12 = self.tracker.calcR12()[self.n_streaker]
-        wake_t, wake_x = self.profile.get_x_t(self.gap, beam_offset, streaker_length, r12)
+        print('gap, beam_offsets xt', gap, beam_offset)
+        wake_t, wake_x = self.profile.get_x_t(gap, beam_offset, streaker_length, r12)
         self.wake_t, self.wake_x = wake_t, wake_x
 
     def cut_images(self):

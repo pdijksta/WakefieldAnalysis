@@ -152,10 +152,21 @@ class StartMain(QtWidgets.QMainWindow):
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
         bunch_length_meas_file = default_dir + '119325494_bunch_length_meas.h5'
         #recon_data_file = default_dir+'2021_05_18-17_41_02_PassiveReconstruction.h5'
-        lasing_file_off = default_dir + '2021_05_18-20_05_21_Lasing_False_SARBD02-DSCR050.h5'
-        lasing_file_on = default_dir + '2021_05_18-20_04_28_Lasing_True_SARBD02-DSCR050.h5'
+        lasing_file_off = default_dir + '2021_05_18-21_45_00_Lasing_False_SARBD02-DSCR050.h5'
+        lasing_file_on = default_dir + '2021_05_18-21_41_35_Lasing_True_SARBD02-DSCR050.h5'
         streaker_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
         lasing_current_profile = default_dir + '2021_05_18-17_41_02_PassiveReconstruction.h5'
+        screen_X0 = 898.02e-6
+        streaker_offsets = 0, 364e-6
+        delta_gap = 0, -62e-6
+        pulse_energy = 180e-6
+
+        self.DirectCalibration.setText('%i' % (screen_X0*1e6))
+        self.StreakerDirect0.setText('%i' % (streaker_offsets[0]*1e6))
+        self.StreakerDirect1.setText('%i' % (streaker_offsets[1]*1e6))
+        self.StreakerGapDelta0.setText('%i' % (delta_gap[0]*1e6))
+        self.StreakerGapDelta1.setText('%i' % (delta_gap[1]*1e6))
+        self.LasingEnergyInput.setText('%i' % (pulse_energy*1e6))
 
         self.ImportCalibration.setText(screen_calib_file)
         self.ReconstructionDataLoad.setText(lasing_file_off)
@@ -274,6 +285,10 @@ class StartMain(QtWidgets.QMainWindow):
         print('Dispersion:', disp)
         return r12, disp
 
+    @property
+    def delta_gaps(self):
+        return float(self.StreakerGapDelta0.text())*1e-6, float(self.StreakerGapDelta1.text())*1e-6
+
     def get_gauss_kwargs(self):
         start, stop, size = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), float(self.SigTSize.text())
         sig_t_range = np.exp(np.linspace(np.log(start), np.log(stop), size))*1e-15
@@ -281,7 +296,7 @@ class StartMain(QtWidgets.QMainWindow):
         n_streaker = int(self.StreakerSelect.currentText())
         charge = self.charge
         self_consistent = self.SelfConsistentCheck.isChecked()
-        delta_gap = (float(self.StreakerGapDelta0.text())*1e-6, float(self.StreakerGapDelta1.text())*1e-6)
+        delta_gap = self.delta_gaps
         kwargs_recon = {
                 'sig_t_range': sig_t_range,
                 'tt_halfrange': tt_halfrange,
@@ -708,7 +723,7 @@ class StartMain(QtWidgets.QMainWindow):
         beamline, n_streaker = self.beamline, self.n_streaker
         charge = self.charge
         streaker_offset = self.streaker_means[n_streaker]
-        gap = None
+        delta_gap = self.delta_gaps[n_streaker]
         pulse_energy = float(self.LasingEnergyInput.text())*1e-6
 
         file_on = self.LasingOnDataLoad.text()
@@ -722,7 +737,7 @@ class StartMain(QtWidgets.QMainWindow):
         las_rec_images = {}
 
         for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-            rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
+            rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
 
             rec_obj.add_dict(data_dict)
             if main_ctr == 1:

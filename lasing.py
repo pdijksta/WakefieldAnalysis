@@ -151,6 +151,31 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
 
     return output
 
+def lasing_figure(figsize=None):
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.set_window_title('Current reconstruction')
+    fig.subplots_adjust(hspace=0.4)
+    subplot = ms.subplot_factory(2,3)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+5)]
+    clear_lasing_figure(*subplots)
+    return fig, subplots
+
+def clear_lasing_figure(sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread):
+
+    for sp, title, xlabel, ylabel in [
+            (sp_slice_mean, 'Energy loss', 't (fs)','$\Delta E$ (MeV)'),
+            (sp_slice_sigma, 'Energy spread increase', 't (fs)', 'Energy spread (MeV)'),
+            (sp_current, 'Current profile', 't (fs)', 'Current (kA)'),
+            (sp_lasing_loss, 'Energy loss power profile', 't (fs)', 'Power (GW)'),
+            (sp_lasing_spread, 'Energy spread power profile', 't (fs)', 'Power (GW)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(True)
+
+
 class LasingReconstruction:
     def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms'):
         assert images_off.profile == images_on.profile
@@ -242,37 +267,42 @@ class LasingReconstruction:
         lasing_dict['all_Eloss'] = all_loss
         lasing_dict['all_Espread'] = all_spread
 
-    def plot(self, plot_loss=True, plot_spread=True):
+    def plot(self, plot_loss=True, plot_spread=True, plot_handles=None):
         mask = self.current_mask
-        ms.figure('Slice properties')
-        subplot = ms.subplot_factory(2,3)
-        sp_ctr = 1
 
-        if plot_loss:
-            sp_slice_mean = subplot(sp_ctr, title='Energy loss', xlabel='t (fs)', ylabel='$\Delta E$ (MeV)')
-            sp_ctr += 1
-        else:
-            sp_slice_mean = dummy_plot()
-        if plot_spread:
-            sp_slice_sigma = subplot(sp_ctr, title='Energy spread increase', xlabel='t (fs)', ylabel='Energy spread (MeV)')
-            sp_ctr += 1
-        else:
-            sp_slice_sigma = dummy_plot()
+        if plot_handles is None:
 
-        sp_current = subplot(sp_ctr, title='Current profile', xlabel='t (fs)', ylabel='Current (kA)')
-        sp_ctr += 1
+            ms.figure('Slice properties')
+            subplot = ms.subplot_factory(2,3)
+            sp_ctr = 1
+            if plot_loss:
+                sp_slice_mean = subplot(sp_ctr, title='Energy loss', xlabel='t (fs)', ylabel='$\Delta E$ (MeV)')
+                sp_ctr += 1
+            else:
+                sp_slice_mean = dummy_plot()
+            if plot_spread:
+                sp_slice_sigma = subplot(sp_ctr, title='Energy spread increase', xlabel='t (fs)', ylabel='Energy spread (MeV)')
+                sp_ctr += 1
+            else:
+                sp_slice_sigma = dummy_plot()
 
-        if plot_loss:
-            sp_lasing_loss = subplot(sp_ctr, title='Energy loss power profile', xlabel='t (fs)', ylabel='Power (GW)')
+            sp_current = subplot(sp_ctr, title='Current profile', xlabel='t (fs)', ylabel='Current (kA)')
             sp_ctr += 1
-        else:
-            sp_lasing_loss = dummy_plot()
-        if plot_spread:
-            sp_lasing_spread = subplot(sp_ctr, title='Energy spread power profile', xlabel='t (fs)', ylabel='Power (GW)')
-            sp_ctr += 1
-        else:
-            sp_lasing_spread = dummy_plot()
 
+            if plot_loss:
+                sp_lasing_loss = subplot(sp_ctr, title='Energy loss power profile', xlabel='t (fs)', ylabel='Power (GW)')
+                sp_ctr += 1
+            else:
+                sp_lasing_loss = dummy_plot()
+            if plot_spread:
+                sp_lasing_spread = subplot(sp_ctr, title='Energy spread power profile', xlabel='t (fs)', ylabel='Power (GW)')
+                sp_ctr += 1
+            else:
+                sp_lasing_spread = dummy_plot()
+        else:
+            sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread = plot_handles
+
+        #print('Plotting...!')
         current_center = []
         for title, ls, mean_color in [('Lasing Off', None, 'black'), ('Lasing On', '--', 'red')]:
             all_slice_dict = self.all_slice_dict[title]
@@ -322,7 +352,7 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImages:
-    def __init__(self, n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=200e-12, subtract_median=False, noise_cut=0.1, max_rms=10e6):
+    def __init__(self, n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.1, max_rms=10e6):
         self.screen_x0 = screen_x0
         self.beamline = beamline
         self.n_streaker = n_streaker
@@ -350,6 +380,10 @@ class LasingReconstructionImages:
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(float)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(float)
         self.add_images(meta_data, images, x_axis, y_axis)
+        if self.charge is None:
+            self.charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
+        if self.gap is None:
+            self.gap = meta_data[config.streaker_names[self.beamline][self.n_streaker]+':GAP']*1e-3
 
     def add_images(self, meta_data, images, x_axis, y_axis):
         self.meta_data = meta_data

@@ -17,6 +17,7 @@ import config
 import tracking
 import elegant_matrix
 import analysis
+import lasing
 import h5_storage
 import streaker_calibration as sc
 
@@ -35,6 +36,7 @@ import myplotstyle as ms
 # - Plot centroid of forward propagated
 # - One-sided plate
 # - add blmeas option to lasing rec
+# - Mean of square instead of square of mean of squareroot
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -126,6 +128,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.ReconstructLasing.clicked.connect(self.reconstruct_lasing)
+        self.ReconstructLasingNew.clicked.connect(self.reconstruct_all_lasing)
         self.ObtainR12.clicked.connect(self.obtain_r12_0)
 
         self.StreakerSelect.activated.connect(self.update_streaker)
@@ -225,6 +228,9 @@ class StartMain(QtWidgets.QMainWindow):
         self.lasing_plot_tab_index1, self.lasing_canvas1 = get_new_tab(self.lasing_plot_handles[0][0], 'Lasing 1')
         self.lasing_plot_tab_index2, self.lasing_canvas2 = get_new_tab(self.lasing_plot_handles[1][0], 'Lasing 2')
 
+        self.all_lasing_fig, self.all_lasing_plot_handles = lasing.lasing_figure()
+        self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'All lasing')
+
     def clear_rec_plots(self):
         if self.reconstruction_plot_handles is not None:
             analysis.clear_reconstruction(*self.reconstruction_plot_handles)
@@ -250,6 +256,10 @@ class StartMain(QtWidgets.QMainWindow):
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
 
+    def clear_all_lasing_plots(self):
+        if self.all_lasing_plot_handles is not None:
+            lasing.clear_lasing_figure(*self.all_lasing_plot_handles)
+
     def obtain_r12_0(self):
         return self.obtain_r12()
 
@@ -269,7 +279,7 @@ class StartMain(QtWidgets.QMainWindow):
         sig_t_range = np.exp(np.linspace(np.log(start), np.log(stop), size))*1e-15
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
         n_streaker = int(self.StreakerSelect.currentText())
-        charge = float(self.Charge.text())*1e-12
+        charge = self.charge
         self_consistent = self.SelfConsistentCheck.isChecked()
         delta_gap = (float(self.StreakerGapDelta0.text())*1e-6, float(self.StreakerGapDelta1.text())*1e-6)
         kwargs_recon = {
@@ -601,6 +611,10 @@ class StartMain(QtWidgets.QMainWindow):
         return float(self.DirectCalibration.text())*1e-6
 
     @property
+    def charge(self):
+        return float(self.Charge.text())*1e-12
+
+    @property
     def streaker_offsets(self):
         return np.array([float(self.StreakerOffset0.text()), float(self.StreakerOffset1.text())])*1e-3
 
@@ -676,7 +690,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         r12, disp = self.obtain_r12(dict_on['meta_data_end'])
         energy_eV = self.get_energy_from_meta(dict_on['meta_data_end'])
-        charge = float(self.Charge.text())*1e-12
+        charge = self.charge
 
         if self.lasing_plot_handles is not None:
             analysis.clear_lasing(self.lasing_plot_handles)
@@ -686,6 +700,41 @@ class StartMain(QtWidgets.QMainWindow):
         self.lasing_canvas1.draw()
         self.lasing_canvas2.draw()
         self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
+
+    def reconstruct_all_lasing(self):
+        self.clear_all_lasing_plots()
+
+        screen_x0 = self.screen_x0
+        beamline, n_streaker = self.beamline, self.n_streaker
+        charge = self.charge
+        streaker_offset = self.streaker_means[n_streaker]
+        gap = None
+        pulse_energy = float(self.LasingEnergyInput.text())*1e-6
+
+        file_on = self.LasingOnDataLoad.text()
+        file_off = self.LasingOffDataLoad.text()
+        lasing_off_dict = h5_storage.loadH5Recursive(file_off)
+        lasing_on_dict = h5_storage.loadH5Recursive(file_on)
+
+        tracker_kwargs = self.get_tracker_kwargs()
+        recon_kwargs = self.get_gauss_kwargs()
+        n_slices = 50
+        las_rec_images = {}
+
+        for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
+            rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
+
+            rec_obj.add_dict(data_dict)
+            if main_ctr == 1:
+                rec_obj.profile = las_rec_images['Lasing Off'].profile
+            rec_obj.process_data()
+            las_rec_images[title] = rec_obj
+            #rec_obj.plot_images('raw', title)
+            #rec_obj.plot_images('tE', title)
+
+        las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3)
+        las_rec.plot(plot_handles=self.all_lasing_plot_handles)
+        self.all_lasing_canvas.draw()
 
     def save_lasing_rec_data(self):
         if self.lasing_rec_dict is None:

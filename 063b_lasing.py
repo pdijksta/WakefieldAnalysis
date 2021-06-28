@@ -41,12 +41,12 @@ screen_x02 = 898.02e-6
 streaker_offset0 = 374e-6
 streaker_offset2 = 364e-6
 
-plot_repair = True
+plot_repair = False
 
 
 for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, streaker_offset in [
-        (lasing_on_fileF, lasing_off_fileF, 625e-6, True, screen_x00, streaker_offset0),
-        (lasing_on_fileS, lasing_off_fileS, 85e-6, True, screen_x00, streaker_offset0),
+        #(lasing_on_fileF, lasing_off_fileF, 625e-6, True, screen_x00, streaker_offset0),
+        #(lasing_on_fileS, lasing_off_fileS, 85e-6, True, screen_x00, streaker_offset0),
         (lasing_on_file2, lasing_off_file2, 180e-6, False, screen_x02, streaker_offset2),
         ]:
 

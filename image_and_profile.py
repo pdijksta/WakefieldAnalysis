@@ -585,11 +585,11 @@ class Image:
                 slice_mean.append(np.nan)
                 slice_sigma.append(np.nan)
                 slice_gf.append(None)
+                slice_mean_rms.append(np.nan)
                 slice_rms.append(np.nan)
+                slice_cut_rms.append(np.nan)
+                slice_cut_mean.append(np.nan)
             else:
-                slice_mean.append(gf.mean)
-                slice_sigma.append(abs(gf.sigma))
-                slice_gf.append(gf)
                 where_max = y_axis[np.argmax(intensity)]
                 mask_rms = np.logical_and(
                         y_axis > where_max - abs(gf.sigma)*rms_sigma,
@@ -598,14 +598,18 @@ class Image:
                 data_rms = intensity[mask_rms]
                 mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
                 rms = np.sqrt(np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms))
-                slice_rms.append(rms)
-                slice_mean_rms.append(mean_rms)
 
                 intensity = intensity.copy()
                 intensity[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
                 profile = AnyProfile(y_axis, intensity-intensity.min())
                 profile.cutoff2(noise_cut)
                 profile.crop()
+
+                slice_mean.append(gf.mean)
+                slice_sigma.append(abs(gf.sigma))
+                slice_gf.append(gf)
+                slice_rms.append(rms)
+                slice_mean_rms.append(mean_rms)
                 slice_cut_rms.append(profile.rms())
                 slice_cut_mean.append(profile.mean())
 

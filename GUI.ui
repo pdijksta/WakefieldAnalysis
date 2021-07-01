@@ -2217,7 +2217,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>0</string>
+       <string>100</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2246,13 +2246,13 @@
        </rect>
       </property>
       <property name="text">
-       <string>Number of slices</string>
+       <string>Pixel per slice</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="LasingReconstructionNSlices">
+     <widget class="QLineEdit" name="LasingReconstructionSliceFactor">
       <property name="geometry">
        <rect>
         <x>140</x>
@@ -2262,7 +2262,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>50</string>
+       <string>3</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2354,62 +2354,6 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="ReconstructLasingNew">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>560</y>
-        <width>161</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="font">
-       <font>
-        <family>Sans Serif</family>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Reconstruct Lasing new</string>
       </property>
      </widget>
     </widget>

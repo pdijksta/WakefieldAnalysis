@@ -128,8 +128,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
-        self.ReconstructLasing.clicked.connect(self.reconstruct_lasing)
-        self.ReconstructLasingNew.clicked.connect(self.reconstruct_all_lasing)
+        self.ReconstructLasing.clicked.connect(self.reconstruct_all_lasing)
         self.ObtainR12.clicked.connect(self.obtain_r12_0)
 
         self.StreakerSelect.activated.connect(self.update_streaker)
@@ -235,42 +234,27 @@ class StartMain(QtWidgets.QMainWindow):
         self.screen_calib_fig, self.screen_calib_plot_handles = analysis.screen_calibration_figure()
         self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(self.screen_calib_fig, 'Screen')
 
-        self.lasing_plot_handles = analysis.lasing_figures()
-        self.lasing_figs = [x[0] for x in self.lasing_plot_handles]
-        self.lasing_plot_tab_index1, self.lasing_canvas1 = get_new_tab(self.lasing_plot_handles[0][0], 'Lasing 1')
-        self.lasing_plot_tab_index2, self.lasing_canvas2 = get_new_tab(self.lasing_plot_handles[1][0], 'Lasing 2')
-
         self.all_lasing_fig, self.all_lasing_plot_handles = lasing.lasing_figure()
         self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'All lasing')
 
     def clear_rec_plots(self):
-        if self.reconstruction_plot_handles is not None:
-            analysis.clear_reconstruction(*self.reconstruction_plot_handles)
-            self.rec_canvas.draw()
-            print('Cleared reconstruction plot')
+        analysis.clear_reconstruction(*self.reconstruction_plot_handles)
+        self.rec_canvas.draw()
 
     def clear_gap_recon_plots(self):
-        if self.gap_recon_plot_handles is not None:
-            sc.clear_gap_recon(*self.gap_recon_plot_handles)
-            self.gap_recon_canvas.draw()
+        sc.clear_gap_recon(*self.gap_recon_plot_handles)
+        self.gap_recon_canvas.draw()
 
     def clear_calib_plots(self):
-        if self.streaker_calib_plot_handles is not None:
-            sc.clear_streaker_calibration(*self.streaker_calib_plot_handles)
-            self.streaker_calib_canvas.draw()
+        sc.clear_streaker_calibration(*self.streaker_calib_plot_handles)
+        self.streaker_calib_canvas.draw()
 
     def clear_screen_plots(self):
-        if self.screen_calib_plot_handles is not None:
-            analysis.clear_screen_calibration(*self.screen_calib_plot_handles)
-            self.screen_calib_canvas.draw()
-
-    def clear_lasing_plots(self):
-        if self.lasing_plot_handles is not None:
-            analysis.clear_lasing(self.lasing_plot_handles)
+        analysis.clear_screen_calibration(*self.screen_calib_plot_handles)
+        self.screen_calib_canvas.draw()
 
     def clear_all_lasing_plots(self):
-        if self.all_lasing_plot_handles is not None:
-            lasing.clear_lasing_figure(*self.all_lasing_plot_handles)
+        lasing.clear_lasing_figure(*self.all_lasing_plot_handles)
 
     def obtain_r12_0(self):
         return self.obtain_r12()
@@ -682,41 +666,6 @@ class StartMain(QtWidgets.QMainWindow):
             energy_eV = meta_data['SARBD01-MBND100:P-SET']*1e6
         return energy_eV
 
-    def reconstruct_lasing(self):
-        self.clear_lasing_plots()
-
-        n_slices = int(self.LasingReconstructionNSlices.text())
-        len_screen = int(self.ScreenLength.text())
-        file_on = self.LasingOnDataLoad.text()
-        file_off = self.LasingOffDataLoad.text()
-        dict_on = h5_storage.loadH5Recursive(file_on)
-        dict_off = h5_storage.loadH5Recursive(file_off)
-
-        lasing_energy_txt = self.LasingEnergyInput.text()
-        if lasing_energy_txt == 'None':
-            lasing_energy = None
-        else:
-            lasing_energy = float(lasing_energy_txt)*1e-6
-        file_current = self.LasingCurrentProfileDataLoad.text()
-        screen_center = self.screen_x0
-
-        structure_center = self.streaker_means[self.n_streaker]
-        streaker_name = config.streaker_names[self.beamline][self.n_streaker]
-        structure_length = [float(self.StructLength1.text()), float(self.StructLength1.text())][self.n_streaker]
-
-        r12, disp = self.obtain_r12(dict_on['meta_data_end'])
-        energy_eV = self.get_energy_from_meta(dict_on['meta_data_end'])
-        charge = self.charge
-
-        if self.lasing_plot_handles is not None:
-            analysis.clear_lasing(self.lasing_plot_handles)
-
-        self.lasing_rec_dict = analysis.reconstruct_lasing(dict_on, dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker_name, self.lasing_plot_handles, lasing_energy, n_slices, len_screen)
-
-        self.lasing_canvas1.draw()
-        self.lasing_canvas2.draw()
-        self.tabWidget.setCurrentIndex(self.lasing_plot_tab_index2)
-
     def reconstruct_all_lasing(self):
         self.clear_all_lasing_plots()
 
@@ -726,6 +675,7 @@ class StartMain(QtWidgets.QMainWindow):
         streaker_offset = self.streaker_means[n_streaker]
         delta_gap = self.delta_gaps[n_streaker]
         pulse_energy = float(self.LasingEnergyInput.text())*1e-6
+        slice_factor = int(self.LasingReconstructionSliceFactor.text())
 
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
@@ -734,7 +684,6 @@ class StartMain(QtWidgets.QMainWindow):
 
         tracker_kwargs = self.get_tracker_kwargs()
         recon_kwargs = self.get_gauss_kwargs()
-        slice_factor = 3
         las_rec_images = {}
 
         for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):

@@ -659,7 +659,82 @@ class Tracker:
                 'best_profile': profiles[best_index],
                 }
 
-    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.)):
+    def find_best_offset(self, offset0, offset_explore, tt_halfrange, meas_screen, gaps, profile, n_streaker, charge, prec=1e-6, method='centroid'):
+        beam_offset_list = []
+        sim_screens = []
+        rms_list = []
+        mean_list = []
+
+        meas_screen = copy.deepcopy(meas_screen)
+        meas_screen.reshape(self.len_screen)
+        meas_screen.cutoff(self.screen_cutoff)
+        meas_screen.crop()
+        meas_screen.reshape(self.len_screen)
+        centroid_meas = meas_screen.mean()
+        rms_meas = meas_screen.rms()
+
+        def forward(beam_offset):
+            beam_offset = np.round(beam_offset/prec)*prec
+            if beam_offset in beam_offset_list:
+                return
+
+            beam_offsets = [0., 0.]
+            beam_offsets[n_streaker] = beam_offset
+
+            sim_screen = self.matrix_forward(profile, gaps, beam_offsets)['screen']
+
+            index = bisect.bisect(beam_offset_list, beam_offset)
+            beam_offset_list.insert(index, beam_offset)
+            sim_screens.insert(index, sim_screen)
+            mean_list.insert(index, sim_screen.mean())
+            rms_list.insert(index, sim_screen.rms())
+
+        def get_index_min(output='index'):
+            beam_offset_arr = np.array(beam_offset_list)
+            if method == 'centroid':
+                centroid_sim = np.array(mean_list)
+                index_min = np.argmin(np.abs(centroid_sim - centroid_meas))
+                sort = np.argsort(centroid_sim)
+                beam_offset = np.interp(centroid_meas, centroid_sim[sort], beam_offset_arr[sort])
+            elif method == 'rms' or method == 'beamsize':
+                rms_sim = np.array(rms_list)
+                index_min = np.argmin(np.abs(rms_sim - rms_meas))
+                sort = np.argsort(rms_sim)
+                beam_offset = np.interp(rms_meas, rms_sim[sort], beam_offset_arr[sort])
+            else:
+                raise ValueError('Method %s unknown' % method)
+
+            if output == 'index':
+                return index_min.squeeze()
+            elif output == 'offset':
+                return beam_offset
+
+        beam_offset_arr = np.linspace(offset0-offset_explore, offset0+offset_explore, 3)
+        for beam_offset in beam_offset_arr:
+            forward(beam_offset)
+        for _ in range(3):
+            beam_offset = get_index_min(output='offset')
+            forward(beam_offset)
+        index = get_index_min(output='index')
+        beam_offset = beam_offset_list[index]
+        delta_offset = beam_offset - offset0
+
+        output = {
+                'sim_screens': sim_screens,
+                'meas_screen': meas_screen,
+                'sim_screen': sim_screens[index],
+                'beam_offset': beam_offset,
+                'beam_offsets': np.array(beam_offset_list),
+                'delta_offset': delta_offset,
+                'n_streaker': n_streaker,
+                'gaps': gaps,
+                'beam_offset0': offset0,
+                'rms_arr': np.array(rms_list),
+                'mean_arr': np.array(mean_list),
+                }
+        return output
+
+    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.), prec=0.5e-15):
 
         opt_func_values = []
         opt_func_screens = []
@@ -670,15 +745,13 @@ class Tracker:
         gauss_wakes = []
         sig_t_list = []
         gaps = [gaps[0]+delta_gap[0], gaps[1]+delta_gap[1]]
-        print('gaps, beam_offsets g', gaps[1], beam_offsets[1])
+        #print('gaps, beam_offsets g', gaps[1], beam_offsets[1])
 
         #meas_screen = copy.deepcopy(meas_screen)
         meas_screen.reshape(self.len_screen)
         meas_screen.cutoff(self.screen_cutoff)
         meas_screen.crop()
         meas_screen.reshape(self.len_screen)
-
-        prec = 0.5e-15
 
         def gaussian_baf(sig_t):
             sig_t = np.round(sig_t/prec)*prec
@@ -730,7 +803,7 @@ class Tracker:
             elif output == 't_sig':
                 return t_min
 
-        sig_t_arr = np.exp(np.linspace(np.log(sig_t_range.min()), np.log(sig_t_range.max()), 5))
+        sig_t_arr = np.exp(np.linspace(np.log(sig_t_range.min()), np.log(sig_t_range.max()), 3))
         for sig_t in sig_t_arr:
             gaussian_baf(sig_t)
 
@@ -793,7 +866,7 @@ class Tracker:
         return output
 
 
-    def find_best_gauss(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares'):
+    def find_best_gauss_old(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares'):
 
         opt_func_values = []
         opt_func_screens = []

@@ -76,6 +76,7 @@ import myplotstyle as ms
 # - Resolution for big streaking
 
 # - Figure 2: Current profile reconstruction (early offset scan)
+# - Maybe add wake function
 # - Time profile reconstructed and measured
 # - Screen profile: measured, reconstructed, TDC forward
 # - Unstreaked and streaked
@@ -733,15 +734,16 @@ class StartMain(QtWidgets.QMainWindow):
 
         tracker_kwargs = self.get_tracker_kwargs()
         recon_kwargs = self.get_gauss_kwargs()
-        n_slices = 50
+        slice_factor = 3
         las_rec_images = {}
 
         for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-            rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
+            rec_obj = lasing.LasingReconstructionImages(screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True, slice_factor=slice_factor)
 
             rec_obj.add_dict(data_dict)
             if main_ctr == 1:
                 rec_obj.profile = las_rec_images['Lasing Off'].profile
+                rec_obj.ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
             rec_obj.process_data()
             las_rec_images[title] = rec_obj
             #rec_obj.plot_images('raw', title)

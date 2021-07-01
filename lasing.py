@@ -190,7 +190,7 @@ class LasingReconstruction:
         self.key_sigma = key_sigma
 
         self.generate_all_slice_dict()
-        self.cap_rms(max_rms)
+        #self.cap_rms(max_rms)
         self.calc_mean_slice_dict()
         self.lasing_analysis()
 
@@ -225,12 +225,11 @@ class LasingReconstruction:
                         'std': np.nanstd(arr, axis=0),
                         }
 
-    def cap_rms(self, max_rms):
-        for key, subdict in self.all_slice_dict.items():
-            arr = subdict['spread']
-            arr[np.sqrt(arr)>max_rms] = np.nan
-        self.calc_mean_slice_dict()
-
+    #def cap_rms(self, max_rms):
+    #    for key, subdict in self.all_slice_dict.items():
+    #        arr = subdict['spread']
+    #        arr[np.sqrt(arr)>max_rms] = np.nan
+    #    self.calc_mean_slice_dict()
 
     def lasing_analysis(self):
         all_slice_dict = self.all_slice_dict
@@ -367,7 +366,7 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImages:
-    def __init__(self, n_slices, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.1):
+    def __init__(self, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.1, slice_factor=1, offset_explore=30e-6, ref_slice_dict=None):
         self.delta_gap = delta_gap
         recon_kwargs['delta_gap'] = [0, 0]
         recon_kwargs['delta_gap'][n_streaker] = delta_gap
@@ -375,31 +374,47 @@ class LasingReconstructionImages:
         self.beamline = beamline
         self.n_streaker = n_streaker
         self.streaker_offset = streaker_offset
-        self.n_slices = n_slices
         self.charge = charge
         self.profile = profile
         self.recon_kwargs = recon_kwargs
         self.subtract_median = subtract_median
         self.noise_cut = noise_cut
+        self.slice_factor = slice_factor
+        self.offset_explore = offset_explore
+        self.ref_slice_dict = None
 
         self.tracker = tracking.Tracker(**tracker_kwargs)
         self.do_recon_plot = False
+        self.beam_offsets = None
+        self.index_median = None
+
+    @property
+    def ref_slice_dict(self):
+        return self._ref_slice_dict
+
+    @ref_slice_dict.setter
+    def ref_slice_dict(self, ref):
+        self._ref_slice_dict = ref
+        if ref is None:
+            self.n_slices = None
+        else:
+            self.n_slices = len(ref['slice_x'])
 
     def add_file(self, filename):
         data_dict = h5_storage.loadH5Recursive(filename)
         self.add_dict(data_dict)
 
-    def add_dict(self, data_dict):
+    def add_dict(self, data_dict, max_index=None):
         meta_data = data_dict['meta_data_begin']
         self.tracker.set_simulator(meta_data)
         images = data_dict['pyscan_result']['image'].astype(float)
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(float)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(float)
-        self.add_images(meta_data, images, x_axis, y_axis)
+        self.add_images(meta_data, images, x_axis, y_axis, max_index)
         if self.charge is None:
             self.charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
 
-    def add_images(self, meta_data, images, x_axis, y_axis):
+    def add_images(self, meta_data, images, x_axis, y_axis, max_index=None):
         self.meta_data = meta_data
         self.x_axis0 = x_axis
         self.x_axis = x_axis - self.screen_x0
@@ -408,6 +423,8 @@ class LasingReconstructionImages:
         self.raw_image_objs = []
         self.meas_screens = []
         for n_image, img in enumerate(images):
+            if max_index is not None and n_image >= max_index:
+                break
             if self.subtract_median:
                 img = img - np.median(img)
                 img[img<0] = 0
@@ -420,7 +437,7 @@ class LasingReconstructionImages:
         data_dict = {
                 'meta_data_begin': self.meta_data,
                 'pyscan_result': {
-                    'image': self.raw_images,
+                    'image': self.raw_images[:len(self.meas_screens)],
                     'x_axis_m': self.x_axis0,
                     'y_axis_m': self.y_axis,
                     }
@@ -436,42 +453,69 @@ class LasingReconstructionImages:
 
     def set_profile(self):
         rms = [x.rms() for x in self.profiles]
-        index_median = np.argsort(rms)[len(rms)//2]
-        self.profile = self.profiles[index_median]
+        self.index_median = np.argsort(rms)[len(rms)//2]
+        self.profile = self.profiles[self.index_median]
 
-    def calc_wake(self):
+    def get_streaker_offsets(self):
         streaker = config.streaker_names[self.beamline][self.n_streaker]
-        beam_offset = -(self.meta_data[streaker+':CENTER']*1e-3 - self.streaker_offset)
+        offset0 = -(self.meta_data[streaker+':CENTER']*1e-3 - self.streaker_offset)
+        tt_halfrange = self.recon_kwargs['tt_halfrange']
+        offset_dicts = []
+        gaps = [10e-3, 10e-3]
+        gaps[self.n_streaker] = self.meta_data[streaker+':GAP']*1e-3 + self.delta_gap
+        beam_offsets = []
+        for meas_screen in self.meas_screens:
+            offset_dict = self.tracker.find_best_offset(offset0, self.offset_explore, tt_halfrange, meas_screen, gaps, self.profile, self.n_streaker, self.charge)
+            offset_dicts.append(offset_dict)
+            beam_offsets.append(offset_dict['beam_offset'])
+        self.beam_offsets = np.array(beam_offsets)
+        return offset_dicts
+
+    def calc_wake(self, beam_offset=None):
+        streaker = config.streaker_names[self.beamline][self.n_streaker]
+        if beam_offset is None:
+            beam_offset = -(self.meta_data[streaker+':CENTER']*1e-3 - self.streaker_offset)
         gap = self.meta_data[streaker+':GAP']*1e-3 + self.delta_gap
         streaker_length = config.streaker_lengths[streaker]
         r12 = self.tracker.calcR12()[self.n_streaker]
-        print('gap, beam_offsets xt', gap, beam_offset)
+        #print('gap, beam_offsets xt', gap, beam_offset)
         wake_t, wake_x = self.profile.get_x_t(gap, beam_offset, streaker_length, r12)
-        self.wake_t, self.wake_x = wake_t, wake_x
-
-    def cut_images(self):
-        x_min, x_max = self.wake_x.min(), self.wake_x.max()
-        self.cut_images = []
-        for img in self.raw_image_objs:
-            cut_img = img.cut(x_min, x_max)
-            self.cut_images.append(cut_img)
+        return wake_t, wake_x
 
     def convert_axes(self):
         dispersion = self.tracker.calcDisp()[self.n_streaker]
         self.dispersion = dispersion
         self.images_tE = []
         self.ref_y = []
-        for img in self.cut_images:
-            img_t = img.x_to_t(self.wake_x, self.wake_t)
-            img_tE, ref_y = img_t.y_to_eV(dispersion, self.tracker.energy_eV)
-            self.images_tE.append(img_tE)
+        self.cut_images = []
+        x_min, x_max = self.wake_x.min(), self.wake_x.max()
+
+        images_E = []
+        for img in self.raw_image_objs:
+            image_E, ref_y = img.y_to_eV(dispersion, self.tracker.energy_eV)
+            images_E.append(image_E)
             self.ref_y.append(ref_y)
 
+        for ctr, img in enumerate(images_E):
+            if self.beam_offsets is None:
+                img_cut = img.cut(x_min, x_max)
+                img_tE = img_cut.x_to_t(self.wake_x, self.wake_t, debug=False)
+            else:
+                wake_t, wake_x = self.calc_wake(self.beam_offsets[ctr])
+                img_cut = img.cut(wake_x.min(), wake_x.max())
+                img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False)
+            self.images_tE.append(img_tE)
+            self.cut_images.append(img_cut)
+
     def slice_x(self):
-        self.images_sliced = []
-        for n_image, image in enumerate(self.images_tE):
-            image_sliced = image.slice_x(self.n_slices)
-            self.images_sliced.append(image_sliced)
+        if self.slice_factor == 1:
+            self.images_sliced = self.images_tE
+        else:
+            self.images_sliced = []
+            for n_image, image in enumerate(self.images_tE):
+                n_slices = len(image.x_axis)//self.slice_factor
+                image_sliced = image.slice_x(n_slices)
+                self.images_sliced.append(image_sliced)
 
     def fit_slice(self):
         self.slice_dicts = []
@@ -479,15 +523,27 @@ class LasingReconstructionImages:
             slice_dict = image.fit_slice(charge=self.charge, noise_cut=self.noise_cut)
             self.slice_dicts.append(slice_dict)
 
+    def interpolate_slice(self, ref):
+        new_slice_dicts = []
+        for slice_dict in self.slice_dicts:
+            new_slice_dicts.append(interpolate_slice_dicts(ref, slice_dict))
+        self.slice_dicts_old = self.slice_dicts
+        self.slice_dicts = new_slice_dicts
+
     def process_data(self):
         if self.profile is None:
             self.get_current_profiles()
             self.set_profile()
-        self.calc_wake()
-        self.cut_images()
+
+        self.wake_t, self.wake_x = self.calc_wake()
+        self.get_streaker_offsets()
         self.convert_axes()
         self.slice_x()
         self.fit_slice()
+        if self.index_median is not None:
+            self.ref_slice_dict = self.slice_dicts[self.index_median]
+        if self.ref_slice_dict is not None:
+            self.interpolate_slice(self.ref_slice_dict)
 
     def plot_images(self, type_, title='', **kwargs):
         if type_ == 'raw':
@@ -503,14 +559,33 @@ class LasingReconstructionImages:
         ny, nx = 3, 3
         subplot = ms.subplot_factory(ny, nx, grid=False)
 
+        figs = []
+        subplots = []
         for n_image, image in enumerate(images):
             if sp_ctr > ny*nx:
-                ms.figure('%s Images %s' % (title, type_))
+                fig = ms.figure('%s Images %s' % (title, type_))
+                figs.append(fig)
+                this_subplots = []
+                subplots.append(this_subplots)
                 sp_ctr = 1
             sp = subplot(sp_ctr, title='Image %i' % n_image, xlabel=image.xlabel, ylabel=image.ylabel)
             sp_ctr += 1
+            this_subplots.append(sp)
             slice_dict = None
             if type_ in ('tE', 'slice') and hasattr(self, 'slice_dicts'):
                 slice_dict = self.slice_dicts[n_image]
             image.plot_img_and_proj(sp, slice_dict=slice_dict, **kwargs)
+        return figs, subplots
+
+def interpolate_slice_dicts(ref, alter):
+    new_dict = {}
+    xx_ref = ref['slice_x']
+    xx_alter = alter['slice_x']
+    for key, arr in alter.items():
+        if key == 'slice_x':
+            new_dict[key] = xx_ref
+        elif type(arr) is np.ndarray:
+            new_dict[key] = np.interp(xx_ref, xx_alter, arr)
+    return new_dict
+
 

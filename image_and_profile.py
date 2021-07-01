@@ -106,7 +106,10 @@ class Profile:
             nearest_zero_neg = index_arr[zero_neg][-1]
             yy[:nearest_zero_neg] = 0
 
-        self._yy = yy / np.sum(yy) * old_sum
+        if np.sum(yy) == 0:
+            self._yy = np.zeros_like(yy)
+        else:
+            self._yy = yy / np.sum(yy) * old_sum
 
 
     def crop(self):
@@ -287,6 +290,7 @@ class BeamProfile(Profile):
         super().scale_yy(scale_factor)
 
     def calc_wake(self, gap, beam_offset, struct_length):
+        #print('calc_wake gap beam_offset %.2e %.2e' % (gap, beam_offset))
         if abs(beam_offset) > gap/2.:
             raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_offset))
         if (gap, beam_offset, struct_length) in self.wake_dict:
@@ -552,9 +556,10 @@ class Image:
         image_extra = np.reshape(self.image[:,:max_x_index], [len(y_axis), n_slices, max_x_index//n_slices])
         new_image = np.mean(image_extra, axis=-1)
 
-        x_axis_reshaped = np.linspace(x_axis[0], x_axis[-1], n_slices)
+        x_axis_reshaped = np.linspace(x_axis[0], x_axis[max_x_index-1], n_slices)
 
         output = self.child(new_image, x_axis_reshaped, y_axis)
+        #import pdb; pdb.set_trace()
         return output
 
     def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1):
@@ -596,8 +601,11 @@ class Image:
                         y_axis < where_max + abs(gf.sigma)*rms_sigma)
                 y_rms = y_axis[mask_rms]
                 data_rms = intensity[mask_rms]
-                mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
-                rms = np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms)
+                if np.sum(data_rms) == 0:
+                    mean_rms, rms = 0, 0
+                else:
+                    mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
+                    rms = np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms)
 
                 slice_gf.append(gf)
                 slice_mean.append(gf.mean)
@@ -607,12 +615,17 @@ class Image:
 
                 intensity = intensity.copy()
                 intensity[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
-                profile = AnyProfile(y_axis, intensity-intensity.min())
-                profile.cutoff2(noise_cut)
-                profile.crop()
+                prof_y = intensity-intensity.min()
+                if np.all(prof_y == 0):
+                    slice_cut_rms.append(0)
+                    slice_cut_mean.append(0)
+                else:
+                    profile = AnyProfile(y_axis, prof_y)
+                    profile.cutoff2(noise_cut)
+                    profile.crop()
 
-                slice_cut_rms.append(profile.rms()**2)
-                slice_cut_mean.append(profile.mean())
+                    slice_cut_rms.append(profile.rms()**2)
+                    slice_cut_mean.append(profile.mean())
 
             # Debug bad gaussfits
             #if 101e-15 < self.x_axis[n_slice] < 104e-15:

@@ -45,8 +45,8 @@ plot_repair = False
 
 
 for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, streaker_offset in [
-        #(lasing_on_fileF, lasing_off_fileF, 625e-6, True, screen_x00, streaker_offset0),
-        #(lasing_on_fileS, lasing_off_fileS, 85e-6, True, screen_x00, streaker_offset0),
+        (lasing_on_fileF, lasing_off_fileF, 625e-6, True, screen_x00, streaker_offset0),
+        (lasing_on_fileS, lasing_off_fileS, 85e-6, True, screen_x00, streaker_offset0),
         (lasing_on_file2, lasing_off_file2, 180e-6, False, screen_x02, streaker_offset2),
         ]:
 
@@ -132,18 +132,19 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
     delta_gap = -62e-6
     tracker_kwargs = config.get_default_tracker_settings()
     recon_kwargs = config.get_default_gauss_recon_settings()
-    n_slices = 50
+    slice_factor = 3
     charge = 200e-12
 
     las_rec_images = {}
 
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-        rec_obj = lasing.LasingReconstructionImages(n_slices, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True)
-        rec_obj.do_recon_plot = True
+        rec_obj = lasing.LasingReconstructionImages(screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True, slice_factor=slice_factor)
+        #rec_obj.do_recon_plot = True
 
         rec_obj.add_dict(data_dict)
         if main_ctr == 1:
             rec_obj.profile = las_rec_images['Lasing Off'].profile
+            rec_obj.ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
         #rec_obj.plot_images('raw', title)

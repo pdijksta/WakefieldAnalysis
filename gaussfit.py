@@ -91,7 +91,10 @@ class GaussFit:
 
     def jacobi(self, xx, scale, mean, sig, const=0):
         g_minus_const = self.fit_func(xx, scale, mean, sig, 0)
-        self.jacobi_arr[:,0] = g_minus_const/scale
+        if scale == 0:
+            self.jacobi_arr[:,0] = 0
+        else:
+            self.jacobi_arr[:,0] = g_minus_const/scale
         if sig != 0:
             self.jacobi_arr[:,1] = g_minus_const * (xx-mean)/sig**2
             self.jacobi_arr[:,2] = g_minus_const * (xx-mean)**2/sig**3

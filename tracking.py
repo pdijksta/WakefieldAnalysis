@@ -745,13 +745,16 @@ class Tracker:
         gauss_wakes = []
         sig_t_list = []
         gaps = [gaps[0]+delta_gap[0], gaps[1]+delta_gap[1]]
-        #print('gaps, beam_offsets g', gaps[1], beam_offsets[1])
+        #print('gaps, beam_offsets g', gaps[n_streaker], beam_offsets[n_streaker])
 
         #meas_screen = copy.deepcopy(meas_screen)
         meas_screen.reshape(self.len_screen)
         meas_screen.cutoff(self.screen_cutoff)
         meas_screen.crop()
         meas_screen.reshape(self.len_screen)
+        centroid_meas = meas_screen.mean()
+        rms_meas = meas_screen.rms()
+
 
         def gaussian_baf(sig_t):
             sig_t = np.round(sig_t/prec)*prec
@@ -784,13 +787,11 @@ class Tracker:
         def get_index_min(output='index'):
             sig_t_arr = np.array(sig_t_list)
             if method == 'centroid':
-                centroid_meas = meas_screen.mean()
                 centroid_sim = np.array([x.mean() for x in opt_func_screens])
                 index_min = np.argmin(np.abs(centroid_sim - centroid_meas))
                 sort = np.argsort(centroid_sim)
                 t_min = np.interp(centroid_meas, centroid_sim[sort], sig_t_arr[sort])
             elif method == 'rms' or method == 'beamsize':
-                rms_meas = meas_screen.rms()
                 rms_sim = np.array([x.rms() for x in opt_func_screens])
                 index_min = np.argmin(np.abs(rms_sim - rms_meas))
                 sort = np.argsort(rms_sim)

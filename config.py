@@ -49,7 +49,7 @@ get_default_tracker_settings = lambda: {
         'timestamp': None,
         'struct_lengths': np.array([1., 1.]),
         'n_particles': int(100e3),
-        'n_emittances': np.array([500, 500])*1e-9,
+        'n_emittances': np.array([300, 300])*1e-9,
         'screen_bins': 500,
         'screen_cutoff': 2e-2,
         'smoothen': 20e-6,

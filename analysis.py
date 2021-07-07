@@ -25,14 +25,14 @@ except ImportError:
     from . import config
 
 
-def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None):
+def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None, both_zero_crossings=True):
     gauss_dict = tracker.find_best_gauss2(**kwargs)
     if not do_plot:
         return gauss_dict
-    plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_file, do_plot, figsize)
+    plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_file, do_plot, figsize, both_zero_crossings)
     return gauss_dict
 
-def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None):
+def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None, both_zero_crossings=True):
 
     best_profile = gauss_dict['reconstructed_profile']
     best_screen = gauss_dict['reconstructed_screen']
@@ -55,8 +55,8 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
     centroid_arr = rms_arr.copy()
 
     for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
-        screen.plot_standard(sp_screen, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value))
-        profile.plot_standard(sp_profile, label='%i: %.1f fs %.3e' % (opt_ctr, sigma*1e15, value), center='Mean')
+        screen.plot_standard(sp_screen, label='%i: %.1f fs' % (opt_ctr, sigma*1e15))
+        profile.plot_standard(sp_profile, label='%i: %.1f fs' % (opt_ctr, sigma*1e15), center='Mean')
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 
@@ -77,12 +77,14 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
                 print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
 
         for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='TDC %i %.1f fs' % (zero_crossing, blmeas_profile.rms()))
+            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='TDC %i %.1f fs' % (zero_crossing, blmeas_profile.rms()*1e15))
+            if not both_zero_crossings:
+                break
 
     color = sp_moments.plot(opt_func_sigmas*1e15, np.abs(centroid_arr)*1e3, marker='.', label='Reconstructed centroid')[0].get_color()
-    sp_moments.axhline(np.abs(meas_screen.mean())*1e3, label='Measured centroid', color=color)
+    sp_moments.axhline(np.abs(meas_screen.mean())*1e3, label='Measured centroid', color=color, ls='--')
     color = sp_moments.plot(opt_func_sigmas*1e15, rms_arr*1e3, marker='.', label='Reconstructed rms')[0].get_color()
-    sp_moments.axhline(meas_screen.rms()*1e3, label='Measured rms', color=color)
+    sp_moments.axhline(meas_screen.rms()*1e3, label='Measured rms', color=color, ls='--')
 
     sp_moments.legend()
     sp_screen.legend()
@@ -440,8 +442,7 @@ def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs_
         meas_screen = tracking.ScreenDistribution(x_axis, proj)
         kwargs_recon['meas_screen'] = meas_screen
 
-        print('Analysing reconstruction')
-
+        #print('Analysing reconstruction')
         kwargs = copy.deepcopy(kwargs_recon)
 
         gaps, streaker_offsets = get_gap_and_offset(meta_data, beamline)

@@ -82,7 +82,7 @@ def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handl
 
 class StreakerCalibration:
 
-    def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, fit_gap=True, fit_order=False, order_centroid=order0_centroid, order_rms=order0_rms, proj_cutoff=0.03):
+    def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, y_axis=None, fit_gap=True, fit_order=False, order_centroid=order0_centroid, order_rms=order0_rms, proj_cutoff=0.03):
         self.order_rms = order_rms
         self.order_centroid = order_centroid
         self.fit_gap = fit_gap
@@ -106,6 +106,7 @@ class StreakerCalibration:
         self.sim_screens = None
         self.plot_list_x = []
         self.plot_list_y = []
+        self.y_axis_list = []
         self.raw_data = None
         self.meas_screens = None
 
@@ -134,7 +135,7 @@ class StreakerCalibration:
         self.gauss_dicts_gap_order = copy.deepcopy(self.fit_dicts_gap_order)
 
         if offsets_range is not None:
-            self.add_data(offsets_range, images, x_axis)
+            self.add_data(offsets_range, images, x_axis, y_axis)
         if file_or_dict is not None:
             self.add_file(file_or_dict)
 
@@ -172,7 +173,7 @@ class StreakerCalibration:
                 }
         return output
 
-    def add_data(self, offsets, images, x_axis):
+    def add_data(self, offsets, images, x_axis, y_axis):
 
         if x_axis[1] < x_axis[0]:
             x_axis = x_axis[::-1]
@@ -219,12 +220,14 @@ class StreakerCalibration:
         self.screen_x0_arr = np.concatenate([self.screen_x0_arr, screen_x0_arr[mask]])[sort]
 
         plot_list_x = [x_axis - screen_x0] * len(plot_list_y)
+        y_axis_list = self.y_axis_list + [y_axis] * len(plot_list_y)
         new_plot_list_x = self.plot_list_x + plot_list_x
         new_plot_list_y = self.plot_list_y + plot_list_y
         new_images = self.images + [x for x in images]
         new_all_centroids = self.all_centroids + [x for x in centroids]
         new_all_rms = self.all_centroids + [x for x in rms]
 
+        self.y_axis_list = []
         self.plot_list_x = []
         self.plot_list_y = []
         self.images = []
@@ -233,6 +236,7 @@ class StreakerCalibration:
         for new_index in sort:
             self.plot_list_x.append(new_plot_list_x[new_index])
             self.plot_list_y.append(new_plot_list_y[new_index])
+            self.y_axis_list.append(y_axis_list[new_index])
             self.images.append(new_images[new_index])
             self.all_rms.append(new_all_rms[new_index])
             self.all_centroids.append(new_all_centroids[new_index])
@@ -253,14 +257,16 @@ class StreakerCalibration:
         images = result_dict['image'].squeeze()
         if 'x_axis_m' in result_dict:
             x_axis = result_dict['x_axis_m']
+            y_axis = result_dict['y_axis_m']
         elif 'x_axis' in result_dict:
             x_axis = result_dict['x_axis']
+            y_axis = result_dict['y_axis']
         else:
             print(result_dict.keys())
             raise KeyError
 
         offsets = data_dict['streaker_offsets'].squeeze()
-        self.add_data(offsets, images, x_axis)
+        self.add_data(offsets, images, x_axis, y_axis)
         self.raw_data = data_dict
 
     @staticmethod

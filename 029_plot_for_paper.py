@@ -58,7 +58,8 @@ import matplotlib.pyplot as plt
 import elegant_matrix
 import tracking
 import gaussfit
-import misc
+import misc2 as misc
+import image_and_profile as iap
 
 import myplotstyle as ms
 
@@ -106,14 +107,14 @@ elif hostname == 'pubuntu':
 
 blmeas_1 = dirname1+'129833611_bunch_length_meas.h5'
 energy_eV = 4491892915.7690735
-profile_meas = tracking.profile_from_blmeas(blmeas_1, tt_halfrange, charge, energy_eV, subtract_min=True)
+profile_meas = iap.profile_from_blmeas(blmeas_1, tt_halfrange, charge, energy_eV, subtract_min=True)
 profile_meas.reshape(len_profile)
-profile_meas2 = tracking.profile_from_blmeas(blmeas_1, tt_halfrange, charge, energy_eV, subtract_min=True, zero_crossing=2)
+profile_meas2 = iap.profile_from_blmeas(blmeas_1, tt_halfrange, charge, energy_eV, subtract_min=True, zero_crossing=2)
 profile_meas2.reshape(len_profile)
-if flip_measured:
-    profile_meas.flipx()
-else:
-    profile_meas2.flipx()
+#if flip_measured:
+#    profile_meas.flipx()
+#else:
+#    profile_meas2.flipx()
 
 
 
@@ -169,7 +170,7 @@ timestamp0 = misc.get_timestamp(os.path.basename(file0))
 tracker0 = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp0, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile)
 r120 = tracker0.calcR12()[n_streaker]
 
-bp_test = tracking.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
+bp_test = iap.get_gaussian_profile(40e-15, tt_halfrange, len_profile, charge, tracker0.energy_eV)
 screen_sim = tracker0.matrix_forward(bp_test, [10e-3, 10e-3], [0, 0])['screen']
 all_emittances = []
 for n_img in range(len(images0)):
@@ -206,7 +207,7 @@ for n_image in range(len(dict_['Image'])):
     screen.crop()
     screen._xx = screen._xx - mean0
 
-    gauss_dict = tracker.find_best_gauss(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True)
+    gauss_dict = tracker.find_best_gauss2(sig_t_range, tt_halfrange, screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True)
     best_screen = gauss_dict['reconstructed_screen']
     best_screen.cutoff(1e-3)
     best_screen.crop()

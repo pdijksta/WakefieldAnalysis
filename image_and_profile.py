@@ -743,7 +743,7 @@ class Image:
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -763,6 +763,19 @@ class Image:
 
 
         x_axis, y_axis, image = self.x_axis, self.y_axis, self.image
+        if xlim is None:
+            index_x_min, index_x_max = 0, len(x_axis)
+        else:
+            index_x_min, index_x_max = sorted([np.argmin((x_axis-xlim[1])**2), np.argmin((x_axis-xlim[0])**2)])
+        if ylim is None:
+            index_y_min, index_y_max = 0, len(y_axis)
+        else:
+            index_y_min, index_y_max = sorted([np.argmin((y_axis-ylim[1])**2), np.argmin((y_axis-ylim[0])**2)])
+
+        x_axis = x_axis[index_x_min:index_x_max]
+        y_axis = y_axis[index_y_min:index_y_max]
+        image = image[index_y_min:index_y_max,index_x_min:index_x_max]
+
         extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[0]*y_factor, y_axis[-1]*y_factor]
 
         if log:
@@ -775,7 +788,11 @@ class Image:
 
         if slice_dict is not None:
             old_lim = sp.get_xlim(), sp.get_ylim()
-            for key_mean, key_sigma, color in [('slice_mean_rms', 'slice_rms_sq', 'blue'), ('slice_cut_mean', 'slice_cut_rms_sq', 'green'), ('slice_mean', 'slice_sigma_sq', 'red')]:
+            for key_mean, key_sigma, color in [
+                    #('slice_mean_rms', 'slice_rms_sq', 'blue'),
+                    ('slice_cut_mean', 'slice_cut_rms_sq', 'green'),
+                    #('slice_mean', 'slice_sigma_sq', 'red'),
+                    ]:
                 sp.errorbar(
                         slice_dict['slice_x']*x_factor,
                         slice_dict[key_mean]*y_factor, yerr=np.sqrt(slice_dict[key_sigma])*y_factor, color='blue', ls='None', marker='.')
@@ -786,8 +803,9 @@ class Image:
             proj = image.sum(axis=-2)
             proj_plot = (y_axis.min() +(y_axis.max()-y_axis.min()) * proj/proj.max()*0.3)*y_factor
             sp.plot(x_axis*x_factor, proj_plot, color='red')
-            gf = GaussFit(x_axis, proj_plot-proj_plot.min(), fit_const=False)
-            sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color='orange')
+            if plot_gauss:
+                gf = GaussFit(x_axis, proj_plot-proj_plot.min(), fit_const=False)
+                sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color='orange')
 
             #import matplotlib.pyplot as plt
             #plt.figure()
@@ -799,8 +817,9 @@ class Image:
             proj = image.sum(axis=-1)
             proj_plot = (x_axis.min() +(x_axis.max()-x_axis.min()) * proj/proj.max()*0.3)*x_factor
             sp.plot(proj_plot, y_axis*y_factor, color='red')
-            gf = GaussFit(y_axis, proj_plot-proj_plot.min(), fit_const=False)
-            sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color='orange')
+            if plot_gauss:
+                gf = GaussFit(y_axis, proj_plot-proj_plot.min(), fit_const=False)
+                sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color='orange')
 
         if revert_x:
             xlim = sp.get_xlim()
@@ -831,7 +850,16 @@ def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_str
     beamsize = np.sqrt(beamsize_sq)
     streaking_strength = np.abs(np.interp(t_axis, dx_dt_t, dxdt))
     resolution = beamsize / streaking_strength
-    return t_axis, resolution
+    output = {
+            'time': t_axis,
+            'resolution': resolution,
+            'r12': r12,
+            'wf_x': wf_x,
+            'beamsize': beamsize,
+            'streaking_strength': streaking_strength,
+            'beam': beam,
+            }
+    return output
 
 def plot_slice_dict(slice_dict):
     subplot = ms.subplot_factory(3, 3)

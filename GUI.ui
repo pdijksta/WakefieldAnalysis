@@ -2175,38 +2175,6 @@
        <string>Reconstruct Lasing</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_71">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>410</y>
-        <width>101</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Current profile</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="LasingCurrentProfileDataLoad">
-      <property name="geometry">
-       <rect>
-        <x>140</x>
-        <y>410</y>
-        <width>611</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>/storage/tmp_reconstruction/2021_04_28-14_32_02_PassiveReconstruction.h5</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QLineEdit" name="LasingEnergyInput">
       <property name="geometry">
        <rect>

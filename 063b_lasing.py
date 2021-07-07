@@ -27,6 +27,15 @@ data_dir1 = data_dir2.replace('19', '18')
 lasing_on_fileF = data_dir1+'2021_05_18-23_42_10_Lasing_True_SARBD02-DSCR050.h5'
 lasing_off_fileF = data_dir1+'2021_05_18-23_43_39_Lasing_False_SARBD02-DSCR050.h5'
 
+# Full lasing begin
+lasing_off_fileFB = data_dir1+'2021_05_18-21_02_13_Lasing_False_SARBD02-DSCR050.h5'
+lasing_on_fileFB = data_dir1+'2021_05_18-20_52_52_Lasing_True_SARBD02-DSCR050.h5'
+
+# Short pulse begin
+lasing_on_fileSB = data_dir1+'2021_05_18-21_08_24_Lasing_True_SARBD02-DSCR050.h5'
+lasing_off_fileSB = data_dir1+'2021_05_18-21_06_46_Lasing_False_SARBD02-DSCR050.h5'
+
+
 # Short pulse
 lasing_on_fileS = data_dir1+'2021_05_18-23_47_11_Lasing_True_SARBD02-DSCR050.h5'
 lasing_off_fileS = data_dir1+'2021_05_18-23_48_12_Lasing_False_SARBD02-DSCR050.h5'
@@ -45,9 +54,11 @@ plot_repair = False
 
 
 for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, streaker_offset in [
-        (lasing_on_fileF, lasing_off_fileF, 625e-6, True, screen_x00, streaker_offset0),
-        (lasing_on_fileS, lasing_off_fileS, 85e-6, True, screen_x00, streaker_offset0),
+        #(lasing_on_fileF, lasing_off_fileF, 625e-6, True, screen_x00, streaker_offset0),
+        #(lasing_on_fileS, lasing_off_fileS, 85e-6, True, screen_x00, streaker_offset0),
         (lasing_on_file2, lasing_off_file2, 180e-6, False, screen_x02, streaker_offset2),
+        (lasing_on_fileFB, lasing_off_fileFB, 625e-6, False, screen_x02, streaker_offset2),
+        (lasing_on_fileSB, lasing_off_fileSB, 85e-6, False, screen_x02, streaker_offset2),
         ]:
 
     lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)
@@ -150,8 +161,8 @@ for lasing_on_file, lasing_off_file, pulse_energy, repair_data, screen_x0, strea
         #rec_obj.plot_images('raw', title)
         #rec_obj.plot_images('tE', title)
 
-    las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3)
-    las_rec.plot(plot_loss=True)
+    las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.0e3)
+    las_rec.plot()
 
 ms.show()
 

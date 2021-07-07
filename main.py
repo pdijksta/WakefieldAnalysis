@@ -155,7 +155,6 @@ class StartMain(QtWidgets.QMainWindow):
         lasing_file_off = default_dir + '2021_05_18-21_45_00_Lasing_False_SARBD02-DSCR050.h5'
         lasing_file_on = default_dir + '2021_05_18-21_41_35_Lasing_True_SARBD02-DSCR050.h5'
         streaker_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
-        lasing_current_profile = default_dir + '2021_05_18-17_41_02_PassiveReconstruction.h5'
         screen_X0 = 898.02e-6
         streaker_offsets = 0, 364e-6
         delta_gap = 0, -62e-6
@@ -174,7 +173,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.SaveDir.setText(save_dir)
         self.LasingOnDataLoad.setText(lasing_file_on)
         self.LasingOffDataLoad.setText(lasing_file_off)
-        self.LasingCurrentProfileDataLoad.setText(lasing_current_profile)
         self.SaveDir.setText(save_dir)
         self.LoadCalibrationFilename.setText(streaker_calib_file)
         self.ForwardBlmeasFilename.setText(bunch_length_meas_file)

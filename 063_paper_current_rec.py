@@ -27,13 +27,15 @@ data_dir1 = data_dir2.replace('19', '18')
 blmeas_file = data_dir1+'119325494_bunch_length_meas.h5'
 
 
-streaker_calib_files = (data_dir2+'2021_05_19-14_14_22_Calibration_SARUN18-UDCP020.h5', data_dir2+'2021_05_19-14_24_05_Calibration_SARUN18-UDCP020.h5',)
-#streaker_calib_files = (data_dir1+'2021_05_18-23_07_20_Calibration_SARUN18-UDCP020.h5', data_dir1+'2021_05_18-23_32_12_Calibration_SARUN18-UDCP020.h5')
+#streaker_calib_files = (data_dir2+'2021_05_19-14_14_22_Calibration_SARUN18-UDCP020.h5', data_dir2+'2021_05_19-14_24_05_Calibration_SARUN18-UDCP020.h5',)
+streaker_calib_files = (data_dir1+'2021_05_18-23_07_20_Calibration_SARUN18-UDCP020.h5', data_dir1+'2021_05_18-23_32_12_Calibration_SARUN18-UDCP020.h5')
 #streaker_calib_files = (data_dir1+'2021_05_19-00_13_25_Calibration_SARUN18-UDCP020.h5', data_dir1+'2021_05_19-00_24_47_Calibration_SARUN18-UDCP020.h5')
 
 strong_streak_file = data_dir1+'2021_05_18-23_43_39_Lasing_False_SARBD02-DSCR050.h5'
+weak_streak_file = data_dir2+'2021_05_19-14_14_22_Calibration_SARUN18-UDCP020.h5'
 
 meta_data_strong = h5_storage.loadH5Recursive(strong_streak_file)['meta_data_begin']
+meta_data_weak = h5_storage.loadH5Recursive(weak_streak_file)['raw_data']['meta_data_begin']
 
 n_streaker = 1
 charge = 200e-12
@@ -101,13 +103,15 @@ n_res = 3
 
 
 
-for n_meta, (meta_data, ls) in enumerate([(sc.meta_data, None), (meta_data_strong, '--')]):
+for n_meta, (meta_data, ls) in enumerate([(meta_data_weak, None), (meta_data_strong, '--')]):
     tracker.set_simulator(meta_data)
     for distance in [250e-6, 300e-6, 350e-6]:
         beam_offset = sc.gap0/2. - distance
-        tt, res = iap.calc_resolution(blmeas_profile, sc.gap0, beam_offset, 1., tracker, n_streaker, bins=(75, 50))
+        res_dict = iap.calc_resolution(blmeas_profile, sc.gap0, beam_offset, 1., tracker, n_streaker, bins=(75, 50))
+        tt = res_dict['time']
+        res = res_dict['resolution']
         sp_res.plot(tt*1e15, res*1e15, label='Setting %i %i $\mu$m' % (n_meta, round(distance*1e6)), ls=ls)
-    tracker.quad_wake = False
+tracker.quad_wake = False
 
 sp_res.set_ylim(0, 10)
 

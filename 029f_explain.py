@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import elegant_matrix
 import tracking
 import gaussfit
-import misc
+import misc2 as misc
 import image_and_profile as iap
 from h5_storage import loadH5Recursive
 

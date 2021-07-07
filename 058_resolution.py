@@ -43,6 +43,7 @@ with open(filename, 'rb') as f:
     pkl_dict = pickle.load(f)
 
 tracker = pkl_dict['tracker']
+tracker._timestamp = None
 profile_meas = pkl_dict['profile_meas']
 profile_meas.reshape(int(5e3))
 tracker.n_particles = int(1e6)

@@ -63,7 +63,7 @@ screen_x02 = 898.02e-6
 streaker_offset0 = 374e-6
 streaker_offset2 = 364e-6
 
-main_fig = ms.figure('Main lasing', figsize=(8, 6))
+main_fig = ms.figure('Main lasing', figsize=(14, 8.5))
 hspace, wspace = 0.4, 0.4
 ms.plt.subplots_adjust(hspace=hspace, wspace=wspace)
 subplot = ms.subplot_factory(2, 3, grid=False)
@@ -116,7 +116,6 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
         las_rec_fb = las_rec
         rec_obj_fb = las_rec_images['Lasing Off']
 
-
     ms.plt.figure(main_fig.number)
     sp = subplot(sp_ctr, title=main_title, xlabel='t (fs)', ylabel='$\Delta$E (MeV)', grid=False)
     sp_ctr += 1
@@ -129,6 +128,10 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
 
     rec_obj = las_rec_images['Lasing On']
     image_tE = rec_obj.images_tE[0]
+
+    rec_obj.slice_factor = 6
+    rec_obj.slice_x()
+    rec_obj.fit_slice()
     slice_dict = rec_obj.slice_dicts[0]
     image_tE.plot_img_and_proj(sp, plot_gauss=False, ylim=[-8e6, 6e6], slice_dict=slice_dict)
 

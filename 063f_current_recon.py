@@ -246,8 +246,8 @@ sp_res = sp_profile.twinx()
 sp_res.set_ylabel('R (fs)')
 
 
-blmeas_profile.plot_standard(sp_profile1, color='black')
-blmeas_profile.plot_standard(sp_profile, color='black')
+blmeas_profile.plot_standard(sp_profile1, color='black', ls='--')
+blmeas_profile.plot_standard(sp_profile, color='black', ls='--')
 
 sp_profile1.set_yticklabels([])
 
@@ -288,7 +288,7 @@ for ctr, beam_offset in enumerate(beam_offsets[-4:][::-1]):
 #sp_res.plot(time2*1e15, resolution2*1e15, label='D ? nm')
 
 
-sp_res.set_ylim(0, 15)
+sp_res.set_ylim(0, 10)
 
 sp_wake.legend(title='d ($\mu$m)', framealpha=1)
 sp_wake.set_xlim(-80, None)

@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.constants import c
 from scipy.ndimage import gaussian_filter1d
 
@@ -743,7 +744,7 @@ class Image:
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot'):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -784,18 +785,19 @@ class Image:
         else:
             log = image
 
-        sp.imshow(log, aspect='auto', extent=extent, origin='lower')
+        sp.imshow(log, aspect='auto', extent=extent, origin='lower', cmap=plt.get_cmap(cmapname))
 
         if slice_dict is not None:
             old_lim = sp.get_xlim(), sp.get_ylim()
             for key_mean, key_sigma, color in [
                     #('slice_mean_rms', 'slice_rms_sq', 'blue'),
-                    ('slice_cut_mean', 'slice_cut_rms_sq', 'green'),
+                    ('slice_cut_mean', 'slice_cut_rms_sq', 'orange'),
                     #('slice_mean', 'slice_sigma_sq', 'red'),
                     ]:
-                sp.errorbar(
-                        slice_dict['slice_x']*x_factor,
-                        slice_dict[key_mean]*y_factor, yerr=np.sqrt(slice_dict[key_sigma])*y_factor, color='blue', ls='None', marker='.')
+                xx = slice_dict['slice_x']*x_factor
+                yy = slice_dict[key_mean]*y_factor
+                yy_err = np.sqrt(slice_dict[key_sigma])*y_factor
+                sp.errorbar(xx, yy, yerr=yy_err, color=color, ls='None', marker='None', lw=.75)
             sp.set_xlim(*old_lim[0])
             sp.set_ylim(*old_lim[1])
 

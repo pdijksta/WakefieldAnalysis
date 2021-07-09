@@ -43,6 +43,8 @@ class dummy_plot:
     scatter = dummy
     set_ylim = dummy
     set_xlim = dummy
+    set_yticklabels = dummy
+    set_yticks = dummy
 
 
 def power_Eloss(slice_current, slice_Eloss_eV):

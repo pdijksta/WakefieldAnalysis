@@ -50,6 +50,11 @@ sc_dict = h5_storage.loadH5Recursive(sc_file)
 n_streaker = 1
 recon_gap = args.recon_gap
 
+plot_gap_recon = True
+
+if plot_gap_recon:
+    recon_gap = True
+
 
 gauss_kwargs = config.get_default_gauss_recon_settings()
 tracker_kwargs = config.get_default_tracker_settings()
@@ -92,7 +97,7 @@ meas_screen.reshape(tracker.len_screen)
 
 if recon_gap:
     gap_arr = np.array([10e-3-100e-6, 10e-3+50e-6])
-    gap_recon_dict = sc.gap_reconstruction2(gap_arr, tracker, recon_kwargs, streaker_offset)
+    gap_recon_dict = sc.gap_reconstruction2(gap_arr, tracker, recon_kwargs, streaker_offset, gap0=10e-3)
 
     delta_gap = gap_recon_dict['gap'] - 10e-3
 else:
@@ -143,11 +148,11 @@ for img_index, title in [(index, '(b) Streaked'), (where0, '(a) Unstreaked')][::
         unstreaked_beamsize = x_gf
 
 sp_screen, sp_profile = [subplot(x+3, grid=False) for x in range(2)]
-sp_opt = sp_moments = lasing.dummy_plot()
+sp_opt = sp_moments = sp_dummy = lasing.dummy_plot()
 sp_ctr += 2
 
 for sp, title, xlabel, ylabel in [
-        (sp_screen, '(c) Screen reconstruction', 'x (mm)', 'Intensity (arb. units)'),
+        (sp_screen, '(c) Screen reconstruction', 'x (mm)', 'Charge density (nC/m)'),
         (sp_profile, '(d) Profile reconstruction', 't (fs)', 'Current (kA)'),
         (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
         (sp_moments, 'Transverse moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
@@ -250,10 +255,14 @@ blmeas_profile.energy_eV = tracker.energy_eV
 tracker.override_quad_beamsize = False
 #tracker.n_emittances = [200e-9, 200e-9]
 
-sp_wake = subplot(sp_ctr, title='(g) Profile and wake', xlabel='t (fs)', ylabel='Wake (MV/m)', title_fs=title_fs)
+if plot_gap_recon:
+    sp_wake = subplot(sp_ctr, title='(g) Gap reconstruction', xlabel='$\Delta$ d ($\mu$m)', ylabel='rms bunch duration (fs)', title_fs=title_fs)
+    sp_profile1 = sp_dummy
+else:
+    sp_wake = subplot(sp_ctr, title='(g) Profile and wake', xlabel='t (fs)', ylabel='Wake (MV/m)', title_fs=title_fs)
+    sp_profile1 = sp_wake.twinx()
 sp_ctr += 1
-sp_profile1 = sp_wake.twinx()
-#sp_wake.set_ylabel('Wake (MV/m)')
+
 sp_res = subplot(sp_ctr, title='(h) Resolution', xlabel='t (fs)', ylabel='R (fs)', title_fs=title_fs)
 sp_ctr += 1
 sp_profile = sp_res.twinx()
@@ -266,12 +275,15 @@ sp_profile1.set_yticklabels([])
 sp_profile1.set_yticks([])
 sp_profile.set_yticks([])
 
-for ctr, beam_offset in enumerate(beam_offsets[-4:][::-1]):
+for ctr, beam_offset in enumerate(beam_offsets[-4:]):
     d = gap/2. - abs(beam_offset)
     wake_dict = blmeas_profile.calc_wake(gap, beam_offset, struct_length)
     wake_t = wake_dict['input']['charge_xx']/c + blmeas_profile.time.min()
     wake_E = wake_dict['dipole']['wake_potential']
-    color = sp_wake.plot(wake_t*1e15, np.abs(wake_E)/1e6, label='%i' % (d*1e6))[0].get_color()
+    if not plot_gap_recon:
+        color = sp_wake.plot(wake_t*1e15, np.abs(wake_E)/1e6, label='%i' % (d*1e6))[0].get_color()
+    else:
+        color = ms.plt.rcParams['axes.prop_cycle'].by_key()['color'][ctr]
 
     tracker.n_particles = int(200e3)
     tracker.n_emittances[0] = tracker.fit_emittance(unstreaked_beamsize, 20e-6, 200e-15)
@@ -296,7 +308,13 @@ sp_res.set_ylim(0, 10)
 #sp_res.legend()
 
 if recon_gap:
-    sc.plot_gap_reconstruction(gap_recon_dict, streaker_offset)
+    if plot_gap_recon:
+        plot_handles = (sp_wake, sp_dummy, sp_dummy, sp_dummy)
+    else:
+        plot_handles = None
+    sc.plot_gap_reconstruction(gap_recon_dict, streaker_offset, plot_handles=plot_handles)
+    old_lim = sp_wake.get_xlim()
+    sp_wake.set_xlim([old_lim[0], old_lim[1]+150])
 
 if not args.noshow:
     ms.show()

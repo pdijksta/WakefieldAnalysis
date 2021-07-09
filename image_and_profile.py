@@ -191,7 +191,7 @@ class Profile:
         self._yy = self._yy[::-1]
 
 class ScreenDistribution(Profile):
-    def __init__(self, x, intensity, real_x=None, subtract_min=True, ignore_range=100e-6):
+    def __init__(self, x, intensity, real_x=None, subtract_min=True, ignore_range=100e-6, charge=1):
         super().__init__()
         self._xx = x
         assert np.all(np.diff(self._xx)>=0)
@@ -200,6 +200,8 @@ class ScreenDistribution(Profile):
             self._yy = self._yy - np.min(self._yy)
         self.real_x = real_x
         self.ignore_range = ignore_range
+        self.charge = charge
+        self.normalize()
 
     @property
     def x(self):
@@ -209,7 +211,9 @@ class ScreenDistribution(Profile):
     def intensity(self):
         return self._yy
 
-    def normalize(self, norm=1.):
+    def normalize(self, norm=None):
+        if norm is None:
+            norm = self.charge
         self._yy = self._yy / self.integral * norm
 
     def plot_standard(self, sp, **kwargs):
@@ -225,17 +229,18 @@ class ScreenDistribution(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        return sp.plot(x*1e3, y/self.integral/1e3, **kwargs)
+        return sp.plot(x*1e3, y*1e9, **kwargs)
 
     def to_dict(self):
         return {'x': self.x,
                 'intensity': self.intensity,
                 'real_x': self.real_x,
+                'charge': self.charge,
                 }
 
     @staticmethod
     def from_dict(dict_):
-        return ScreenDistribution(dict_['x'], dict_['intensity'], dict_['real_x'])
+        return ScreenDistribution(dict_['x'], dict_['intensity'], dict_['real_x'], charge=dict_['charge'])
 
 class AnyProfile(Profile):
     def __init__(self, xx, yy):
@@ -244,7 +249,7 @@ class AnyProfile(Profile):
         self.yy = self._yy = yy
 
 
-def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
+def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, charge=1):
     """
     Smoothening by applying changes to coordinate.
     Does not actually smoothen the output, just broadens it.
@@ -259,7 +264,7 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0):
     screen_hist, bin_edges0 = np.histogram(x_points2, bins=screen_bins, density=True)
     screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
 
-    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points)
+    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points, charge=charge)
 
 class BeamProfile(Profile):
     def __init__(self, time, current, energy_eV, charge):

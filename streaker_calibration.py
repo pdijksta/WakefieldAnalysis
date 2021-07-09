@@ -644,7 +644,7 @@ class StreakerCalibration:
                 }
         return output
 
-    def gap_reconstruction2(self, gap_arr, tracker, gauss_kwargs, streaker_offset, precision=1e-6):
+    def gap_reconstruction2(self, gap_arr, tracker, gauss_kwargs, streaker_offset, precision=1e-6, gap0=0):
         """
         Optimized version
         """
@@ -692,6 +692,7 @@ class StreakerCalibration:
         gap = get_gap()
         output = {
                 'gap': gap,
+                'gap0': gap0,
                 'gap_arr': np.array(gaps),
                 'lin_fit': np.array(lin_fit),
                 'lin_fit_const': np.array(lin_fit_const),
@@ -713,16 +714,18 @@ class StreakerCalibration:
         all_rms_arr = gap_recon_dict['all_rms']
         lin_fit = gap_recon_dict['lin_fit']
         lin_fit_const = gap_recon_dict['lin_fit_const']
+        gap0 = gap_recon_dict['gap0']
 
-        for gap_ctr, gap in enumerate(gap_arr):
+        for gap_ctr in list(range(len(gap_arr)))[::-1]:
+            gap = gap_arr[gap_ctr]
             distance_arr = gap/2. - np.abs(self.offsets[self.offsets != 0] - streaker_offset)
             d_arr2 = distance_arr - distance_arr.min()
             sort = np.argsort(d_arr2)
-            _label = '%.3f' % (gap*1e3)
+            _label = '%i' % round((gap-gap0)*1e6)
             #sp_centroid.plot(d_arr2, centroid_arr, label=_label)
             rms_arr = all_rms_arr[gap_ctr]
-            color = ms.colorprog(gap_ctr, gap_arr)
-            sp_rms.plot(d_arr2[sort]*1e6, rms_arr[sort]*1e15, label=_label, marker='.', color=color)
+            #color = ms.colorprog(gap_ctr, gap_arr)
+            color= sp_rms.plot(d_arr2[sort]*1e6, rms_arr[sort]*1e15, label=_label, marker='.')[0].get_color()
             fit_yy = lin_fit_const[gap_ctr] + lin_fit[gap_ctr]*d_arr2[sort]
             sp_rms.plot(d_arr2[sort]*1e6, fit_yy*1e15, color=color, ls='--')
 
@@ -734,7 +737,7 @@ class StreakerCalibration:
         sp_fit.axhline(0, color='black', ls='--')
         sp_fit.axvline(gap_recon_dict['gap']*1e3, color='black', ls='--')
 
-        sp_rms.legend()
+        sp_rms.legend(title='$\Delta$g ($\mu$m)')
 
 
 def gauss_recon_figure(figsize=None):

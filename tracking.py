@@ -365,7 +365,7 @@ class Tracker:
         #        print()
 
 
-        screen = iap.getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0)
+        screen = iap.getScreenDistributionFromPoints(beam_at_screen[0,:], self.screen_bins, 0, charge=beamProfile.charge)
         screen_no_smoothen = copy.deepcopy(screen)
         screen.smoothen(self.smoothen)
 
@@ -423,7 +423,7 @@ class Tracker:
             r12_dict[n_streaker] = rr[0,1]
 
         screen_watcher = sim.watch[-1]
-        screen = iap.getScreenDistributionFromPoints(screen_watcher['x'], self.screen_bins)
+        screen = iap.getScreenDistributionFromPoints(screen_watcher['x'], self.screen_bins, charge=beamProfile.charge)
         screen.smoothen(self.smoothen)
         screen.cutoff(self.screen_cutoff)
         screen.reshape(self.len_screen)

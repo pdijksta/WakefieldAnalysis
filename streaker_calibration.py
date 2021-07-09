@@ -459,7 +459,7 @@ class StreakerCalibration:
             sim_screens = None
 
         if forward_propagate_blmeas:
-            blmeas_profile.plot_standard(sp_current, color='black')
+            blmeas_profile.plot_standard(sp_current, color='black', ls='--')
 
         for fit_dict, sp1, sp2, yy, yy_err, yy_sim in [
                 (fit_dict_centroid, sp_center, sp_center2, self.centroids, self.centroids_std, centroid_sim),
@@ -577,7 +577,7 @@ class StreakerCalibration:
 
         if blmeas_profile is not None:
             for _sp in sp_profile_pos, sp_profile_neg:
-                blmeas_profile.plot_standard(_sp, color='black', lw=3, center=center, label='TDC %i fs' % round(blmeas_profile.rms()*1e15))
+                blmeas_profile.plot_standard(_sp, color='black', center=center, ls='--', label='%i' % round(blmeas_profile.rms()*1e15))
 
         #gap = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['gap_fit']
         #streaker_center = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['streaker_offset']
@@ -595,19 +595,19 @@ class StreakerCalibration:
                 continue
 
             rec_profile = gauss_dict['reconstructed_profile']
-            label = '%i $\mu$m %i fs' % (round(distance*1e6), round(rec_profile.rms()*1e15))
+            label = '%i' % (round(rec_profile.rms()*1e15))
             rec_profile.plot_standard(sp_profile, label=label, center=center)
 
             meas_screen = gauss_dict['meas_screen']
             rec_screen = gauss_dict['reconstructed_screen']
-            label = '%i $\mu$m' % round(distance*1e6)
+            label = '%i' % round(distance*1e6)
             color = meas_screen.plot_standard(sp_screen, label=label)[0].get_color()
             rec_screen.plot_standard(sp_screen, ls='--', color=color)
 
         for _sp in sp_screen_pos, sp_screen_neg:
-            _sp.legend(title='Distance / rms')
+            _sp.legend(title='d ($\mu$m)')
         for _sp in sp_profile_pos, sp_profile_neg:
-            _sp.legend()
+            _sp.legend(title='rms (fs)')
 
     def gap_reconstruction(self, gap_arr, tracker, gauss_kwargs):
 

@@ -15,15 +15,21 @@ import image_and_profile as iap
 import myplotstyle as ms
 import elegant_matrix
 
+np.random.seed(0)
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--noshow', action='store_true')
 parser.add_argument('--save', type=str)
+parser.add_argument('--recon-gap', action='store_true')
 args = parser.parse_args()
 
 ms.closeall()
 
-title_fs = 10
+config.fontsize=9
+
+title_fs = config.fontsize
+ms.set_fontsizes(title_fs)
 
 elegant_matrix.set_tmp_dir('~/tmp_elegant/')
 
@@ -42,7 +48,18 @@ blmeas_file = data_dir1+'119325494_bunch_length_meas.h5'
 sc_file = data_dir1+'2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
 sc_dict = h5_storage.loadH5Recursive(sc_file)
 n_streaker = 1
-recon_gap = False
+recon_gap = args.recon_gap
+
+
+gauss_kwargs = config.get_default_gauss_recon_settings()
+tracker_kwargs = config.get_default_tracker_settings()
+
+blmeas_file = data_dir1+'119325494_bunch_length_meas.h5'
+blmeas_profile = iap.profile_from_blmeas(blmeas_file, gauss_kwargs['tt_halfrange'], gauss_kwargs['charge'], 0, True)
+blmeas_profile.cutoff2(0.03)
+blmeas_profile.crop()
+blmeas_profile.reshape(1000)
+
 
 #sc_dict = h5_storage.loadH5Recursive(sc_file)
 #sc = streaker_calibration.StreakerCalibration('Aramis', n_streaker, 10e-3, sc_dict)
@@ -79,7 +96,7 @@ if recon_gap:
 
     delta_gap = gap_recon_dict['gap'] - 10e-3
 else:
-    delta_gap = -55e-6
+    delta_gap = -53e-6
 print('Delta gap %i um' % (delta_gap*1e6))
 
 
@@ -94,8 +111,8 @@ recon_kwargs['n_streaker'] = 1
 recon_kwargs['meas_screen'] = meas_screen
 
 
-hspace, wspace = 0.5, 0.4
-fig = ms.figure('Current profile reconstruction', figsize=(6, 12))
+hspace, wspace = 0.45, 0.35
+fig = ms.figure('Current profile reconstruction', figsize=(6, 10))
 ms.plt.subplots_adjust(hspace=hspace, wspace=wspace)
 subplot = ms.subplot_factory(4, 2, grid=False)
 sp_ctr = 1
@@ -122,14 +139,16 @@ for img_index, title in [(index, '(b) Streaked'), (where0, '(a) Unstreaked')][::
     x_rms = prof.rms()
     x_gf = prof.gaussfit.sigma
     print('%s RMS: %i um; Gauss sigma: %i um' % (title, x_rms*1e6, x_gf*1e6))
+    if img_index == where0:
+        unstreaked_beamsize = x_gf
 
-sp_profile, sp_screen = [subplot(x+3, grid=False) for x in range(2)]
+sp_screen, sp_profile = [subplot(x+3, grid=False) for x in range(2)]
 sp_opt = sp_moments = lasing.dummy_plot()
 sp_ctr += 2
 
 for sp, title, xlabel, ylabel in [
-        (sp_screen, '(d) Screen rec', 'x (mm)', 'Intensity (arb. units)'),
-        (sp_profile, '(c) Profile rec', 't (fs)', 'Current (kA)'),
+        (sp_screen, '(c) Screen reconstruction', 'x (mm)', 'Intensity (arb. units)'),
+        (sp_profile, '(d) Profile reconstruction', 't (fs)', 'Current (kA)'),
         (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
         (sp_moments, 'Transverse moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
         ]:
@@ -142,21 +161,21 @@ plot_handles = sp_screen, sp_profile, sp_opt, sp_moments
 
 outp = analysis.current_profile_rec_gauss(tracker, recon_kwargs, plot_handles, blmeas_file, both_zero_crossings=False)
 
-sp_screen.get_legend().remove()
+#sp_screen.get_legend().remove()
 sp_profile.get_legend().remove()
 
 
-sp_profile_pos = subplot(sp_ctr, title='(e) Profiles', xlabel='t (fs)', ylabel='I (kA)')
+sp_screen_pos = subplot(sp_ctr, title='(e) Distance scan', xlabel='x (mm)', ylabel='Intensity (arb. units)')
 sp_ctr += 1
-sp_screen_pos = subplot(sp_ctr, title='(f) Screens', xlabel='x (mm)', ylabel='Intensity (arb. units)')
+sp_profile_pos = subplot(sp_ctr, title='(e) Profile comparison', xlabel='t (fs)', ylabel='I (kA)')
 sp_ctr += 1
 
 plot_handles = None, (lasing.dummy_plot(), sp_screen_pos, lasing.dummy_plot(), sp_profile_pos)
 beam_offsets, _ = sc.reconstruct_current(tracker, copy.deepcopy(recon_kwargs), force_gap=recon_kwargs['gaps'][1])
-sc.plot_reconstruction(plot_handles=plot_handles)
+sc.plot_reconstruction(plot_handles=plot_handles, blmeas_profile=blmeas_profile)
 
-sp_screen_pos.get_legend().remove()
-sp_profile_pos.get_legend().remove()
+#sp_screen_pos.get_legend().remove()
+#sp_profile_pos.get_legend().remove()
 
 
 
@@ -165,22 +184,17 @@ gap = recon_kwargs['gaps'][1]
 beam_offset = recon_kwargs['beam_offsets'][-1]
 struct_length = 1
 
+
 gauss_kwargs = config.get_default_gauss_recon_settings()
 tracker_kwargs = config.get_default_tracker_settings()
-
 n_emittance = 300e-9
 tracker_kwargs['n_emittances'] = [n_emittance, n_emittance]
 
 tracker = tracking.Tracker(**tracker_kwargs)
 
 
-blmeas_file = data_dir1+'119325494_bunch_length_meas.h5'
-blmeas_profile = iap.profile_from_blmeas(blmeas_file, gauss_kwargs['tt_halfrange'], gauss_kwargs['charge'], 0, True)
-blmeas_profile.cutoff2(0.03)
-blmeas_profile.crop()
-blmeas_profile.reshape(1000)
 
-blmeas_profile.plot_standard(sp_profile_pos, color='black')
+#blmeas_profile.plot_standard(sp_profile_pos, color='black', ls='--')
 
 #ms.figure('Resolution', figsize=(10, 8))
 #ms.plt.subplots_adjust(hspace=0.4, wspace=0.8)
@@ -234,22 +248,23 @@ calib_image = screen_calib_image
 tracker.set_simulator(meta_data)
 blmeas_profile.energy_eV = tracker.energy_eV
 tracker.override_quad_beamsize = False
-tracker.n_emittances = [200e-9, 200e-9]
+#tracker.n_emittances = [200e-9, 200e-9]
 
 sp_wake = subplot(sp_ctr, title='(g) Profile and wake', xlabel='t (fs)', ylabel='Wake (MV/m)', title_fs=title_fs)
 sp_ctr += 1
 sp_profile1 = sp_wake.twinx()
 #sp_wake.set_ylabel('Wake (MV/m)')
-sp_profile = subplot(sp_ctr, title='(h) Resolution', xlabel='t (fs)', ylabel='I (kA)', title_fs=title_fs)
+sp_res = subplot(sp_ctr, title='(h) Resolution', xlabel='t (fs)', ylabel='R (fs)', title_fs=title_fs)
 sp_ctr += 1
-sp_res = sp_profile.twinx()
-sp_res.set_ylabel('R (fs)')
+sp_profile = sp_res.twinx()
 
 
 blmeas_profile.plot_standard(sp_profile1, color='black', ls='--')
 blmeas_profile.plot_standard(sp_profile, color='black', ls='--')
 
 sp_profile1.set_yticklabels([])
+sp_profile1.set_yticks([])
+sp_profile.set_yticks([])
 
 for ctr, beam_offset in enumerate(beam_offsets[-4:][::-1]):
     d = gap/2. - abs(beam_offset)
@@ -258,11 +273,12 @@ for ctr, beam_offset in enumerate(beam_offsets[-4:][::-1]):
     wake_E = wake_dict['dipole']['wake_potential']
     color = sp_wake.plot(wake_t*1e15, np.abs(wake_E)/1e6, label='%i' % (d*1e6))[0].get_color()
 
-
     tracker.n_particles = int(200e3)
+    tracker.n_emittances[0] = tracker.fit_emittance(unstreaked_beamsize, 20e-6, 200e-15)
+    print('Emittance X set to %i nm' % (tracker.n_emittances[0]*1e9))
     res_dicts = []
     if beam_offset in (beam_offsets[-4], beam_offsets[-1]):
-        for quad_wake, label, ls in [(False, 'D', '--'), (True, 'Q', None)]:
+        for quad_wake, label, ls in [(False, 'D', 'dotted'), (True, 'Q', None)]:
             tracker.quad_wake = quad_wake
             res_dict = iap.calc_resolution(blmeas_profile, gap, beam_offset, struct_length, tracker, 1)
             res = res_dict['resolution']
@@ -271,27 +287,10 @@ for ctr, beam_offset in enumerate(beam_offsets[-4:][::-1]):
             sp_res.plot(res_t*1e15, res*1e15, label=label, color=color, ls=ls)
             res_dicts.append(res_dict)
 
-    #sp_image = subplot(sp_ctr, title='Raw image', xlabel='x (mm)', ylabel='y (mm)', grid=False)
-    #sp_ctr += 1
-    #image.plot_img_and_proj(sp_image)
-
-    #gfX = gaussfit.GaussFit(x_axis_calib, screen_calib_raw_image.sum(axis=0))
-    #beamsize = gfX.sigma
-
-    #sp_screen_calib = subplot(sp_ctr, title='Screen calibration', xlabel='x (mm)', ylabel='y (mm)', grid=False)
-    #sp_ctr += 1
-    #calib_image.plot_img_and_proj(sp_screen_calib)
-
-    #resolution2 = beamsize / res_dicts[0]['streaking_strength']
-    #time2 = res_dicts[0]['time']
-
-#sp_res.plot(time2*1e15, resolution2*1e15, label='D ? nm')
-
-
 sp_res.set_ylim(0, 10)
 
-sp_wake.legend(title='d ($\mu$m)', framealpha=1)
-sp_wake.set_xlim(-80, None)
+#sp_wake.legend(title='d ($\mu$m)', framealpha=1)
+#sp_wake.set_xlim(-80, None)
 
 
 #sp_res.legend()

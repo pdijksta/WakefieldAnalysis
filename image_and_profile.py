@@ -744,7 +744,7 @@ class Image:
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot'):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='green', key_sigma='slice_cut_rms_sq', key_mean='slice_cut_mean'):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -761,7 +761,6 @@ class Image:
             x_factor = unit_to_factor(self.x_unit)
         if y_factor is None:
             y_factor = unit_to_factor(self.y_unit)
-
 
         x_axis, y_axis, image = self.x_axis, self.y_axis, self.image
         if xlim is None:
@@ -789,39 +788,28 @@ class Image:
 
         if slice_dict is not None:
             old_lim = sp.get_xlim(), sp.get_ylim()
-            for key_mean, key_sigma, color in [
-                    #('slice_mean_rms', 'slice_rms_sq', 'blue'),
-                    ('slice_cut_mean', 'slice_cut_rms_sq', 'orange'),
-                    #('slice_mean', 'slice_sigma_sq', 'red'),
-                    ]:
-                xx = slice_dict['slice_x']*x_factor
-                yy = slice_dict[key_mean]*y_factor
-                yy_err = np.sqrt(slice_dict[key_sigma])*y_factor
-                sp.errorbar(xx, yy, yerr=yy_err, color=color, ls='None', marker='None', lw=.75)
+            mask = slice_dict['slice_current'] > slice_cutoff
+            xx = slice_dict['slice_x'][mask]*x_factor
+            yy = slice_dict[key_mean][mask]*y_factor
+            yy_err = np.sqrt(slice_dict[key_sigma][mask])*y_factor
+            sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, ls='None', marker='None', lw=.75)
             sp.set_xlim(*old_lim[0])
             sp.set_ylim(*old_lim[1])
 
         if plot_proj:
             proj = image.sum(axis=-2)
             proj_plot = (y_axis.min() +(y_axis.max()-y_axis.min()) * proj/proj.max()*0.3)*y_factor
-            sp.plot(x_axis*x_factor, proj_plot, color='red')
+            sp.plot(x_axis*x_factor, proj_plot, color=proj_color)
             if plot_gauss:
                 gf = GaussFit(x_axis, proj_plot-proj_plot.min(), fit_const=False)
-                sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color='orange')
-
-            #import matplotlib.pyplot as plt
-            #plt.figure()
-            #sp = plt.subplot(1,1,1)
-            #gf.plot_data_and_fit(sp)
-            #plt.show()
-            #import pdb; pdb.set_trace()
+                sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color=gauss_color)
 
             proj = image.sum(axis=-1)
             proj_plot = (x_axis.min() +(x_axis.max()-x_axis.min()) * proj/proj.max()*0.3)*x_factor
-            sp.plot(proj_plot, y_axis*y_factor, color='red')
+            sp.plot(proj_plot, y_axis*y_factor, color=proj_color)
             if plot_gauss:
                 gf = GaussFit(y_axis, proj_plot-proj_plot.min(), fit_const=False)
-                sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color='orange')
+                sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color=gauss_color)
 
         if revert_x:
             xlim = sp.get_xlim()

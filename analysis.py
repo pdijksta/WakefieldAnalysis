@@ -34,8 +34,9 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
 
 def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None, both_zero_crossings=True):
 
-    best_profile = gauss_dict['reconstructed_profile']
-    best_screen = gauss_dict['reconstructed_screen']
+    #best_profile = gauss_dict['reconstructed_profile']
+    #best_screen = gauss_dict['reconstructed_screen']
+    best_index = gauss_dict['best_index']
     opt_func_values = gauss_dict['opt_func_values']
     opt_func_screens = gauss_dict['opt_func_screens']
     opt_func_profiles = gauss_dict['opt_func_profiles']
@@ -55,13 +56,17 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
     centroid_arr = rms_arr.copy()
 
     for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
-        screen.plot_standard(sp_screen, label='%i: %.1f fs' % (opt_ctr, sigma*1e15))
-        profile.plot_standard(sp_profile, label='%i: %.1f fs' % (opt_ctr, sigma*1e15), center='Mean')
+        if opt_ctr == best_index:
+            lw = 3
+        else:
+            lw = None
+        screen.plot_standard(sp_screen, label='%.1f fs' % (sigma*1e15), lw=lw)
+        profile.plot_standard(sp_profile, label='%.1f fs' % (sigma*1e15), center='Mean', lw=lw)
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 
-    best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
-    best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')
+    #best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
+    #best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')
 
     if blmeas_file is not None:
         blmeas_profiles = []
@@ -87,7 +92,7 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
     sp_moments.axhline(meas_screen.rms()*1e3, label='Measured rms', color=color, ls='--')
 
     sp_moments.legend()
-    sp_screen.legend()
+    sp_screen.legend(title='Initial $\sigma$', fontsize=config.fontsize)
     sp_profile.legend()
 
     yy_opt = opt_func_values[:,1]

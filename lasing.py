@@ -292,7 +292,7 @@ class LasingReconstruction:
         lasing_dict['all_Eloss'] = all_loss
         lasing_dict['all_Espread'] = all_spread
 
-    def plot(self, plot_handles=None, figsize=None):
+    def plot(self, plot_handles=None, figsize=None, n_shots=None):
         mask = self.current_mask
 
         if plot_handles is None:
@@ -329,6 +329,14 @@ class LasingReconstruction:
         sp_slice_sigma.legend()
 
         lasing_dict = self.lasing_dict
+
+        for key, sp in [('all_Eloss', sp_lasing_loss), ('all_Espread', sp_lasing_spread)]:
+            if n_shots is None:
+                n_shots = len(lasing_dict[key])
+            for n_shot, y_arr in enumerate(lasing_dict[key]):
+                if n_shot > len(lasing_dict[key]) - n_shots:
+                    sp.plot(lasing_dict['time']*1e15, y_arr/1e9, ls='--')
+
         for key, label, sp in [
                 ('Eloss', '$\Delta E$', sp_lasing_loss),
                 ('Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
@@ -338,19 +346,15 @@ class LasingReconstruction:
             #sp.errorbar(xx_plot, yy_plot, yerr=yy_err, label=label, color='red', lw=3)
             yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
             yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
-            sp.errorbar(xx_plot, yy_plot, yerr=yy_err, label=label, color='black', lw=3)
-        sp_lasing_loss.legend()
-        sp_lasing_spread.legend()
+            sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='black', lw=2)
 
-        for key, label, sp in [('all_Eloss', '$\Delta E$', sp_lasing_loss), ('all_Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
-            for y_arr in lasing_dict[key]:
-                sp.plot(lasing_dict['time']*1e15, y_arr/1e9)
+        #sp_lasing_loss.legend()
+        #sp_lasing_spread.legend()
 
         for label, recon_image in [('Lasing On', self.images_on), ('Lasing Off', self.images_off)]:
             delta_distance = recon_image.beam_offsets - (-recon_image.streaker_center)
             mean_x = np.array([abs(x.mean()) for x in recon_image.meas_screens])
-            sort = np.argsort(mean_x)
-            sp_orbit.plot(mean_x[sort]*1e3, delta_distance[sort]*1e6, label=label, marker='.')
+            sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
         sp_orbit.legend()
 
 
@@ -424,6 +428,8 @@ class LasingReconstructionImages:
             if self.subtract_median:
                 img = img - np.median(img)
                 img[img<0] = 0
+            else:
+                img = img - np.quantile(img, 0.1)
             image = iap.Image(img, self.x_axis, y_axis)
             self.raw_image_objs.append(image)
             screen = iap.ScreenDistribution(image.x_axis, image.image.sum(axis=-2))
@@ -459,7 +465,7 @@ class LasingReconstructionImages:
         tt_halfrange = self.recon_kwargs['tt_halfrange']
         offset_dicts = []
         gaps = [10e-3, 10e-3]
-        gaps[self.n_streaker] = self.epics_gap + self.delta_gap
+        gaps[self.n_streaker] = self.gap
         beam_offsets = []
         for meas_screen in self.meas_screens:
             offset_dict = self.tracker.find_best_offset(offset0, self.offset_explore, tt_halfrange, meas_screen, gaps, self.profile, self.n_streaker, self.charge)

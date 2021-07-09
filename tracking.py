@@ -99,7 +99,6 @@ class Tracker:
             self._r12 = outp_r12
         return self._disp
 
-
     def fit_emittance(self, target_beamsize, assumed_screen_res, tt_halfrange):
         if target_beamsize <= assumed_screen_res:
             raise ValueError('Target beamsize must be larger assumed screen resolution')
@@ -843,6 +842,7 @@ class Tracker:
                'meas_screen': meas_screen,
                'gaps': np.array(gaps),
                'beam_offsets': np.array(beam_offsets),
+               'best_index': index_min,
                }
         # Final step
         if not self_consistent:

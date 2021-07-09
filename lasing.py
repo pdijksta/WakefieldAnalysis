@@ -407,9 +407,9 @@ class LasingReconstructionImages:
         images = data_dict['pyscan_result']['image'].astype(float)
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(float)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(float)
-        self.add_images(meta_data, images, x_axis, y_axis, max_index)
         if self.charge is None:
             self.charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
+        self.add_images(meta_data, images, x_axis, y_axis, max_index)
 
     def add_images(self, meta_data, images, x_axis, y_axis, max_index=None):
         self.meta_data = meta_data
@@ -434,7 +434,7 @@ class LasingReconstructionImages:
                 img = img - np.quantile(img, 0.1)
             image = iap.Image(img, self.x_axis, y_axis)
             self.raw_image_objs.append(image)
-            screen = iap.ScreenDistribution(image.x_axis, image.image.sum(axis=-2))
+            screen = iap.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), charge=self.charge)
             self.meas_screens.append(screen)
             rms_arr.append(screen.rms())
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]

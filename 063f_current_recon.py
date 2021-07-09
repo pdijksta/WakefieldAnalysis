@@ -170,7 +170,7 @@ outp = analysis.current_profile_rec_gauss(tracker, recon_kwargs, plot_handles, b
 sp_profile.get_legend().remove()
 
 
-sp_screen_pos = subplot(sp_ctr, title='(e) Distance scan', xlabel='x (mm)', ylabel='Intensity (arb. units)')
+sp_screen_pos = subplot(sp_ctr, title='(e) Distance scan', xlabel='x (mm)', ylabel=config.rho_label)
 sp_ctr += 1
 sp_profile_pos = subplot(sp_ctr, title='(e) Profile comparison', xlabel='t (fs)', ylabel='I (kA)')
 sp_ctr += 1

@@ -74,3 +74,5 @@ tmp_elegant_dir = '~/tmp_elegant'
 
 fontsize = 8
 
+rho_label = r'$\rho$ (nC/m)'
+

@@ -37,7 +37,7 @@ def analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=None, f
     if tt_halfrange is None:
         tt_halfrange = config.get_default_gauss_recon_settings()['tt_halfrange']
 
-    sc = StreakerCalibration(beamline, n_streaker, gap0, file_or_dict=result_dict, fit_gap=fit_gap, fit_order=fit_order)
+    sc = StreakerCalibration(beamline, n_streaker, gap0, charge, file_or_dict=result_dict, fit_gap=fit_gap, fit_order=fit_order)
     sc.fit()
     if forward_propagate_blmeas:
         beam_profile = iap.profile_from_blmeas(blmeas, tt_halfrange, charge, tracker.energy_eV, True, 1)
@@ -46,7 +46,7 @@ def analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=None, f
         beam_profile.crop()
         beam_profile.reshape(tracker.len_screen)
 
-        sc.forward_propagate(beam_profile, tt_halfrange, charge, tracker)
+        sc.forward_propagate(beam_profile, tt_halfrange, tracker)
     sc.plot_streaker_calib(plot_handles)
     return sc.get_result_dict()
 
@@ -59,7 +59,7 @@ def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handl
     if charge is None:
         charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
 
-    sc = StreakerCalibration(beamline, n_streaker, gap0, file_or_dict=result_dict, fit_gap=True, fit_order=False)
+    sc = StreakerCalibration(beamline, n_streaker, gap0, charge, file_or_dict=result_dict, fit_gap=True, fit_order=False)
     streaker_offset = sc.fit_type('centroid')['streaker_offset']
     gap_recon = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset)
     delta_gap = gap_recon['gap'] - gap0
@@ -82,7 +82,7 @@ def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handl
 
 class StreakerCalibration:
 
-    def __init__(self, beamline, n_streaker, gap0, file_or_dict=None, offsets_range=None, images=None, x_axis=None, y_axis=None, fit_gap=True, fit_order=False, order_centroid=order0_centroid, order_rms=order0_rms, proj_cutoff=0.03):
+    def __init__(self, beamline, n_streaker, gap0, charge, file_or_dict=None, offsets_range=None, images=None, x_axis=None, y_axis=None, fit_gap=True, fit_order=False, order_centroid=order0_centroid, order_rms=order0_rms, proj_cutoff=0.03):
         self.order_rms = order_rms
         self.order_centroid = order_centroid
         self.fit_gap = fit_gap
@@ -91,6 +91,7 @@ class StreakerCalibration:
         self.n_streaker = n_streaker
         self.proj_cutoff = proj_cutoff
         self.beamline = beamline
+        self.charge = charge
 
         self.offsets = []
         self.screen_x0_arr = []
@@ -142,7 +143,7 @@ class StreakerCalibration:
     def get_meas_screens(self, type_='centroid', cutoff=3e-2, shape=int(5e3)):
         meas_screens = []
         for x, y in zip(self.plot_list_x, self.plot_list_y):
-            meas_screen = iap.ScreenDistribution(x, y)
+            meas_screen = iap.ScreenDistribution(x, y, charge=self.charge)
             meas_screen.cutoff2(cutoff)
             meas_screen.crop()
             meas_screen.reshape(shape)
@@ -374,7 +375,7 @@ class StreakerCalibration:
         self.fit_type('beamsize')
         self.fit_type('centroid')
 
-    def forward_propagate(self, blmeas_profile, tt_halfrange, charge, tracker, type_='centroid', blmeas_cutoff=None, force_gap=None, force_streaker_offset=None):
+    def forward_propagate(self, blmeas_profile, tt_halfrange, tracker, type_='centroid', blmeas_cutoff=None, force_gap=None, force_streaker_offset=None):
         tracker.set_simulator(self.meta_data)
         if force_streaker_offset is None:
             streaker_offset = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['streaker_offset']
@@ -388,7 +389,7 @@ class StreakerCalibration:
             pass
         else:
             try:
-                blmeas_profile = iap.profile_from_blmeas(blmeas_profile, tt_halfrange, charge, tracker.energy_eV, True)
+                blmeas_profile = iap.profile_from_blmeas(blmeas_profile, tt_halfrange, tracker.energy_eV, True)
             except Exception:
                 print(type(blmeas_profile))
                 print(type(iap.BeamProfile))
@@ -543,7 +544,7 @@ class StreakerCalibration:
             if x_axis[1] < x_axis[0]:
                 x_axis = x_axis[::-1]
                 median_proj = median_proj[::-1]
-            meas_screen = iap.ScreenDistribution(x_axis, median_proj, subtract_min=True)
+            meas_screen = iap.ScreenDistribution(x_axis, median_proj, subtract_min=True, charge=self.charge)
             meas_screen.cutoff2(tracker.screen_cutoff)
             meas_screen.crop()
             meas_screen.reshape(tracker.len_screen)
@@ -683,7 +684,7 @@ class StreakerCalibration:
                 gap = np.interp(0, lin_fit2[sort], gaps2[sort])
                 raise ValueError('Gap interpolated to %e. Gap_arr limits: %e, %e' % (gap, gap_arr.min(), gap_arr.max()))
             return gap
-        for gap in [gap_arr.min(), gap_arr.mean(), gap_arr.max()]:
+        for gap in [gap_arr.min(), gap_arr.max()]:
             one_gap(gap)
 
         for _ in range(3):
@@ -753,8 +754,8 @@ def gauss_recon_figure(figsize=None):
 
 def clear_gauss_recon(sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg):
     for sp, title, xlabel, ylabel in [
-            (sp_screen_pos, 'Screen profile (+)', 'x (mm)', 'Intensity (arb. units)'),
-            (sp_screen_neg, 'Screen profile (-)', 'x (mm)', 'Intensity (arb. units)'),
+            (sp_screen_pos, 'Screen profile (+)', 'x (mm)', config.rho_label),
+            (sp_screen_neg, 'Screen profile (-)', 'x (mm)', config.rho_label),
             (sp_profile_pos, 'Beam current (+)', 't (fs)', 'Current (kA)'),
             (sp_profile_neg, 'Beam current (-)', 't (fs)', 'Current (kA)'),
             ]:

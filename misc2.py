@@ -65,7 +65,7 @@ def avergage_BeamProfiles(bp_list, align='Max'):
 
 
 def fit_nat_beamsize(screen_meas, screen_sim, emittance, screen_res=0., print_=False):
-    screen_sim2 = iap.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), screen_res)
+    screen_sim2 = iap.getScreenDistributionFromPoints(screen_sim.real_x, len(screen_sim._xx), screen_res, charge=screen_sim.charge)
 
     sig_meas = np.sqrt(screen_meas.gaussfit.sigma**2 - screen_res**2)
     sig_sim = np.sqrt(screen_sim2.gaussfit.sigma**2 - screen_res**2)
@@ -137,17 +137,17 @@ def get_median(projx, method='gf_mean', output='proj'):
     elif output == 'index':
         return index_median
 
-def image_to_screen(image, x_axis, subtract_min, x_offset=0):
+def image_to_screen(image, x_axis, subtract_min, x_offset=0, charge=1):
     proj = image.sum(axis=-2)
-    return proj_to_screen(proj, x_axis, subtract_min, x_offset)
+    return proj_to_screen(proj, x_axis, subtract_min, x_offset, charge=charge)
 
-def proj_to_screen(proj, x_axis, subtract_min, x_offset=0):
+def proj_to_screen(proj, x_axis, subtract_min, x_offset=0, charge=1):
 
     if x_axis[1] < x_axis[0]:
         x_axis = x_axis[::-1]
         proj = proj[::-1]
 
-    screen = iap.ScreenDistribution(x_axis-x_offset, proj, subtract_min=subtract_min)
+    screen = iap.ScreenDistribution(x_axis-x_offset, proj, subtract_min=subtract_min, charge=charge)
     return screen
 
 

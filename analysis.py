@@ -24,6 +24,7 @@ except ImportError:
     from . import lasing
     from . import config
 
+rho_label = config.rho_label
 
 def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None, both_zero_crossings=True):
     gauss_dict = tracker.find_best_gauss2(**kwargs)
@@ -170,14 +171,14 @@ def screen_calibration_figure():
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 1)
 
-    sp_proj = subplot(sp_ctr, xlabel='x (mm)', ylabel='Intensity (arb. units)', sciy=True)
+    sp_proj = subplot(sp_ctr, xlabel='x (mm)', ylabel=rho_label, sciy=True)
     sp_ctr += 1
     clear_screen_calibration(sp_proj)
     return fig, (sp_proj, )
 
 def clear_screen_calibration(sp_proj):
     for sp, title, xlabel, ylabel in [
-            (sp_proj, 'Unstreaked beam', 'x (mm)', 'Intensity (arb. units)'),
+            (sp_proj, 'Unstreaked beam', 'x (mm)', rho_label),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -196,7 +197,7 @@ def reconstruction_figure(figsize=None):
 
 def clear_reconstruction(sp_screen, sp_profile, sp_opt, sp_moments):
     for sp, title, xlabel, ylabel in [
-            (sp_screen, 'Screen', 'x (mm)', 'Intensity (arb. units)'),
+            (sp_screen, 'Screen', 'x (mm)', r'\rho '),
             (sp_profile, 'Profile', 't (fs)', 'Current (kA)'),
             (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
             (sp_moments, 'Moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
@@ -238,7 +239,7 @@ def clear_lasing(plot_handles):
             (sp_off_tE, 'Lasing off tE', 't (fs)', '$\Delta$ E (MeV)'),
             (sp_on_tE, 'Lasing on tE', 't (fs)', '$\Delta$ E (MeV)'),
             (sp_power, 'Power', 't (fs)', 'P (GW)'),
-            (sp_current, 'Current', 't (fs)', 'I (arb. units)'),
+            (sp_current, 'Current', 't (fs)', 'I (kA)'),
             (sp_centroid, 'Slice centroids', 't (fs)', '$\Delta$ E (MeV)'),
             (sp_slice_size, 'Slice sizes', 't (fs)', '$\sigma_E$ (MeV)'),
             ]:

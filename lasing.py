@@ -336,7 +336,7 @@ class LasingReconstruction:
             if n_shots is None:
                 n_shots = len(lasing_dict[key])
             for n_shot, y_arr in enumerate(lasing_dict[key]):
-                if n_shot > len(lasing_dict[key]) - n_shots:
+                if n_shot > len(lasing_dict[key]) - n_shots - 1:
                     sp.plot(lasing_dict['time']*1e15, y_arr/1e9, ls='--')
 
         for key, label, sp in [
@@ -348,7 +348,7 @@ class LasingReconstruction:
             #sp.errorbar(xx_plot, yy_plot, yerr=yy_err, label=label, color='red', lw=3)
             yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
             yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
-            sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='black', lw=2)
+            sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='black')
 
         #sp_lasing_loss.legend()
         #sp_lasing_spread.legend()

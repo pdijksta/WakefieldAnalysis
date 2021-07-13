@@ -68,8 +68,8 @@ screen_x02 = 898.02e-6
 streaker_offset0 = 374e-6
 streaker_offset2 = 364e-6
 
-main_fig = ms.figure('Main lasing', figsize=(11, 6.5))
-hspace, wspace = 0.4, 0.3
+main_fig = ms.figure('Main lasing', figsize=(13, 7.68))
+hspace, wspace = 0.35, 0.3
 ms.plt.subplots_adjust(hspace=hspace, wspace=wspace)
 subplot = ms.subplot_factory(3, 3, grid=False)
 sp_ctr = 1

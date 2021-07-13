@@ -213,7 +213,7 @@ class ScreenDistribution(Profile):
 
     def normalize(self, norm=None):
         if norm is None:
-            norm = self.charge
+            norm = abs(self.charge)
         self._yy = self._yy / self.integral * norm
 
     def plot_standard(self, sp, **kwargs):
@@ -229,7 +229,8 @@ class ScreenDistribution(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        return sp.plot(x*1e3, y*1e9, **kwargs)
+        factor = np.abs(self.charge /np.trapz(x, y))
+        return sp.plot(x*1e3, y*1e9*factor, **kwargs)
 
     def to_dict(self):
         return {'x': self.x,
@@ -316,7 +317,6 @@ class BeamProfile(Profile):
         if np.any(np.isnan(tt)):
             raise ValueError('Nan in t!')
         return tt, xx
-
 
     def write_sdds(self, filename, gap, beam_offset, struct_length):
         s0 = (self.time - self.time[0])*c

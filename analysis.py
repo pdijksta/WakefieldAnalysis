@@ -61,8 +61,8 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
             lw = 3
         else:
             lw = None
-        screen.plot_standard(sp_screen, label='%.1f fs' % (sigma*1e15), lw=lw)
-        profile.plot_standard(sp_profile, label='%.1f fs' % (sigma*1e15), center='Mean', lw=lw)
+        screen.plot_standard(sp_screen, label='%.1f' % (sigma*1e15), lw=lw)
+        profile.plot_standard(sp_profile, label='%.1f' % (profile.rms()*1e15), center='Mean', lw=lw)
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 
@@ -83,7 +83,7 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
                 print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
 
         for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='TDC %i %.1f fs' % (zero_crossing, blmeas_profile.rms()*1e15))
+            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='%.1f' % (blmeas_profile.rms()*1e15))
             if not both_zero_crossings:
                 break
 
@@ -93,8 +93,8 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
     sp_moments.axhline(meas_screen.rms()*1e3, label='Measured rms', color=color, ls='--')
 
     sp_moments.legend()
-    sp_screen.legend(title='Initial $\sigma$', fontsize=config.fontsize)
-    sp_profile.legend()
+    sp_screen.legend(title='Initial $\sigma$ (fs)', fontsize=config.fontsize)
+    sp_profile.legend(title='rms (fs)', fontsize=config.fontsize)
 
     yy_opt = opt_func_values[:,1]
     sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)

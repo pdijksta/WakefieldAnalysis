@@ -3087,6 +3087,11 @@
     </item>
     <item>
      <property name="text">
+      <string>SATBD02-DSCR050</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>simulation</string>
      </property>
     </item>

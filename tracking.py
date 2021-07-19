@@ -11,12 +11,14 @@ try:
     from . import misc2 as misc
     from . import image_and_profile as iap
     from . import myplotstyle as ms
+    from . import config
 except ImportError:
     import elegant_matrix
     import wf_model
     import misc2 as misc
     import image_and_profile as iap
     import myplotstyle as ms
+    import config
 
 tmp_folder = './'
 e0_eV = m_e*c**2/e
@@ -26,10 +28,11 @@ BeamProfile = iap.BeamProfile
 ScreenDistribution = iap.ScreenDistribution
 
 class Tracker:
-    def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.), quad_wake_back=False):
+    def __init__(self, magnet_file='', timestamp=0, struct_lengths=(1, 1), n_particles=1, n_emittances=(1, 1), screen_bins=0, screen_cutoff=0, smoothen=0, profile_cutoff=0, len_screen=0, energy_eV='file', forward_method='matrix', compensate_negative_screen=True, optics0='default', quad_wake=True, bp_smoothen=0, override_quad_beamsize=False, quad_x_beamsize=(0., 0.), quad_wake_back=False, beamline='Aramis'):
 
         self._r12 = None
         self._disp = None
+        self.beamline = beamline
         if magnet_file:
             self.set_simulator(magnet_file, energy_eV, timestamp)
 
@@ -73,7 +76,7 @@ class Tracker:
         self._disp = None
 
     def set_simulator(self, magnet_file, energy_eV='file', timestamp=None):
-        self.simulator = elegant_matrix.get_simulator(magnet_file)
+        self.simulator = elegant_matrix.get_simulator(magnet_file, self.beamline)
         if energy_eV == 'file':
             try:
                 self.energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
@@ -284,10 +287,11 @@ class Tracker:
 
         # Optics
         if self.optics0 == 'default':
-            beta_x = elegant_matrix.simulator.beta_x0
-            beta_y = elegant_matrix.simulator.beta_y0
-            alpha_x = elegant_matrix.simulator.alpha_x0
-            alpha_y = elegant_matrix.simulator.alpha_y0
+            optics_dict = config.default_optics
+            beta_x = optics_dict['beta_x']
+            beta_y = optics_dict['beta_y']
+            alpha_x = optics_dict['alpha_x']
+            alpha_y = optics_dict['alpha_y']
         else:
             beta_x, beta_y, alpha_x, alpha_y = self.optics0
 

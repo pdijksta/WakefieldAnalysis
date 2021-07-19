@@ -287,7 +287,7 @@ class Tracker:
 
         # Optics
         if self.optics0 == 'default':
-            optics_dict = config.default_optics
+            optics_dict = config.default_optics[self.beamline]
             beta_x = optics_dict['beta_x']
             beta_y = optics_dict['beta_y']
             alpha_x = optics_dict['alpha_x']

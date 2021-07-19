@@ -297,9 +297,6 @@ class StartMain(QtWidgets.QMainWindow):
         assert os.access(tmp_dir, os.W_OK)
         elegant_matrix.set_tmp_dir(tmp_dir)
 
-        #time_match = re_time.match(self.ImportFileTime.text().strip())
-        #if time_match is None:
-        #    raise ValueError('Wrong format of ImportFileTime: %s\nMust be: yyyy-MM-dd:hh-mm-ss' % self.ImportFileTime.text())
         timestamp = None
         struct_lengths = [float(self.StructLength1.text()), float(self.StructLength1.text())]
         n_particles = int(float(self.N_Particles.text()))
@@ -329,6 +326,7 @@ class StartMain(QtWidgets.QMainWindow):
                 'bp_smoothen': bp_smoothen,
                 'override_quad_beamsize': override_quad_beamsize,
                 'quad_x_beamsize': quad_x_beamsize,
+                'beamline': self.beamline,
                 }
         return tracker_kwargs
 

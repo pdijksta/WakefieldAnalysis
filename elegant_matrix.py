@@ -154,12 +154,8 @@ def get_magnet_length(mag_name, branch='Aramis'):
 
 class simulator:
 
-    beta_x0 = 4.968
-    alpha_x0 = -0.563
-    beta_y0 = 16.807
-    alpha_y0 = 1.782
-
-    def __init__(self, file_or_dict):
+    def __init__(self, file_or_dict, beamline='Aramis'):
+        self.beamline = beamline
         file_h5, file_json = None, None
         if type(file_or_dict) is str:
             file_ = file_or_dict
@@ -323,7 +319,8 @@ class simulator:
         #alpha_y = 1.781136
 
         if optics0 == 'default':
-            beta_x, alpha_x, beta_y, alpha_y = self.beta_x0, self.alpha_x0, self.beta_y0, self.alpha_y0
+            optics_dict = config.default_optics[self.beamline]
+            beta_x, alpha_x, beta_y, alpha_y = optics_dict['beta_x'], optics_dict['alpha_x'], optics_dict['beta_y'], optics_dict['alpha_y']
         else:
             beta_x, alpha_x, beta_y, alpha_y = optics0
 
@@ -354,8 +351,12 @@ class simulator:
                 wf_dict = wf_model.generate_elegant_wf(filename, xx, gap/2., beam_offset, L=1.)
                 wf_dicts.append(wf_dict)
 
-        lat = os.path.join(this_dir, './Aramis.lat')
-        ele = os.path.join(this_dir, './SwissFEL_in_streaker.ele')
+        if self.beamline == 'Aramis':
+            lat = os.path.join(this_dir, './Aramis.lat')
+            ele = os.path.join(this_dir, './SwissFEL_in_streaker.ele')
+        elif self.beamline == 'Athos':
+            lat = os.path.join(this_dir, './Athos_Full.lat')
+            ele = os.path.join(this_dir, './SwissFEL_in0_Athos.ele')
         macro_dict = {
                 '_p_central_': p_central,
                 '_twf_factor_': int(linearize_twf),
@@ -391,6 +392,6 @@ class simulator:
 
 #@functools.wraps(simulator)
 #@functools.lru_cache(400)
-def get_simulator(file_):
-    return simulator(file_)
+def get_simulator(file_, beamline='Aramis'):
+    return simulator(file_, beamline)
 

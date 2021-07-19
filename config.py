@@ -7,11 +7,15 @@ streaker_names = {
             (0, 'SARUN18-UDCP010'),
             (1, 'SARUN18-UDCP020'),
             ]),
+        'Athos': collections.OrderedDict([
+            (0, 'SATMA02-UDCP045'),
+            ]),
         }
 
 streaker_lengths = {
         'SARUN18-UDCP010': 1.,
         'SARUN18-UDCP020': 1.,
+        'SATMA02-UDCP045': 1.,
         }
 
 beamline_quads = {
@@ -26,6 +30,21 @@ beamline_chargepv = {
 
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
+        }
+
+default_optics = {
+        'Aramis': {
+            'beta_x': 4.968,
+            'alpha_x': -0.563,
+            'beta_y': 16.807,
+            'alpha_y': 1.782,
+            },
+        'Athos': {
+            'beta_x': 30.9,
+            'alpha_x': 3.8,
+            'beta_y': 69.4,
+            'alpha_y': -14.3,
+            },
         }
 
 _aramis_pvs = ['SARUN%02i-DBPM070:%s1' % (i, dim) for i, dim in itertools.product(range(1, 21), ('X', 'Y'))]

@@ -57,7 +57,7 @@ def get_images(screen, n_images, beamline='Aramis', dry_run=None):
 
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
-    meta_dict_1 = get_meta_data(screen)
+    meta_dict_1 = get_meta_data(screen, dry_run)
 
     positioner = pyscan.BsreadPositioner(n_messages=n_images)
     settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=1)
@@ -89,7 +89,7 @@ def get_images(screen, n_images, beamline='Aramis', dry_run=None):
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    meta_dict_2 = get_meta_data(screen)
+    meta_dict_2 = get_meta_data(screen, dry_run)
 
     output_dict = {
             'pyscan_result': result_dict,
@@ -104,7 +104,7 @@ def get_images(screen, n_images, beamline='Aramis', dry_run=None):
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
 
     print('Start data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
-    meta_dict_1 = get_meta_data(screen)
+    meta_dict_1 = get_meta_data(screen, dry_run)
 
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
@@ -115,14 +115,16 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
     if abs(current_val - offset_range[0]) > abs(current_val - offset_range[-1]):
         offset_range = offset_range[::-1]
 
+    positions = offset_range * 1e3 # convert to mm
+    positioner = pyscan.VectorPositioner(positions=positions.tolist())
+
+    def dummy_func(*args):
+        print('I would set %s to' % offset_pv, args)
+
     if dry_run:
         screen = 'simulation'
-        writables = None
-        positioner = pyscan.TimePositioner(time_interval=(1.1*n_images), n_intervals=len(offset_range))
-
+        writables = [pyscan.function_value(dummy_func, 'dummy')]
     else:
-        positions = offset_range * 1e3 # convert to mm
-        positioner = pyscan.VectorPositioner(positions=positions.tolist())
         writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.005)]
 
     cam_instance_name = screen + '_sp1'
@@ -151,7 +153,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    meta_dict_2 = get_meta_data(screen)
+    meta_dict_2 = get_meta_data(screen, dry_run)
 
     output = {
             'pyscan_result': result_dict,
@@ -183,7 +185,7 @@ def move_pv(pv, value, timeout, tolerance):
 
 def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
     print('Start bpm_data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
-    meta_dict_1 = get_meta_data(screen)
+    meta_dict_1 = get_meta_data(screen, dry_run)
 
     x_axis, y_axis = get_axis(screen)
 
@@ -218,7 +220,7 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
                 result_dict[key][n_offset] = image_dict[key]
 
 
-    meta_dict_2 = get_meta_data(screen)
+    meta_dict_2 = get_meta_data(screen, dry_run)
     output = {
             'pyscan_result': result_dict,
             'streaker_offsets': offset_range,
@@ -262,7 +264,7 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
         print('Start get_images_and_bpm for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
     if include_meta_data:
-        meta_dict_1 = get_meta_data(screen)
+        meta_dict_1 = get_meta_data(screen, dry_run)
     else:
         meta_dict_1 = None
 
@@ -307,7 +309,7 @@ def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=Tr
         raise
 
     if include_meta_data:
-        meta_dict_2 = get_meta_data(screen)
+        meta_dict_2 = get_meta_data(screen, dry_run)
     else:
         meta_dict_2 = None
 
@@ -332,7 +334,7 @@ def get_aramis_quad_strengths():
     k1l_dict[energy_pv] = caget(energy_pv)
     return k1l_dict
 
-def get_meta_data(screen):
+def get_meta_data(screen, dry_run):
     all_streakers = config.all_streakers
     meta_dict = {}
     for streaker, suffix1, suffix2 in itertools.product(all_streakers, [':GAP', ':CENTER'], ['', '.RBV']):
@@ -341,7 +343,10 @@ def get_meta_data(screen):
     meta_dict.update({x: caget(x) for x in config.beamline_chargepv.values()})
 
     energy_pv = screen+':ENERGY-OP'
-    meta_dict[energy_pv] = caget(energy_pv)
+    if dry_run:
+        meta_dict[energy_pv] = 6000
+    else:
+        meta_dict[energy_pv] = caget(energy_pv)
 
     k1l_dict = get_aramis_quad_strengths()
     meta_dict.update(k1l_dict)

@@ -343,8 +343,8 @@ class LasingReconstruction:
                 ('Eloss', '$\Delta E$', sp_lasing_loss),
                 ('Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
             xx_plot = lasing_dict[key]['time']*1e15
-            yy_plot = lasing_dict[key]['power']/1e9
-            yy_err = lasing_dict[key]['power_err']/1e9
+            #yy_plot = lasing_dict[key]['power']/1e9
+            #yy_err = lasing_dict[key]['power_err']/1e9
             #sp.errorbar(xx_plot, yy_plot, yerr=yy_err, label=label, color='red', lw=3)
             yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
             yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9

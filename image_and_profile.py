@@ -820,7 +820,7 @@ class Image:
             xlim = sp.get_xlim()
             sp.set_xlim(*xlim[::-1])
 
-def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_streaker, bins=(150, 100)):
+def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_streaker, bins=(150, 100), camera_res=20e-6):
     gaps = [10e-3, 10e-3]
     gaps[n_streaker] = gap
     beam_offsets = [0, 0]
@@ -834,7 +834,8 @@ def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_str
     dxdt = np.diff(wf_x)/np.diff(wf_t)
     dx_dt_t = wf_t[:-1]
     beam_t = beam[-2]
-    hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam[0], bins=bins)
+    beam_x = beam[0] + np.random.randn(beam_t.size)*camera_res
+    hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam_x, bins=bins)
     t_axis = (xedges[1:] + xedges[:-1])/2.
     x_axis = (yedges[1:] + yedges[:-1])/2.
     x_axis2 = np.ones_like(hist)*x_axis

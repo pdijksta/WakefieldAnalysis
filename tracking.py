@@ -55,6 +55,8 @@ class Tracker:
         self.hist_bins_2d = (500, 500)
         self.split_streaker = 0
 
+        self.gauss_prec = 0.5e-15
+
         if forward_method == 'matrix':
             self.forward = self.matrix_forward
         elif forward_method == 'elegant':
@@ -733,8 +735,10 @@ class Tracker:
                 }
         return output
 
-    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.), prec=0.5e-15):
+    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.), prec=None):
 
+        if prec is None:
+            prec = self.gauss_prec
         opt_func_values = []
         opt_func_screens = []
         opt_func_screens_no_smoothen = []

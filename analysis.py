@@ -30,10 +30,23 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
     gauss_dict = tracker.find_best_gauss2(**kwargs)
     if not do_plot:
         return gauss_dict
-    plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_file, do_plot, figsize, both_zero_crossings)
+    if blmeas_file is not None:
+        blmeas_profiles = []
+        for zero_crossing in (1, 2):
+            try:
+                blmeas_profile = iap.profile_from_blmeas(blmeas_file, kwargs['tt_halfrange'], kwargs['charge'], tracker.energy_eV, True, zero_crossing)
+                blmeas_profile.cutoff2(5e-2)
+                blmeas_profile.crop()
+                blmeas_profile.reshape(int(1e3))
+                blmeas_profiles.append(blmeas_profile)
+            except KeyError as e:
+                print(e)
+                print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
+
+    plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_profiles, do_plot, figsize, both_zero_crossings)
     return gauss_dict
 
-def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=None, do_plot=True, figsize=None, both_zero_crossings=True):
+def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=True, figsize=None, both_zero_crossings=True):
 
     #best_profile = gauss_dict['reconstructed_profile']
     #best_screen = gauss_dict['reconstructed_screen']
@@ -61,29 +74,17 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
             lw = 3
         else:
             lw = None
-        screen.plot_standard(sp_screen, label='%.1f' % (sigma*1e15), lw=lw)
-        profile.plot_standard(sp_profile, label='%.1f' % (profile.rms()*1e15), center='Mean', lw=lw)
+        screen.plot_standard(sp_screen, label='%i' % round(sigma*1e15), lw=lw)
+        profile.plot_standard(sp_profile, label='%i' % round(profile.rms()*1e15), center='Mean', lw=lw)
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 
     #best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
     #best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')
 
-    if blmeas_file is not None:
-        blmeas_profiles = []
-        for zero_crossing in (1, 2):
-            try:
-                blmeas_profile = iap.profile_from_blmeas(blmeas_file, kwargs['tt_halfrange'], kwargs['charge'], tracker.energy_eV, True, zero_crossing)
-                blmeas_profile.cutoff2(5e-2)
-                blmeas_profile.crop()
-                blmeas_profile.reshape(int(1e3))
-                blmeas_profiles.append(blmeas_profile)
-            except KeyError as e:
-                print(e)
-                print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
-
+    if blmeas_profiles is not None:
         for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='%.1f' % (blmeas_profile.rms()*1e15))
+            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='%i' % round(blmeas_profile.rms()*1e15))
             if not both_zero_crossings:
                 break
 
@@ -93,7 +94,7 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_file=N
     sp_moments.axhline(meas_screen.rms()*1e3, label='Measured rms', color=color, ls='--')
 
     sp_moments.legend()
-    sp_screen.legend(title='Initial $\sigma$ (fs)', fontsize=config.fontsize)
+    sp_screen.legend(title='Gaussian $\sigma$ (fs)', fontsize=config.fontsize)
     sp_profile.legend(title='rms (fs)', fontsize=config.fontsize)
 
     yy_opt = opt_func_values[:,1]

@@ -90,7 +90,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
 
     n_streaker = 1
     beamline = 'Aramis'
-    delta_gap = -62e-6
+    delta_gap = -55e-6
     tracker_kwargs = config.get_default_tracker_settings()
     recon_kwargs = config.get_default_gauss_recon_settings()
     slice_factor = 3
@@ -114,7 +114,8 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
             rec_obj.ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
             rec_obj.ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
         rec_obj.process_data()
-        print('Average distances (um)', (rec_obj.gap/2. - abs(rec_obj.beam_offsets.mean()))*1e6)
+        avg_distance = rec_obj.gap/2. - abs(rec_obj.beam_offsets.mean())
+        print('Average distances (um)', (avg_distance*1e6))
         las_rec_images[title] = rec_obj
         #rec_obj.plot_images('raw', title)
         #rec_obj.plot_images('tE', title)
@@ -131,9 +132,9 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
         rec_obj_fb = las_rec_images['Lasing Off']
 
     ms.plt.figure(main_fig.number)
-    title = main_title + ' (%i uJ)' % round(las_rec.lasing_dict['Espread']['energy']*1e6)
-    sp_off = subplot(ctr+1, title=title, xlabel='t (fs)', ylabel='$\Delta$E (MeV)', grid=False)
-    sp_on = subplot(ctr+4, title=None, xlabel='t (fs)', ylabel='$\Delta$E (MeV)', grid=False)
+    title = main_title + ' ($E$=%i $\mu$J, $d$=%i $\mu$m)' % (round(las_rec.lasing_dict['Espread']['energy']*1e6), round(avg_distance*1e6))
+    sp_off = subplot(ctr+1, title=title, xlabel='t (fs)', ylabel='E (MeV)', grid=False)
+    sp_on = subplot(ctr+4, title=None, xlabel='t (fs)', ylabel='E (MeV)', grid=False)
 
     sp_espread = subplot(ctr+7, xlabel='t (fs)', ylabel='P (GW)')
     sp_dummy = lasing.dummy_plot()
@@ -142,8 +143,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
     #sp_espread.get_legend().remove()
     if ctr == 0:
         espread_ylim = [-2, sp_espread.get_ylim()[1]]
-    else:
-        sp_espread.set_ylim(*espread_ylim)
+    sp_espread.set_ylim(*espread_ylim)
 
     for key, sp in [('Lasing On', sp_on), ('Lasing Off', sp_off)]:
         rec_obj = las_rec_images[key]
@@ -181,6 +181,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
         gf = gaussfit.GaussFit(xx[mask], yy[mask])
         gf.plot_data_and_fit(sp)
         sp.set_title('Gaussfit %i $\sigma$ %.1f fs m %.1f fs' % (gf_ctr, (gf.sigma*1e15), gf.mean*1e15))
+        print('Gaussian duration %.1f fs' % (gf.sigma*1e15))
         #sp_espread.plot(gf.xx*1e15, gf.reconstruction/1e9, label='%.1f' % (gf.sigma*1e15), color='red', lw=3)
 
     #if gf_lims:

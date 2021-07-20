@@ -57,7 +57,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
 
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
-    meta_dict_1 = get_meta_data(screen, dry_run)
+    meta_dict_1 = get_meta_data(screen, dry_run, beamline)
 
     positioner = pyscan.BsreadPositioner(n_messages=n_images)
     settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=1)
@@ -89,7 +89,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    meta_dict_2 = get_meta_data(screen, dry_run)
+    meta_dict_2 = get_meta_data(screen, dry_run, beamline)
 
     output_dict = {
             'pyscan_result': result_dict,
@@ -104,7 +104,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline):
 
     print('Start data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
-    meta_dict_1 = get_meta_data(screen, dry_run)
+    meta_dict_1 = get_meta_data(screen, dry_run, beamline)
 
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
     offset_pv = streaker+':CENTER'
@@ -153,7 +153,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
         else:
             raise ValueError('Unexpected', len(arr.shape))
 
-    meta_dict_2 = get_meta_data(screen, dry_run)
+    meta_dict_2 = get_meta_data(screen, dry_run, beamline)
 
     output = {
             'pyscan_result': result_dict,
@@ -185,7 +185,7 @@ def move_pv(pv, value, timeout, tolerance):
 
 def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline):
     print('Start bpm_data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
-    meta_dict_1 = get_meta_data(screen, dry_run)
+    meta_dict_1 = get_meta_data(screen, dry_run, beamline)
 
     x_axis, y_axis = get_axis(screen)
 
@@ -220,7 +220,7 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
                 result_dict[key][n_offset] = image_dict[key]
 
 
-    meta_dict_2 = get_meta_data(screen, dry_run)
+    meta_dict_2 = get_meta_data(screen, dry_run, beamline)
     output = {
             'pyscan_result': result_dict,
             'streaker_offsets': offset_range,
@@ -264,7 +264,7 @@ def get_images_and_bpm(screen, n_images, beamline, axis=True, print_=True, inclu
         print('Start get_images_and_bpm for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
     if include_meta_data:
-        meta_dict_1 = get_meta_data(screen, dry_run)
+        meta_dict_1 = get_meta_data(screen, dry_run, beamline)
     else:
         meta_dict_1 = None
 
@@ -309,7 +309,7 @@ def get_images_and_bpm(screen, n_images, beamline, axis=True, print_=True, inclu
         raise
 
     if include_meta_data:
-        meta_dict_2 = get_meta_data(screen, dry_run)
+        meta_dict_2 = get_meta_data(screen, dry_run, beamline)
     else:
         meta_dict_2 = None
 
@@ -324,17 +324,17 @@ def get_images_and_bpm(screen, n_images, beamline, axis=True, print_=True, inclu
 
     return output_dict
 
-def get_aramis_quad_strengths():
-    quads = config.beamline_quads['Aramis']
+def get_quad_strengths(beamline):
+    quads = config.beamline_quads[beamline]
 
     k1l_dict = {}
     for quad in quads:
         k1l_dict[quad] = caget(quad.replace('.', '-')+':K1L-SET')
-    energy_pv = 'SARBD01-MBND100:ENERGY-OP'
+    energy_pv = config.beamline_energypv[beamline]
     k1l_dict[energy_pv] = caget(energy_pv)
     return k1l_dict
 
-def get_meta_data(screen, dry_run):
+def get_meta_data(screen, dry_run, beamline):
     all_streakers = config.all_streakers
     meta_dict = {}
     for streaker, suffix1, suffix2 in itertools.product(all_streakers, [':GAP', ':CENTER'], ['', '.RBV']):
@@ -348,7 +348,7 @@ def get_meta_data(screen, dry_run):
     else:
         meta_dict[energy_pv] = caget(energy_pv)
 
-    k1l_dict = get_aramis_quad_strengths()
+    k1l_dict = get_quad_strengths(beamline)
     meta_dict.update(k1l_dict)
     meta_dict['time'] = str(datetime.datetime.now())
     for gas_monitor_energy_pv in config.gas_monitor_pvs.values():

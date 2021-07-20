@@ -258,7 +258,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def obtain_r12(self, meta_data=None):
         if meta_data is None:
-            meta_data = daq.get_meta_data(self.screen, self.dry_run)
+            meta_data = daq.get_meta_data(self.screen, self.dry_run, self.beamline)
         #print('obtain_r12', meta_data)
         tracker = self.get_tracker(meta_data)
         r12 = tracker.calcR12()[self.n_streaker]

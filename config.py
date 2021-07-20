@@ -28,6 +28,11 @@ beamline_chargepv = {
         'Athos': 'SINEG01-DICT215:B2_CHARGE-OP',
         }
 
+beamline_energypv = {
+        'Aramis': 'SARBD01-MBND100:ENERGY-OP',
+        'Athos': 'SATBD01-MBND200:ENERGY-OP',
+        }
+
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
         }

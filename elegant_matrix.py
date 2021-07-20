@@ -214,7 +214,7 @@ class simulator:
         elif branch == 'Athos':
             lat = os.path.join(this_dir, './Athos_Full.lat')
             ele = os.path.join(this_dir, './SwissFEL_in0_Athos.ele')
-            macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER$1'}
+            macro_dict = {'_matrix_start_': 'MIDDLE_STREAKER_1$1'}
 
             for quad in quads_athos:
                 key = '_'+quad.lower()+'.k1_'
@@ -254,12 +254,15 @@ class simulator:
 
         return mat_dict, disp_dict
 
-    def get_streaker_matrices(self, timestamp, del_sim=True):
+    def get_streaker_matrices(self, timestamp, branch, del_sim=True):
 
-        mat_dict = self.get_elegant_matrix('NULL', timestamp, del_sim=del_sim)[0]
+        mat_dict = self.get_elegant_matrix('NULL', timestamp, del_sim=del_sim, branch=branch)[0]
         s1 = mat_dict['MIDDLE_STREAKER_1']
-        s2 = mat_dict['MIDDLE_STREAKER_2']
-        screen = mat_dict['SARBD02.DSCR050']
+        if branch == 'Aramis':
+            s2 = mat_dict['MIDDLE_STREAKER_2']
+        elif branch == 'Athos':
+            s2 = np.identity(len(s1))
+        screen = mat_dict[config.beamline_screens[branch].replace('-','.')]
         s1_to_s2 = np.matmul(s2, np.linalg.inv(s1))
         s2_to_screen = np.matmul(screen, np.linalg.inv(s2))
 

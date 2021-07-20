@@ -78,10 +78,12 @@ class Tracker:
     def set_simulator(self, magnet_file, energy_eV='file', timestamp=None):
         self.simulator = elegant_matrix.get_simulator(magnet_file, self.beamline)
         if energy_eV == 'file':
-            try:
-                self.energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
-            except KeyError:
-                self.energy_eV = self.simulator.get_data('SARBD01-MBND100:ENERGY-OP', timestamp)*1e6
+            energy_pv = config.beamline_energypv[self.beamline]
+            self.energy_eV = self.simulator.get_data(energy_pv, timestamp)*1e6
+            #try:
+            #    self.energy_eV = self.simulator.get_data('SARBD01-MBND100:ENERGY-OP', timestamp)*1e6
+            #except KeyError:
+            #    self.energy_eV = self.simulator.get_data('SARBD01-MBND100:P-SET', timestamp)*1e6
         else:
             self.energy_eV = energy_eV
         self._r12 is None
@@ -96,10 +98,11 @@ class Tracker:
         if self._disp is None or self._r12 is None:
             outp_disp = {}
             outp_r12 = {}
+            screen = config.beamline_screens[self.beamline].replace('-', '.')
             for n_streaker in (0, 1):
-                mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), self.timestamp)
-                outp_disp[n_streaker] = disp_dict['SARBD02.DSCR050']
-                outp_r12[n_streaker] = mat_dict['SARBD02.DSCR050'][0,1]
+                mat_dict, disp_dict = self.simulator.get_elegant_matrix(int(n_streaker), self.timestamp, branch=self.beamline)
+                outp_disp[n_streaker] = disp_dict[screen]
+                outp_r12[n_streaker] = mat_dict[screen][0,1]
             self._disp = outp_disp
             self._r12 = outp_r12
         return self._disp
@@ -276,7 +279,7 @@ class Tracker:
 
         ## Obtain first order matrices from elegant
 
-        streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp)
+        streaker_matrices = self.simulator.get_streaker_matrices(self.timestamp, self.beamline)
         streaker_matrices2 = {}
         for key, arr in streaker_matrices.items():
             if key != 'mat_dict':
@@ -381,9 +384,14 @@ class Tracker:
             s_.normalize()
 
         r12_dict = {}
-        for n_streaker in (0, 1):
+        screen_name = config.beamline_screens[self.beamline].replace('-','.')
+        if self.beamline == 'Aramis':
+            n_streakers = (0, 1)
+        elif self.beamline == 'Athos':
+            n_streakers = (0,)
+        for n_streaker in n_streakers:
             r0 = mat_dict['MIDDLE_STREAKER_%i' % (n_streaker+1)]
-            r1 = mat_dict['SARBD02.DSCR050']
+            r1 = mat_dict[screen_name]
 
             rr = np.matmul(r1, np.linalg.inv(r0))
             r12_dict[n_streaker] = rr[0,1]

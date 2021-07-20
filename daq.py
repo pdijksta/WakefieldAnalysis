@@ -57,10 +57,16 @@ def get_images(screen, n_images, beamline, dry_run=None):
 
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
+
+    def dummy_func(*args):
+        pass
+
     meta_dict_1 = get_meta_data(screen, dry_run, beamline)
 
-    positioner = pyscan.BsreadPositioner(n_messages=n_images)
-    settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=1)
+    #positioner = pyscan.BsreadPositioner(n_messages=n_images)
+    positioner = pyscan.VectorPositioner([0])
+    writables = [pyscan.function_value(dummy_func, 'dummy')]
+    settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=n_images)
 
     pipeline_client = PipelineClient("http://sf-daqsync-01:8889/")
     cam_instance_name = str(screen) + "_sp1"
@@ -75,7 +81,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
 
     readables = get_readables(beamline)
 
-    raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings)
+    raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings, writables=writables)
     output = [[x] for x in raw_output]
 
     result_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
@@ -218,7 +224,6 @@ def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, 
         for key in image_dict.keys():
             if key in result_dict:
                 result_dict[key][n_offset] = image_dict[key]
-
 
     meta_dict_2 = get_meta_data(screen, dry_run, beamline)
     output = {

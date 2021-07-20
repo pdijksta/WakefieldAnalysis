@@ -33,6 +33,11 @@ beamline_energypv = {
         'Athos': 'SATBD01-MBND200:ENERGY-OP',
         }
 
+beamline_screens = {
+        'Aramis': 'SARBD02-DSCR050',
+        'Athos': 'SATBD02-DSCR050',
+        }
+
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
         }

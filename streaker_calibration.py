@@ -589,6 +589,8 @@ class StreakerCalibration:
         #streaker_center = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['streaker_offset']
         gauss_dicts = self.gauss_dicts_gap_order[type_][self.fit_gap][self.fit_order]
 
+        if len(gauss_dicts) == 0:
+            raise ValueError
         for gauss_dict in gauss_dicts:
             beam_offset = gauss_dict['beam_offsets'][self.n_streaker]
 
@@ -630,7 +632,6 @@ class StreakerCalibration:
             gap = np.round(gap/precision)*precision
             if gap in gaps:
                 return
-            self.gap0 = gap
             offset_list, gauss_dicts = self.reconstruct_current(tracker, gauss_kwargs, plot_details=False, force_gap=gap, force_streaker_offset=streaker_offset, use_offsets=use_offsets)
             distance_arr = gap/2. - np.abs(offset_list)
 
@@ -734,7 +735,7 @@ def gauss_recon_figure(figsize=None):
     if figsize is None:
         figsize = [6.4, 4.8]
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Streaker center calibration')
+    fig.canvas.set_window_title('Current reconstruction')
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 2, grid=False)
     plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+4)))

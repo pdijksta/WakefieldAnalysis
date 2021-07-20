@@ -13,7 +13,7 @@
 	concat_order	= 0,
 	print_statistics	= 0,
 	random_number_seed	= 9876543210,
-	p_central	= <_p_central_>,
+	p_central_mev	= 5500,
 	tracking_updates	= 1
 &end
 

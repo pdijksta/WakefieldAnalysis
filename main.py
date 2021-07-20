@@ -26,7 +26,6 @@ import myplotstyle as ms
 #TODO
 #
 # - add info of beamsize with / without assumed screen resolution
-# - debug delay after using BsreadPositioner or any pyscan
 # - add tilt option
 # - handle feedback in user interface
 # - detune undulator button
@@ -34,9 +33,9 @@ import myplotstyle as ms
 # - Offset based on centroid, offset based on sizes (?)
 # - Dispersion (?)
 # - Plot centroid of forward propagated
-# - One-sided plate
 # - add blmeas option to lasing rec
 # - Mean of square instead of square of mean of squareroot
+# - Athos gas detector
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -44,11 +43,13 @@ import myplotstyle as ms
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
+# - debug delay after using BsreadPositioner or any pyscan
 
 # Not so important
 # - noise reduction from the image
 # - uJ instead of True, False
 # - non blocking daq
+# - One-sided plate
 
 # Done
 # - pulse energy from gas detector in pyscan

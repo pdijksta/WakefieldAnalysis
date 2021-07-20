@@ -117,7 +117,6 @@ class StartMain(QtWidgets.QMainWindow):
         self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
         self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
-        self.ObtainStreakerFromLive.clicked.connect(self.obtain_streaker_settings_from_live)
         self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
         self.GapReconstruction.clicked.connect(self.gap_reconstruction)
         self.ClearCalibPlots.clicked.connect(self.clear_calib_plots)
@@ -259,7 +258,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def obtain_r12(self, meta_data=None):
         if meta_data is None:
-            meta_data = daq.get_meta_data(self.screen)
+            meta_data = daq.get_meta_data(self.screen, self.dry_run)
         #print('obtain_r12', meta_data)
         tracker = self.get_tracker(meta_data)
         r12 = tracker.calcR12()[self.n_streaker]
@@ -344,7 +343,7 @@ class StartMain(QtWidgets.QMainWindow):
     def calibrate_screen(self):
         self.clear_screen_plots()
         n_images = int(self.CalibrateScreenImages.text())
-        image_dict = daq.get_images(self.screen, n_images, dry_run=self.dry_run)
+        image_dict = daq.get_images(self.screen, n_images, self.beamline, dry_run=self.dry_run)
         try:
             result = analysis.analyze_screen_calibration(image_dict, True, self.screen_calib_plot_handles)
         except:
@@ -368,57 +367,6 @@ class StartMain(QtWidgets.QMainWindow):
         print('X0 is %.3f um' % (x0*1e6))
         print('Beamsize is %.3f um' % (beamsize*1e6))
         return x0, beamsize
-
-    def obtain_streaker_settings_from_live(self):
-        for n_streaker, gap_widget, offset_widget in [
-                (0, self.StreakerGap0, self.StreakerOffset0),
-                (1, self.StreakerGap1, self.StreakerOffset1)]:
-            streaker = config.streaker_names[self.beamline][n_streaker]
-            gap_mm = daq.caget(streaker+':GAP')
-            offset_mm = daq.caget(streaker+':CENTER')
-            gap_widget.setText('%.3f' % gap_mm)
-            offset_widget.setText('%.3f' % offset_mm)
-
-    def streaker_set(self):
-        widgets = (self.SetStreakerDirectCheck, self.SetStreakerFromLiveCheck, self.SetStreakerSaveCheck)
-        self._check_check(widgets, 'Check set streaker checkmarks')
-
-        if self.SetStreakerDirectCheck.isChecked():
-            meta_dict = None
-        elif self.SetStreakerFromLiveCheck.isChecked():
-            self.obtain_streaker_settings_from_live()
-            if daq is None:
-                raise RuntimeError('Cannot get settings from live!')
-            meta_dict = daq.get_meta_data(self.screen)
-
-        elif self.SetStreakerSaveCheck:
-            filename = self.ReconstructionDataLoad.text().strip()
-            dict_ = h5_storage.loadH5Recursive(filename)
-            if 'meta_data' in dict_:
-                meta_dict = dict_['meta_data']
-            elif 'meta_data_end' in dict_:
-                meta_dict = dict_['meta_data_end']
-
-        if meta_dict is not None:
-            streaker_dict = config.streaker_names[self.beamline]
-            for n_streaker, gap_widget, offset_widget in [
-                    (0, self.StreakerGap0, self.StreakerOffset0),
-                    (1, self.StreakerGap1, self.StreakerOffset1),
-                    ]:
-                streaker = streaker_dict[n_streaker]
-                offset_mm = meta_dict[streaker+':CENTER']
-                gap_mm = meta_dict[streaker+':GAP']
-                if offset_mm < .01*gap_mm/2:
-                    offset_mm = 0
-                gap_widget.setText('%.4f' % gap_mm)
-                offset_widget.setText('%.4f' % offset_mm)
-
-        gaps = [float(self.StreakerGap0.text())*1e-3, float(self.StreakerGap1.text())*1e-3]
-        # beam offset is negative of streaker offset
-        streaker_offsets = self.streaker_offsets
-
-        print('Streaker is set: gaps: %s, offsets: %s' % (gaps, streaker_offsets))
-        return gaps, streaker_offsets
 
     def reconstruct_current(self):
         self.clear_rec_plots()
@@ -481,7 +429,7 @@ class StartMain(QtWidgets.QMainWindow):
         if daq is None:
             raise ImportError('Daq not available')
 
-        result_dict = daq.data_streaker_offset(streaker, range_, self.screen, n_images, self.dry_run)
+        result_dict = daq.data_streaker_offset(streaker, range_, self.screen, n_images, self.dry_run, self.beamline)
 
         try:
             full_dict = self._analyze_streaker_calib(result_dict)
@@ -580,7 +528,7 @@ class StartMain(QtWidgets.QMainWindow):
 
     def obtain_reconstruction(self):
         n_images = int(self.ReconNumberImages.text())
-        screen_dict = daq.get_images(self.screen, n_images, dry_run=self.dry_run)
+        screen_dict = daq.get_images(self.screen, n_images, self.beamline, self.dry_run)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
         elog_text = 'Screen %s data taken' % self.screen
@@ -611,10 +559,6 @@ class StartMain(QtWidgets.QMainWindow):
         return float(self.Charge.text())*1e-12
 
     @property
-    def streaker_offsets(self):
-        return np.array([float(self.StreakerOffset0.text()), float(self.StreakerOffset1.text())])*1e-3
-
-    @property
     def streaker_means(self):
         streaker0_mean = float(self.StreakerDirect0.text())*1e-6
         streaker1_mean = float(self.StreakerDirect1.text())*1e-6
@@ -633,7 +577,7 @@ class StartMain(QtWidgets.QMainWindow):
         else:
             n_images = int(self.LasingOffNumberImages.text())
 
-        image_dict = daq.get_images(self.screen, n_images, dry_run=self.dry_run)
+        image_dict = daq.get_images(self.screen, n_images, self.beamline, self.dry_run)
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
         lasing_str = str(lasing_on_off)
@@ -706,7 +650,8 @@ class StartMain(QtWidgets.QMainWindow):
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_reconstruction_%s.h5' % screen_str
-        self.elog_and_H5(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, self.lasing_rec_dict)
+        filename = self.elog_and_H5(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, self.lasing_rec_dict)
+        self.ReconstructionDataLoad.setText(filename)
 
     def elog_and_H5(self, text, figs, title, basename, data_dict):
 

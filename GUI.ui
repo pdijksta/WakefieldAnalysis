@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -1192,7 +1192,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>300</y>
+        <y>160</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1248,7 +1248,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>400</y>
+        <y>260</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1304,7 +1304,7 @@
       <property name="geometry">
        <rect>
         <x>190</x>
-        <y>310</y>
+        <y>170</y>
         <width>121</width>
         <height>20</height>
        </rect>
@@ -1320,7 +1320,7 @@
       <property name="geometry">
        <rect>
         <x>370</x>
-        <y>310</y>
+        <y>170</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -1336,7 +1336,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>560</y>
+        <y>420</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1392,7 +1392,7 @@
       <property name="geometry">
        <rect>
         <x>170</x>
-        <y>560</y>
+        <y>420</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -1444,227 +1444,11 @@
        <string>Save data</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_30">
-      <property name="geometry">
-       <rect>
-        <x>300</x>
-        <y>150</y>
-        <width>161</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Streaker settings</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_28">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>260</y>
-        <width>161</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Structure offset [mm]</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerGap1">
-      <property name="geometry">
-       <rect>
-        <x>380</x>
-        <y>210</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>10</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerGap0">
-      <property name="geometry">
-       <rect>
-        <x>220</x>
-        <y>210</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>10</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="ObtainStreakerFromLive">
-      <property name="geometry">
-       <rect>
-        <x>560</x>
-        <y>300</y>
-        <width>191</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="font">
-       <font>
-        <family>Sans Serif</family>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Update Streaker from live</string>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerOffset1">
-      <property name="geometry">
-       <rect>
-        <x>380</x>
-        <y>250</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>5.06</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_27">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>220</y>
-        <width>161</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Structure gap [mm]</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="StreakerOffset0">
-      <property name="geometry">
-       <rect>
-        <x>220</x>
-        <y>250</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>0</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QCheckBox" name="SetStreakerFromLiveCheck">
-      <property name="geometry">
-       <rect>
-        <x>440</x>
-        <y>180</y>
-        <width>111</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>From live</string>
-      </property>
-      <property name="checked">
-       <bool>false</bool>
-      </property>
-     </widget>
-     <widget class="QCheckBox" name="SetStreakerDirectCheck">
-      <property name="geometry">
-       <rect>
-        <x>300</x>
-        <y>180</y>
-        <width>111</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Direct input</string>
-      </property>
-      <property name="checked">
-       <bool>false</bool>
-      </property>
-     </widget>
-     <widget class="QCheckBox" name="SetStreakerSaveCheck">
-      <property name="geometry">
-       <rect>
-        <x>120</x>
-        <y>180</y>
-        <width>111</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>From Saved</string>
-      </property>
-      <property name="checked">
-       <bool>true</bool>
-      </property>
-     </widget>
      <widget class="QLineEdit" name="BunchLengthMeasFile">
       <property name="geometry">
        <rect>
         <x>270</x>
-        <y>490</y>
+        <y>350</y>
         <width>611</width>
         <height>26</height>
        </rect>
@@ -1680,7 +1464,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>490</y>
+        <y>350</y>
         <width>231</width>
         <height>20</height>
        </rect>
@@ -1696,7 +1480,7 @@
       <property name="geometry">
        <rect>
         <x>560</x>
-        <y>360</y>
+        <y>170</y>
         <width>191</width>
         <height>41</height>
        </rect>
@@ -1752,7 +1536,7 @@
       <property name="geometry">
        <rect>
         <x>330</x>
-        <y>580</y>
+        <y>440</y>
         <width>571</width>
         <height>26</height>
        </rect>
@@ -1768,7 +1552,7 @@
       <property name="geometry">
        <rect>
         <x>530</x>
-        <y>550</y>
+        <y>410</y>
         <width>121</width>
         <height>20</height>
        </rect>
@@ -3151,7 +2935,7 @@
      <x>0</x>
      <y>0</y>
      <width>962</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

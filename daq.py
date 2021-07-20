@@ -53,7 +53,7 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
 
     return output
 
-def get_images(screen, n_images, beamline='Aramis', dry_run=None):
+def get_images(screen, n_images, beamline, dry_run=None):
 
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
@@ -101,7 +101,7 @@ def get_images(screen, n_images, beamline='Aramis', dry_run=None):
 
     return output_dict
 
-def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
+def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline):
 
     print('Start data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
     meta_dict_1 = get_meta_data(screen, dry_run)
@@ -183,7 +183,7 @@ def move_pv(pv, value, timeout, tolerance):
     else:
         raise ValueError('Pv %s should be %e, is: %e after %f seconds!' % (pv, value, current_value, timeout))
 
-def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline='Aramis'):
+def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline):
     print('Start bpm_data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
     meta_dict_1 = get_meta_data(screen, dry_run)
 
@@ -258,7 +258,7 @@ def get_axis(screen):
 
     return x_axis, y_axis
 
-def get_images_and_bpm(screen, n_images, beamline='Aramis', axis=True, print_=True, include_meta_data=True, x_axis=None, y_axis=None, dry_run=False):
+def get_images_and_bpm(screen, n_images, beamline, axis=True, print_=True, include_meta_data=True, x_axis=None, y_axis=None, dry_run=False):
 
     if print_:
         print('Start get_images_and_bpm for screen %s, %i images, beamline %s' % (screen, n_images, beamline))

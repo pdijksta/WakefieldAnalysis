@@ -162,6 +162,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
         yy = las_rec.lasing_dict['Espread']['power']
         power_profile = iap.AnyProfile(xx, yy)
         print('Rms duration %.1f fs' % (power_profile.rms()*1e15))
+        print('FWHM duration %.1f fs' % (power_profile.fwhm()*1e15))
     elif ctr == 1:
         gf_lims = ([25e-15, 40e-15], [55e-15, 70e-15])
     elif ctr == 2:
@@ -173,7 +174,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
             gf_subplot = ms.subplot_factory(2,2)
             gf_sp_ctr = 1
         sp = subplot(gf_sp_ctr, xlabel='t (fs)', ylabel='P (GW)')
-        gf_sp_ctr  += 1
+        gf_sp_ctr += 1
 
         xx = las_rec.lasing_dict['Espread']['time']
         yy = las_rec.lasing_dict['Espread']['power']

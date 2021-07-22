@@ -71,6 +71,24 @@ class Profile:
         rms = np.sqrt(np.sum(square * self._yy) / np.sum(self._yy))
         return rms
 
+    def fwhm(self):
+        abs_yy = np.abs(self._yy)
+        half = abs_yy.max()/2.
+        mask_fwhm = abs_yy > half
+        indices_fwhm = np.argwhere(mask_fwhm)
+        indices_left = indices_fwhm.min()-1, indices_fwhm.min()
+        indices_right = indices_fwhm.max(), indices_fwhm.max()+1
+        lims = []
+        for indices in indices_left, indices_right:
+            xx = abs_yy[indices[0]:indices[1]+1]
+            yy = self._xx[indices[0]:indices[1]+1]
+            sort = np.argsort(xx)
+            x = np.interp(half, xx[sort], yy[sort])
+            lims.append(x)
+
+        fwhm = abs(lims[0]-lims[1])
+        return fwhm
+
     def cutoff(self, cutoff_factor):
         """
         Cutoff based on max value of the y array.

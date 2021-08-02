@@ -107,6 +107,7 @@ class StreakerCalibration:
         self.sim_screens = None
         self.plot_list_x = []
         self.plot_list_y = []
+        self.plot_list_image = []
         self.y_axis_list = []
         self.raw_data = None
         self.meas_screens = None
@@ -141,14 +142,22 @@ class StreakerCalibration:
             self.add_file(file_or_dict)
 
     def get_meas_screens(self, type_='centroid', cutoff=3e-2, shape=int(5e3)):
+        streaking_factors = []
         meas_screens = []
+        index0 = np.argwhere(self.offsets == 0).squeeze()
+
         for x, y in zip(self.plot_list_x, self.plot_list_y):
             meas_screen = iap.ScreenDistribution(x, y, charge=self.charge)
             meas_screen.cutoff2(cutoff)
             meas_screen.crop()
             meas_screen.reshape(shape)
             meas_screens.append(meas_screen)
+            streaking_factors.append(meas_screen.rms())
         self.meas_screens = meas_screens
+
+        bs0 = streaking_factors[index0]
+        self.streaking_factors = streaking_factors/bs0
+
         return meas_screens
 
     def get_result_dict(self):
@@ -188,6 +197,7 @@ class StreakerCalibration:
         assert where0.size == 1
 
         plot_list_y = []
+        plot_list_image = []
         for n_o in range(len(offsets)):
             for n_i in range(n_images):
                 proj = proj_x[n_o,n_i]
@@ -195,7 +205,9 @@ class StreakerCalibration:
                 proj[proj<proj.max()*self.proj_cutoff] = 0
                 centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
                 rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
-            median_proj = misc.get_median(proj_x[n_o,:], method='mean')
+            median_proj_index = misc.get_median(proj_x[n_o,:], method='mean', output='index')
+            median_proj = proj_x[n_o, median_proj_index]
+            plot_list_image.append(images[n_o, median_proj_index])
             plot_list_y.append(median_proj)
         centroid_mean = np.mean(centroids, axis=1)
         screen_x0 = centroid_mean[where0]
@@ -224,6 +236,7 @@ class StreakerCalibration:
         y_axis_list = self.y_axis_list + [y_axis] * len(plot_list_y)
         new_plot_list_x = self.plot_list_x + plot_list_x
         new_plot_list_y = self.plot_list_y + plot_list_y
+        new_plot_list_image = self.plot_list_image + plot_list_image
         new_images = self.images + [x for x in images]
         new_all_centroids = self.all_centroids + [x for x in centroids]
         new_all_rms = self.all_centroids + [x for x in rms]
@@ -231,12 +244,14 @@ class StreakerCalibration:
         self.y_axis_list = []
         self.plot_list_x = []
         self.plot_list_y = []
+        self.plot_list_image = []
         self.images = []
         self.all_rms = []
         self.all_centroids = []
         for new_index in sort:
             self.plot_list_x.append(new_plot_list_x[new_index])
             self.plot_list_y.append(new_plot_list_y[new_index])
+            self.plot_list_image.append(new_plot_list_image[new_index])
             self.y_axis_list.append(y_axis_list[new_index])
             self.images.append(new_images[new_index])
             self.all_rms.append(new_all_rms[new_index])
@@ -581,10 +596,6 @@ class StreakerCalibration:
         else:
             fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = plot_handles
 
-        if blmeas_profile is not None:
-            for _sp in sp_profile_pos, sp_profile_neg:
-                blmeas_profile.plot_standard(_sp, color='black', center=center, ls='--', label='%i' % round(blmeas_profile.rms()*1e15))
-
         #gap = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['gap_fit']
         #streaker_center = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['streaker_offset']
         gauss_dicts = self.gauss_dicts_gap_order[type_][self.fit_gap][self.fit_order]
@@ -611,6 +622,10 @@ class StreakerCalibration:
             label = '%i' % round(distance*1e6)
             color = meas_screen.plot_standard(sp_screen, label=label)[0].get_color()
             rec_screen.plot_standard(sp_screen, ls='--', color=color)
+
+        if blmeas_profile is not None:
+            for _sp in sp_profile_pos, sp_profile_neg:
+                blmeas_profile.plot_standard(_sp, color='black', center=center, ls='--', label='%i' % round(blmeas_profile.rms()*1e15))
 
         for _sp in sp_screen_pos, sp_screen_neg:
             _sp.legend(title='d ($\mu$m)')
@@ -649,18 +664,33 @@ class StreakerCalibration:
         def get_gap():
             lin_fit2 = np.array(lin_fit)
             gaps2 = np.array(gaps)
-            sort = np.argsort(lin_fit2)
-            gap = np.interp(0, lin_fit2[sort], gaps2[sort], left=np.nan, right=np.nan)
-            if np.isnan(gap):
+            err = False
+            for i in range(len(gaps)-1):
+                lin_fit_a = lin_fit2[i]
+                lin_fit_b = lin_fit2[i+1]
+                if np.sign(lin_fit_a) != np.sign(lin_fit_b):
+                    gaps3 = np.array([gaps2[i], gaps2[i+1]])
+                    lin_fit3 = np.array([lin_fit_a, lin_fit_b])
+                    sort = np.argsort(lin_fit3)
+                    gap = np.interp(0, lin_fit3[sort], gaps3[sort], left=np.nan, right=np.nan)
+                    break
+            else:
+                err = True
+            if not err and np.isnan(gap):
+                err = True
+            if err:
+                sort = np.argsort(lin_fit2)
                 gap = np.interp(0, lin_fit2[sort], gaps2[sort])
                 raise ValueError('Gap interpolated to %e. Gap_arr limits: %e, %e' % (gap, gap_arr.min(), gap_arr.max()))
             return gap
+
         for gap in [gap_arr.min(), gap_arr.max()]:
             one_gap(gap)
 
         for _ in range(3):
             gap = get_gap()
             one_gap(gap)
+
         gap = get_gap()
         rms_arr = np.array(rms)
         rms_rms = np.std(rms_arr, axis=1)

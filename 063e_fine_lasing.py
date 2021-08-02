@@ -90,7 +90,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
 
     n_streaker = 1
     beamline = 'Aramis'
-    delta_gap = -55e-6
+    delta_gap = -50e-6
     tracker_kwargs = config.get_default_tracker_settings()
     recon_kwargs = config.get_default_gauss_recon_settings()
     slice_factor = 3
@@ -183,6 +183,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
         gf.plot_data_and_fit(sp)
         sp.set_title('Gaussfit %i $\sigma$ %.1f fs m %.1f fs' % (gf_ctr, (gf.sigma*1e15), gf.mean*1e15))
         print('Gaussian duration %.1f fs' % (gf.sigma*1e15))
+        print('Gaussian mean %.1f fs' % (gf.mean*1e15))
         #sp_espread.plot(gf.xx*1e15, gf.reconstruction/1e9, label='%.1f' % (gf.sigma*1e15), color='red', lw=3)
 
     #if gf_lims:

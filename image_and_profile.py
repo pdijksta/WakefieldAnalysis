@@ -767,7 +767,7 @@ class Image:
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='green', key_sigma='slice_cut_rms_sq', key_mean='slice_cut_mean'):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='deepskyblue', key_sigma='slice_cut_rms_sq', key_mean='slice_cut_mean'):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -815,7 +815,7 @@ class Image:
             xx = slice_dict['slice_x'][mask]*x_factor
             yy = slice_dict[key_mean][mask]*y_factor
             yy_err = np.sqrt(slice_dict[key_sigma][mask])*y_factor
-            sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, ls='None', marker='None', lw=.75)
+            sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, ls='None', marker='None', lw=1)
             sp.set_xlim(*old_lim[0])
             sp.set_ylim(*old_lim[1])
 

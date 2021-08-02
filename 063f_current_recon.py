@@ -54,7 +54,6 @@ plot_gap_recon = True
 if plot_gap_recon:
     recon_gap = True
 
-
 gauss_kwargs = config.get_default_gauss_recon_settings()
 tracker_kwargs = config.get_default_tracker_settings()
 
@@ -129,7 +128,7 @@ where0 = np.argwhere(sc.offsets == 0).squeeze()
 xlim = -3e-3, 1e-3
 ylim = 1e-3, 5e-3
 for img_index, title in [(index, '(b) Streaked'), (where0, '(a) Unstreaked')][::-1]:
-    raw_image = sc.images[img_index][0]
+    raw_image = sc.plot_list_image[img_index]
 
     x_axis = sc.plot_list_x[img_index]
     y_axis = sc.y_axis_list[img_index]
@@ -140,9 +139,9 @@ for img_index, title in [(index, '(b) Streaked'), (where0, '(a) Unstreaked')][::
     img.plot_img_and_proj(sp_img, xlim=xlim, ylim=ylim, plot_gauss=False)
     sumx = raw_image.sum(axis=0)
     prof = iap.AnyProfile(x_axis, sumx-np.min(sumx))
-    prof.cutoff2(0.05)
+    prof.cutoff2(3e-2)
     prof.crop()
-    prof.reshape(1000)
+    prof.reshape(5e3)
     x_rms = prof.rms()
     x_gf = prof.gaussfit.sigma
     distance = sc.gap0/2. - abs(sc.offsets[img_index])
@@ -170,7 +169,7 @@ plot_handles = sp_screen, sp_profile, sp_opt, sp_moments
 tracker.gauss_prec=1e-15
 
 outp = analysis.current_profile_rec_gauss(tracker, recon_kwargs, do_plot=False)
-analysis.plot_rec_gauss(tracker, recon_kwargs, outp, plot_handles, [blmeas_profile], both_zero_crossings=False)
+analysis.plot_rec_gauss(tracker, recon_kwargs, outp, plot_handles, [blmeas_profile], both_zero_crossings=False, skip_indices=(1,3))
 tracker.gauss_prec=0.5e-15
 
 #sp_screen.get_legend().remove()
@@ -265,13 +264,13 @@ sp_profile = sp_res.twinx()
 
 
 blmeas_profile.plot_standard(sp_profile1, color='black', ls='--')
-blmeas_profile.plot_standard(sp_profile, color='black', ls='--')
+blmeas_profile.plot_standard(sp_profile, color='black', ls='--', label='I(t)')
 
 sp_profile1.set_yticklabels([])
 sp_profile1.set_yticks([])
 sp_profile.set_yticks([])
 
-for ctr, (distance, color_ctr) in enumerate([(229e-6, 2), (292e-6, 0)]):
+for ctr, (distance, color_ctr) in enumerate([(231e-6, 2), (294e-6, 0)]):
     beam_offset = gap/2. - distance
     wake_dict = blmeas_profile.calc_wake(gap, beam_offset, struct_length)
     wake_t = wake_dict['input']['charge_xx']/c + blmeas_profile.time.min()
@@ -299,24 +298,20 @@ for ctr, (distance, color_ctr) in enumerate([(229e-6, 2), (292e-6, 0)]):
                 label = '%i' % (round(distance*1e6))
             else:
                 label = None
-            sp_res.plot(res_t*1e15, res*1e15, label=label, color=color, ls=ls)
+            mask = res<10e-15
+            sp_res.plot(res_t[mask]*1e15, res[mask]*1e15, label=label, color=color, ls=ls)
             res_dicts.append(res_dict)
 
 sp_res.set_ylim(0, 10)
-sp_res.legend(title='d ($\mu$m)', loc='upper right')
-
-#sp_gap.legend(title='d ($\mu$m)', framealpha=1)
-#sp_gap.set_xlim(-80, None)
-
-
-#sp_res.legend()
+#sp_res.legend(title='d ($\mu$m)', loc='upper right')
+ms.comb_legend(sp_res, sp_profile, title='d ($\mu$m)', loc='upper right')
 
 if recon_gap:
     if plot_gap_recon:
         plot_handles = (sp_gap, sp_dummy, sp_dummy, sp_dummy)
     else:
         plot_handles = None
-    sc.plot_gap_reconstruction(gap_recon_dict, plot_handles=plot_handles, exclude_gap_ctrs=(2,))
+    sc.plot_gap_reconstruction(gap_recon_dict, plot_handles=plot_handles, exclude_gap_ctrs=(3,))
     sc.plot_gap_reconstruction(gap_recon_dict)
     old_lim = sp_gap.get_xlim()
     sp_gap.set_xlim([old_lim[0], old_lim[1]+80])

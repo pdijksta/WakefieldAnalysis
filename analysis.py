@@ -46,7 +46,7 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
     plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_profiles, do_plot, figsize, both_zero_crossings)
     return gauss_dict
 
-def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=True, figsize=None, both_zero_crossings=True):
+def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=True, figsize=None, both_zero_crossings=True, skip_indices=()):
 
     #best_profile = gauss_dict['reconstructed_profile']
     #best_screen = gauss_dict['reconstructed_screen']
@@ -64,20 +64,24 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profil
     else:
         sp_screen, sp_profile, sp_opt, sp_moments = plot_handles
 
-    meas_screen.plot_standard(sp_screen, color='black', lw=3)
 
     rms_arr = np.zeros(len(opt_func_screens))
     centroid_arr = rms_arr.copy()
 
     for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
+        if opt_ctr in skip_indices:
+            continue
         if opt_ctr == best_index:
             lw = 3
+            lw = None
         else:
             lw = None
         screen.plot_standard(sp_screen, label='%i' % round(sigma*1e15), lw=lw)
         profile.plot_standard(sp_profile, label='%i' % round(profile.rms()*1e15), center='Mean', lw=lw)
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
+
+    meas_screen.plot_standard(sp_screen, color='black', ls='--', label=r'$\rho(x)$')
 
     #best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
     #best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')

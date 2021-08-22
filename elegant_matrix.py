@@ -260,11 +260,13 @@ class simulator:
         s1 = mat_dict['MIDDLE_STREAKER_1']
         if branch == 'Aramis':
             s2 = mat_dict['MIDDLE_STREAKER_2']
+            s1_to_s2 = np.matmul(s2, np.linalg.inv(s1))
         elif branch == 'Athos':
-            s2 = np.identity(len(s1))
+            s2 = s1
+            s1_to_s2 = np.identity(len(s1))
         screen = mat_dict[config.beamline_screens[branch].replace('-','.')]
-        s1_to_s2 = np.matmul(s2, np.linalg.inv(s1))
         s2_to_screen = np.matmul(screen, np.linalg.inv(s2))
+        s1_to_screen = np.matmul(screen, np.linalg.inv(s1))
 
         # s2_to_screen @ s1_to_s2 @ s1 == screen -> checked
 
@@ -272,6 +274,7 @@ class simulator:
                 'start_to_s1': s1,
                 's1_to_s2': s1_to_s2,
                 's2_to_screen': s2_to_screen,
+                's1_to_screen': s1_to_screen,
                 'mat_dict': mat_dict,
                 }
 

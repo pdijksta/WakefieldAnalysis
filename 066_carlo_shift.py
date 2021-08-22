@@ -19,6 +19,8 @@ elif hostname == 'pc11292.psi.ch':
 elif hostname == 'pubuntu':
     data_dir = '/mnt/data/data_2021-06-19/'
 
+charge = 200e-12
+
 
 data_files = [
         (data_dir+ '2021_06_19-17_30_57_Calibration_SARUN18-UDCP020.h5', data_dir + '2021_06_19-17_50_16_Calibration_SARUN18-UDCP020.h5'),
@@ -26,7 +28,7 @@ data_files = [
 
 
 for files in data_files:
-    calibrator = sc = streaker_calibration.StreakerCalibration('Aramis', 1, 10e-3, fit_gap=True, fit_order=False)
+    calibrator = sc = streaker_calibration.StreakerCalibration('Aramis', 1, 10e-3, charge, fit_gap=True, fit_order=False)
     for _file in files:
         calibrator.add_file(_file)
 
@@ -41,6 +43,8 @@ for files in data_files:
     tracker.set_simulator(meta_data)
 
     gap_recon_dict = calibrator.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_center)
+
+    calibrator.plot_gap_reconstruction(gap_recon_dict)
 
 
 ms.show()

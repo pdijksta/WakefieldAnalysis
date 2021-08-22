@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from socket import gethostname
 
 import tracking
+import h5_storage
+import image_and_profile as iap
 import elegant_matrix
 import doublehornfit
 
@@ -30,20 +32,21 @@ n_streaker = 1
 
 hostname = gethostname()
 if hostname == 'desktop':
-    dirname1 = '/storage/data_2020-10-03/'
-    dirname2 = '/storage/data_2020-10-04/'
-    archiver_dir = '/storage/Philipp_data_folder/'
+    data_dir2 = '/storage/data_2021-05-19/'
 elif hostname == 'pc11292.psi.ch':
-    dirname1 = '/sf/data/measurements/2020/10/03/'
-    dirname2 = '/sf/data/measurements/2020/10/04/'
+    data_dir2 = '/sf/data/measurements/2021/05/19/'
 elif hostname == 'pubuntu':
-    dirname1 = '/home/work/data_2020-10-03/'
-    dirname2 = '/home/work/data_2020-10-04/'
-    archiver_dir = '/home/work/'
+    data_dir2 = '/mnt/data/data_2021-05-19/'
+data_dir1 = data_dir2.replace('19', '18')
+
+blmeas_file = data_dir1+'119325494_bunch_length_meas.h5'
+
+sc_file = data_dir1+'2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
+meta_data = h5_storage.loadH5Recursive(sc_file)['raw_data']['meta_data_begin']
 
 
 
-bp_gauss = tracking.get_gaussian_profile(40e-15, 200e-15, len_profile, charge, energy_eV)
+bp_gauss = iap.get_gaussian_profile(40e-15, 200e-15, len_profile, charge, energy_eV)
 
 flat_current = np.zeros_like(bp_gauss.current)
 flat_time = bp_gauss.time
@@ -85,14 +88,14 @@ for bp, bp_label in [(bp_gauss, 'Gauss'), (bp_flat, 'Flat'), (bp_dhf, 'Double ho
         #if quad_wake:
         #    continue
 
-        tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=True)
+        tracker = tracking.Tracker(meta_data, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=True)
         label = main_label + ' ' + bp_label
         forward_dict = tracker.matrix_forward(bp, gaps, beam_offsets)
         screen = forward_dict['screen']
         #screen.smoothen(15e-6)
         #screen.cutoff(1e-3)
 
-        tracker = tracking.Tracker(archiver_dir + 'archiver_api_data/2020-10-03.h5', timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
+        tracker = tracking.Tracker(meta_data, timestamp, struct_lengths, n_particles, n_emittances, screen_bins, screen_cutoff, smoothen, profile_cutoff, len_profile, quad_wake=quad_wake)
         if not plot_wake:
             plot_wake = True
             wake_dict = forward_dict['wake_dict'][n_streaker]
@@ -104,15 +107,12 @@ for bp, bp_label in [(bp_gauss, 'Gauss'), (bp_flat, 'Flat'), (bp_dhf, 'Double ho
 
 
         bp_back = tracker.track_backward2(screen, bp, gaps, beam_offsets, n_streaker)
-        new_bp_back = tracking.BeamProfile(
-                bp_gauss.time,
-                np.interp(bp_gauss.time, bp_back.time, bp_back.current, left=0., right=0.),
-                energy_eV, charge)
+        new_bp_back = tracking.BeamProfile(bp_gauss.time, np.interp(bp_gauss.time, bp_back.time, bp_back.current, left=0., right=0.), energy_eV, charge)
 
         new_bp_back.plot_standard(sp_profile, label=label+' Rec')
         color = screen.plot_standard(sp_screen, label=label)[0].get_color()
 
-        forward_dict2 = tracker.matrix_forward(new_bp_back, gaps, beam_offsets, debug=True)
+        forward_dict2 = tracker.matrix_forward(new_bp_back, gaps, beam_offsets)
         screen2 = forward_dict2['screen']
         screen2.plot_standard(sp_screen, color=color, ls='--')
 

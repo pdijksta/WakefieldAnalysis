@@ -20,14 +20,13 @@ elif hostname == 'pubuntu':
     data_dir = '/mnt/data/data_2021-06-19/'
 
 charge = 200e-12
-
-
 data_files = [
-        (data_dir+ '2021_06_19-17_30_57_Calibration_SARUN18-UDCP020.h5', data_dir + '2021_06_19-17_50_16_Calibration_SARUN18-UDCP020.h5'),
+        (data_dir+ '2021_06_19-17_06_24_Calibration_SARUN18-UDCP020.h5',),
+        #(data_dir+ '2021_06_19-17_30_57_Calibration_SARUN18-UDCP020.h5', data_dir + '2021_06_19-17_50_16_Calibration_SARUN18-UDCP020.h5'),
         ]
+use_offsets = [np.arange(17)[1:-2], None]
 
-
-for files in data_files:
+for files, use_offset in zip(data_files, use_offsets):
     calibrator = sc = streaker_calibration.StreakerCalibration('Aramis', 1, 10e-3, charge, fit_gap=True, fit_order=False)
     for _file in files:
         calibrator.add_file(_file)
@@ -42,10 +41,20 @@ for files in data_files:
     meta_data = calibrator.meta_data
     tracker.set_simulator(meta_data)
 
-    gap_recon_dict = calibrator.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_center)
+    gap_recon_dict = calibrator.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_center, gap0=10e-3, use_offsets=use_offset)
 
     calibrator.plot_gap_reconstruction(gap_recon_dict)
+    gap = gap_recon_dict['gap']
 
+    offset_list, gauss_dicts = calibrator.reconstruct_current(tracker, gauss_kwargs, force_gap=gap, force_streaker_offset=streaker_center)
+    calibrator.plot_reconstruction()
+
+
+# Result:
+# streaker_center 389 um
+# delta_gap: -46 um
+
+ms.saveall('./plots/066', ending='.pdf')
 
 ms.show()
 

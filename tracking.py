@@ -760,7 +760,8 @@ class Tracker:
         gauss_wakes = []
         sig_t_list = []
         gaps = [gaps[0]+delta_gap[0], gaps[1]+delta_gap[1]]
-        #print('gaps, beam_offsets g', gaps[n_streaker], beam_offsets[n_streaker])
+        #distance = gaps[n_streaker]/2. - abs(beam_offsets[n_streaker])
+        #print('gaps, beam_offsets, distance', gaps[n_streaker], beam_offsets[n_streaker], '%i' % (distance*1e6))
 
         #meas_screen = copy.deepcopy(meas_screen)
         meas_screen.reshape(self.len_screen)

@@ -30,6 +30,7 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
     gauss_dict = tracker.find_best_gauss2(**kwargs)
     if not do_plot:
         return gauss_dict
+    blmeas_profiles = None
     if blmeas_file is not None:
         blmeas_profiles = []
         for zero_crossing in (1, 2):
@@ -50,7 +51,7 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profil
 
     #best_profile = gauss_dict['reconstructed_profile']
     #best_screen = gauss_dict['reconstructed_screen']
-    best_index = gauss_dict['best_index']
+    #best_index = gauss_dict['best_index']
     opt_func_values = gauss_dict['opt_func_values']
     opt_func_screens = gauss_dict['opt_func_screens']
     opt_func_profiles = gauss_dict['opt_func_profiles']
@@ -64,18 +65,13 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profil
     else:
         sp_screen, sp_profile, sp_opt, sp_moments = plot_handles
 
-
     rms_arr = np.zeros(len(opt_func_screens))
     centroid_arr = rms_arr.copy()
 
     for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
         if opt_ctr in skip_indices:
             continue
-        if opt_ctr == best_index:
-            lw = 3
-            lw = None
-        else:
-            lw = None
+        lw = None
         screen.plot_standard(sp_screen, label='%i' % round(sigma*1e15), lw=lw)
         profile.plot_standard(sp_profile, label='%i' % round(profile.rms()*1e15), center='Mean', lw=lw)
         rms_arr[opt_ctr] = screen.rms()
@@ -202,7 +198,7 @@ def reconstruction_figure(figsize=None):
 
 def clear_reconstruction(sp_screen, sp_profile, sp_opt, sp_moments):
     for sp, title, xlabel, ylabel in [
-            (sp_screen, 'Screen', 'x (mm)', r'\rho '),
+            (sp_screen, 'Screen', 'x (mm)', config.rho_label),
             (sp_profile, 'Profile', 't (fs)', 'Current (kA)'),
             (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
             (sp_moments, 'Moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
@@ -411,6 +407,8 @@ def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs_
     else:
         raise ValueError(type(tracker_kwargs_or_tracker))
 
+    charge = kwargs_recon['charge']
+
     if type(data_file_or_dict) is dict:
         screen_data = data_file_or_dict
     else:
@@ -450,7 +448,7 @@ def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs_
         if revert:
             proj = proj[::-1]
 
-        meas_screen = tracking.ScreenDistribution(x_axis, proj)
+        meas_screen = tracking.ScreenDistribution(x_axis, proj, charge=charge)
         kwargs_recon['meas_screen'] = meas_screen
 
         #print('Analysing reconstruction')

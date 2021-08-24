@@ -247,7 +247,12 @@ class ScreenDistribution(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        factor = np.abs(self.charge /np.trapz(x, y))
+        factor = np.abs(self.charge /np.trapz(y, x))
+        #try:
+        #    integral = np.trapz(y*factor, x)
+        #    print('charge', self.charge, 'factor', factor, 'integral', integral, 'label', kwargs['label'])
+        #except:
+        #    pass
         return sp.plot(x*1e3, y*1e9*factor, **kwargs)
 
     def to_dict(self):

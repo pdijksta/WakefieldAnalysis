@@ -68,9 +68,8 @@ class DataLoader(dict):
         else:
             #return data_list[-1,1]
             #import pdb; pdb.set_trace()
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             raise KeyError('Requested data at border of data array')
-
 
     def add_other_csv(self, file_):
         new_dict = csv_to_dict(file_)
@@ -86,7 +85,6 @@ class DataLoader(dict):
         new_dict = loadH5Recursive(file_)
         assert len(set(new_dict.keys()).intersection(set(self.keys()))) == 0
         self.update(new_dict)
-
 
 @functools.lru_cache(5)
 def load_blmeas(file_):

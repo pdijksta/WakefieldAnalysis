@@ -44,7 +44,7 @@ lasing_on_file = data_dir + '2021_06_19-17_20_39_Lasing_True_SARBD02-DSCR050.h5'
 
 for lasing_file in [lasing_off_file, lasing_on_file]:
     lasing_dict = h5_storage.loadH5Recursive(lasing_file)
-    analysis.reconstruct_current(lasing_dict, n_streaker, beamline, tracker, rec_mode, kwargs_recon, screen_x0, streaker_centers)
+    analysis.reconstruct_current(lasing_dict, n_streaker, beamline, tracker, rec_mode, kwargs_recon, screen_x0, streaker_centers, figsize=(20, 16))
 
 lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)
 lasing_on_dict = h5_storage.loadH5Recursive(lasing_on_file)
@@ -64,7 +64,7 @@ for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), 
     #rec_obj.plot_images('tE', title)
 
 las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=0.5e3)
-las_rec.plot()
+las_rec.plot(figsize=(20, 16))
 
 
 ms.saveall('./plots/066b', ending='.pdf')

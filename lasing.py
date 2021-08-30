@@ -177,15 +177,18 @@ def lasing_figure(figsize=None):
     fig = plt.figure(figsize=figsize)
     fig.canvas.set_window_title('Lasing reconstruction')
     fig.subplots_adjust(hspace=0.4)
-    subplot = ms.subplot_factory(2,3)
-    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+6)]
+    subplot = ms.subplot_factory(3,3)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+9)]
     clear_lasing_figure(*subplots)
     return fig, subplots
 
-def clear_lasing_figure(sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit):
+def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit):
 
     for sp, title, xlabel, ylabel in [
-            (sp_slice_mean, 'Energy loss', 't (fs)','$\Delta E$ (MeV)'),
+            (sp_image_on, 'Lasing On', 'x (mm)', 'y (mm)'),
+            (sp_image_on2, 'Lasing On', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_image_off, 'Lasing Off', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_slice_mean, 'Energy loss', 't (fs)', '$\Delta E$ (MeV)'),
             (sp_slice_sigma, 'Energy spread increase', 't (fs)', 'Energy spread (MeV)'),
             (sp_current, 'Current profile', 't (fs)', 'Current (kA)'),
             (sp_lasing_loss, 'Energy loss power profile', 't (fs)', 'Power (GW)'),
@@ -196,7 +199,7 @@ def clear_lasing_figure(sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_los
         sp.set_title(title)
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
-        sp.grid(True)
+        sp.grid(False)
 
 
 class LasingReconstruction:
@@ -299,7 +302,18 @@ class LasingReconstruction:
 
         if plot_handles is None:
             _, plot_handles = lasing_figure(figsize=figsize)
-        sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit = plot_handles
+        sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit = plot_handles
+
+        for sp_image_tE, sp_image_xy, obj in [
+                (sp_image_on2, sp_image_on, self.images_on),
+                (sp_image_off, None, self.images_off),
+                ]:
+            index_median = 0
+            image_xy = obj.raw_image_objs[index_median]
+            image_tE = obj.images_tE[index_median]
+            if sp_image_xy is not None:
+                image_xy.plot_img_and_proj(sp_image_xy)
+            image_tE.plot_img_and_proj(sp_image_tE)
 
         current_center = []
         for title, ls, mean_color in [('Lasing Off', None, 'black'), ('Lasing On', '--', 'red')]:

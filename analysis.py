@@ -209,9 +209,9 @@ def clear_reconstruction(sp_screen, sp_profile, sp_opt, sp_moments):
         sp.set_ylabel(ylabel)
         sp.grid(True)
 
-def lasing_figures():
+def lasing_figures(figsize=None):
     output = []
-    fig = plt.figure()
+    fig = plt.figure(figsize=figsize)
     fig.canvas.set_window_title('Lasing reconstruction')
     subplot = ms.subplot_factory(3,3, grid=False)
     plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+8)))
@@ -249,7 +249,7 @@ def clear_lasing(plot_handles):
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
 
-def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy, n_slices, len_profile):
+def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structure_center, structure_length, file_current, r12, disp, energy_eV, charge, streaker, plot_handles, pulse_energy, n_slices, len_profile, figsize=None):
 
     if type(file_or_dict_on) is dict:
         dict_on = file_or_dict_on
@@ -343,7 +343,7 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
     lasing_dict = lasing.obtain_lasing(median_image_off, median_image_on, n_slices, wake_x, wake_t, len_profile, disp, energy_eV, charge, pulse_energy=pulse_energy, debug=False)
 
     if plot_handles is None:
-        plot_handles = lasing_figures()
+        plot_handles = lasing_figures(figsize)
 
     (fig, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
     (fig, (sp_power, sp_current, sp_centroid, sp_slice_size)) = plot_handles[1]
@@ -398,7 +398,7 @@ def reconstruct_lasing(file_or_dict_on, file_or_dict_off, screen_center, structu
     #import pdb; pdb.set_trace()
     return output
 
-def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs_or_tracker, rec_mode, kwargs_recon, screen_x0, streaker_centers, blmeas_file=None, plot_handles=None, do_plot=True):
+def reconstruct_current(data_file_or_dict, n_streaker, beamline, tracker_kwargs_or_tracker, rec_mode, kwargs_recon, screen_x0, streaker_centers, blmeas_file=None, plot_handles=None, do_plot=True, figsize=None):
 
     if type(tracker_kwargs_or_tracker) is dict:
         tracker = tracking.Tracker(**tracker_kwargs_or_tracker)

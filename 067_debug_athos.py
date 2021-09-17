@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from socket import gethostname
 
 import h5_storage
 import streaker_calibration
@@ -11,9 +12,20 @@ elegant_matrix.set_tmp_dir('~/tmp_elegant/')
 
 plt.close('all')
 
-file_ = '/storage/data_2021-07-20/2021_07_20-12_23_34_Calibration_data_SATMA02-UDCP045.h5'
+hostname = gethostname()
+if hostname == 'desktop':
+    data_dir = '/storage/data_2021-07-20/'
+elif hostname == 'pc11292.psi.ch':
+    data_dir = '/sf/data/measurements/2021/07/20/'
+elif hostname == 'pubuntu':
+    data_dir = '/mnt/data/data_2021-07-20/'
+
+
+
+file_ = data_dir+'2021_07_20-12_23_34_Calibration_data_SATMA02-UDCP045.h5'
 dict_ = h5_storage.loadH5Recursive(file_)
-sc = streaker_calibration.StreakerCalibration('Athos', 0, 10e-3, 200e-12, file_)
+dict_['meta_data_begin']['SATMA02.MQUA070'] = 0.119105
+sc = streaker_calibration.StreakerCalibration('Athos', 0, 10e-3, 200e-12, dict_)
 sc.fit()
 calib_dict = sc.fit_type('centroid')
 sc.plot_streaker_calib()

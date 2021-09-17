@@ -28,6 +28,13 @@
 &end
 
 &alter_elements
+	name = "SATMA02.MQUA070.Q[12]"
+	item = "K1"
+	value = <_satma02.mqua070.k1_>
+&end
+
+
+&alter_elements
 	name = "SATBD01.MQUA010"
 	item = "K1"
 	value = <_satbd01.mqua010.k1_>

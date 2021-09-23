@@ -587,6 +587,7 @@ class Tracker:
 
     def track_backward2(self, screen, profile, gaps, beam_offsets, n_streaker, **kwargs):
         if beam_offsets[n_streaker] == 0:
+            print(gaps, beam_offsets, n_streaker)
             raise ValueError('Beam Offset is 0')
         wf_dict = profile.calc_wake(gaps[n_streaker], beam_offsets[n_streaker], self.struct_lengths[n_streaker])
         wake_effect = profile.wake_effect_on_screen(wf_dict, self.calcR12()[n_streaker])

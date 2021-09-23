@@ -82,7 +82,10 @@ def get_images(screen, n_images, beamline, dry_run=None):
     readables = get_readables(beamline)
 
     raw_output = pyscan.scan(positioner=positioner, readables=readables, settings=settings, writables=writables)
-    output = [[x] for x in raw_output]
+
+    # Bugged?
+    # output = [[x] for x in raw_output]
+    output = raw_output
 
     result_dict = pyscan_result_to_dict(readables, output, scrap_bs=True)
 
@@ -104,7 +107,6 @@ def get_images(screen, n_images, beamline, dry_run=None):
             }
 
     print('End get_images')
-
     return output_dict
 
 def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline):

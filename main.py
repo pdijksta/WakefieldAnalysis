@@ -69,6 +69,7 @@ import myplotstyle as ms
 # - Comments to elog
 # - optional provide the pulse energy calibration
 # - png.png
+# - R12 in Athos is wrong - does not change when quad is changed
 
 # Other comments
 # - Data for paper
@@ -203,7 +204,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.Charge.setText('%i' % round(gs['charge']*1e12))
 
         if elog is not None:
-            self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/')
+            self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
 
         self.current_rec_dict = None
         self.lasing_rec_dict = None
@@ -260,6 +261,7 @@ class StartMain(QtWidgets.QMainWindow):
     def obtain_r12(self, meta_data=None):
         if meta_data is None:
             meta_data = daq.get_meta_data(self.screen, self.dry_run, self.beamline)
+            print(meta_data)
         #print('obtain_r12', meta_data)
         tracker = self.get_tracker(meta_data)
         r12 = tracker.calcR12()[self.n_streaker]
@@ -273,7 +275,7 @@ class StartMain(QtWidgets.QMainWindow):
         return float(self.StreakerGapDelta0.text())*1e-6, float(self.StreakerGapDelta1.text())*1e-6
 
     def get_gauss_kwargs(self):
-        start, stop, size = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), float(self.SigTSize.text())
+        start, stop, size = float(self.SigTfsStart.text()), float(self.SigTfsStop.text()), int(self.SigTSize.text())
         sig_t_range = np.exp(np.linspace(np.log(start), np.log(stop), size))*1e-15
         tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
         n_streaker = int(self.StreakerSelect.currentText())
@@ -639,7 +641,7 @@ class StartMain(QtWidgets.QMainWindow):
             #rec_obj.plot_images('raw', title)
             #rec_obj.plot_images('tE', title)
 
-        las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=1.5e3)
+        las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=0.5e3)
         las_rec.plot(plot_handles=self.all_lasing_plot_handles)
         self.all_lasing_canvas.draw()
 

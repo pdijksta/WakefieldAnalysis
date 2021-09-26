@@ -67,8 +67,10 @@
 &alter_elements
 	name = "SATBD02.MQUA030"
 	item = "K1"
-	value = <_satbd01.mqua030.k1_>
+	value = <_satbd02.mqua030.k1_>
 &end
+
+
 
 
 

@@ -54,15 +54,12 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
     return output
 
 def get_images(screen, n_images, beamline, dry_run=None):
-
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
-
 
     def dummy_func(*args):
         pass
 
     meta_dict_1 = get_meta_data(screen, dry_run, beamline)
-
     #positioner = pyscan.BsreadPositioner(n_messages=n_images)
     positioner = pyscan.VectorPositioner([0])
     writables = [pyscan.function_value(dummy_func, 'dummy')]
@@ -99,7 +96,6 @@ def get_images(screen, n_images, beamline, dry_run=None):
             raise ValueError('Unexpected', len(arr.shape))
 
     meta_dict_2 = get_meta_data(screen, dry_run, beamline)
-
     output_dict = {
             'pyscan_result': result_dict,
             'meta_data_begin': meta_dict_1,

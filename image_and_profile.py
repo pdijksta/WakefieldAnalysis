@@ -884,7 +884,7 @@ def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_str
 def plot_resolution(res_dict, sp_current, sp_res, max_res=20e-15):
     bp = res_dict['beamprofile']
     bp.plot_standard(sp_current)
-    sp_res.plot(res_dict['time'], res_dict['resolution'])
+    sp_res.plot(res_dict['time']*1e15, res_dict['resolution']*1e15)
     sp_res.set_ylim(None, max_res*1e15)
 
 def plot_slice_dict(slice_dict):

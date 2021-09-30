@@ -877,8 +877,14 @@ def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_str
             'beamsize': beamsize,
             'streaking_strength': streaking_strength,
             'beam': beam,
+            'beamprofile': beamprofile
             }
     return output
+
+def plot_resolution(res_dict, sp_current, sp_res):
+    bp = res_dict['beamprofile']
+    bp.plot_standard(sp_current)
+    sp_res.plot(res_dict['time'], res_dict['resolution'])
 
 def plot_slice_dict(slice_dict):
     subplot = ms.subplot_factory(3, 3)

@@ -20,6 +20,7 @@ import analysis
 import lasing
 import h5_storage
 import streaker_calibration as sc
+import image_and_profile as iap
 
 import myplotstyle as ms
 
@@ -37,6 +38,7 @@ import myplotstyle as ms
 # - Mean of square instead of square of mean of squareroot
 # - Athos gas detector
 # - Calibration based on TDC
+# - Add resolution to tool
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -132,6 +134,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.ReconstructLasing.clicked.connect(self.reconstruct_all_lasing)
         self.ObtainR12.clicked.connect(self.obtain_r12_0)
+        self.PlotResolution.clicked.connect(self.plot_resolution)
 
         self.StreakerSelect.activated.connect(self.update_streaker)
         self.BeamlineSelect.activated.connect(self.update_streaker)
@@ -237,6 +240,9 @@ class StartMain(QtWidgets.QMainWindow):
         self.all_lasing_fig, self.all_lasing_plot_handles = lasing.lasing_figure()
         self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'All lasing')
 
+        self.resolution_fig, self.resolution_plot_handles = analysis.resolution_figure()
+        self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'Resolution')
+
     def clear_rec_plots(self):
         analysis.clear_reconstruction(*self.reconstruction_plot_handles)
         self.rec_canvas.draw()
@@ -255,6 +261,20 @@ class StartMain(QtWidgets.QMainWindow):
 
     def clear_all_lasing_plots(self):
         lasing.clear_lasing_figure(*self.all_lasing_plot_handles)
+
+    def plot_resolution(self):
+        bp_dict = h5_storage.loadH5Recursive(os.path.join(os.path.dirname(__file__), './example_current_profile.h5'))
+        gap = 10e-3
+        beam_offset = gap/2 - (float(self.PlotResolutionDistance.text())*1e-6)
+        struct_length = config.streaker_lengths[self.streaker]
+        meta_data = daq.get_meta_data(self.screen, False, self.beamline)
+        tracker = self.get_tracker(meta_data)
+        n_streaker = self.n_streaker
+        beamprofile = iap.BeamProfile(bp_dict['time_profile'], bp_dict['current'], 6e9, self.charge)
+        res_dict = iap.calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_streaker, bins=(150, 100), camera_res=20e-6)
+
+        analysis.clear_resolution_figure(*self.resolution_plot_handles)
+        iap.plot_resolution(res_dict, *self.resolution_plot_handles)
 
     def obtain_r12_0(self):
         return self.obtain_r12()

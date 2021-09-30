@@ -50,18 +50,18 @@ def analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=None, f
     sc.plot_streaker_calib(plot_handles)
     return sc.get_result_dict()
 
-def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handles=None, charge=None):
+def reconstruct_gap(result_dict, tracker, gauss_kwargs, do_plot=True, plot_handles=None, charge=None, delta_gap=(-150e-6, 50e-6), use_offsets=None):
     meta_data = result_dict['meta_data_begin']
     streaker = result_dict['streaker']
     beamline, n_streaker = analysis.get_beamline_n_streaker(streaker)
     gap0 = meta_data[streaker+':GAP']*1e-3
-    gap_arr = np.array([gap0-150e-6, gap0+50e-6])
+    gap_arr = np.array([gap0+delta_gap[0], gap0+delta_gap[1]])
     if charge is None:
         charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
 
     sc = StreakerCalibration(beamline, n_streaker, gap0, charge, file_or_dict=result_dict, fit_gap=True, fit_order=False)
     streaker_offset = sc.fit_type('centroid')['streaker_offset']
-    gap_recon = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset)
+    gap_recon = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset, use_offsets=use_offsets)
     delta_gap = gap_recon['gap'] - gap0
     sc.fit_gap=False
     sc.gap0 = gap_recon['gap']
@@ -681,7 +681,8 @@ class StreakerCalibration:
             if err:
                 sort = np.argsort(lin_fit2)
                 gap = np.interp(0, lin_fit2[sort], gaps2[sort])
-                raise ValueError('Gap interpolated to %e. Gap_arr limits: %e, %e' % (gap, gap_arr.min(), gap_arr.max()))
+                #raise ValueError('Gap interpolated to %e. Gap_arr limits: %e, %e' % (gap, gap_arr.min(), gap_arr.max()))
+                print('Gap interpolated to %e. Gap_arr limits: %e, %e' % (gap, gap_arr.min(), gap_arr.max()))
             return gap
 
         for gap in [gap_arr.min(), gap_arr.max()]:

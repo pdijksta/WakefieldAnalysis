@@ -36,6 +36,7 @@ import myplotstyle as ms
 # - add blmeas option to lasing rec
 # - Mean of square instead of square of mean of squareroot
 # - Athos gas detector
+# - Calibration based on TDC
 
 #Problematic / cannot be done easily:
 # - save BPM data also

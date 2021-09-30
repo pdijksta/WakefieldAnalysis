@@ -169,27 +169,22 @@ def resolution_figure():
     fig = plt.figure()
     fig.canvas.set_window_title('Screen center calibration')
     fig.subplots_adjust(hspace=0.35)
-    sp_ctr = 1
-    subplot = ms.subplot_factory(1, 2)
-
-    sp_curr = subplot(sp_ctr)
-    sp_ctr += 1
-    sp_res = subplot(sp_ctr)
-    sp_ctr += 1
+    subplot = ms.subplot_factory(1, 1)
+    sp_res = subplot(1)
+    sp_curr = sp_res.twinx()
     clear_resolution_figure(sp_curr, sp_res)
     return fig, (sp_curr, sp_res)
 
 def clear_resolution_figure(sp_curr, sp_res):
     for sp, title, xlabel, ylabel in [
-            (sp_curr, 'Example current', 't (fs)', 'I (kA)'),
             (sp_res, 'Expected resolution', 't (fs)', 'R (fs)'),
             ]:
         sp.clear()
         sp.set_title(title)
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
-        sp.grid(True)
-
+        sp_res.grid(True)
+    sp_curr.set_ylabel('I (kA)')
 
 def screen_calibration_figure():
     fig = plt.figure()

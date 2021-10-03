@@ -381,7 +381,9 @@ class StreakerCalibration:
                 'p0': p0,
                 'xx_fit': xx_fit,
                 'xx_fit2': xx_fit2,
-                'screen_rms0': const0
+                'screen_rms0': const0,
+                'screen_x0_arr': self.screen_x0_arr,
+                'screen_x0': np.mean(self.screen_x0_arr),
                 }
         self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order] = fit_dict
         return fit_dict

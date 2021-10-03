@@ -38,7 +38,6 @@ import myplotstyle as ms
 # - Mean of square instead of square of mean of squareroot
 # - Athos gas detector
 # - Calibration based on TDC
-# - Add resolution to tool
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -73,6 +72,7 @@ import myplotstyle as ms
 # - optional provide the pulse energy calibration
 # - png.png
 # - R12 in Athos is wrong - does not change when quad is changed
+# - Add resolution to tool
 
 # Other comments
 # - Data for paper

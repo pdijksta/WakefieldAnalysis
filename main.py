@@ -38,10 +38,13 @@ import myplotstyle as ms
 # - Mean of square instead of square of mean of squareroot
 # - Athos gas detector
 # - Calibration based on TDC
+# - Fix calibration - screen and streaker offset at same time
+# - fix systematic current
 
 #Problematic / cannot be done easily:
 # - save BPM data also
 # - One-sided plate
+# - Update load blmeas (need bugfixes by Thomas)
 
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
@@ -73,6 +76,7 @@ import myplotstyle as ms
 # - png.png
 # - R12 in Athos is wrong - does not change when quad is changed
 # - Add resolution to tool
+# - Fix non converging calibration
 
 # Other comments
 # - Data for paper

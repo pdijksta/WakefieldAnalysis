@@ -325,7 +325,10 @@ class StreakerCalibration:
         const0 = yy_mean[where0]
         offset0 = (offsets[0] + offsets[-1])/2
 
-        s0_arr = yy_mean/(np.abs((offsets-offset0-semigap))**(-order0) + np.abs((offsets-offset0+semigap))**(-order0))
+        if type_ == 'centroid':
+            s0_arr = (yy_mean-const0)/(np.abs((offsets-offset0-semigap))**(-order0) - np.abs((offsets-offset0+semigap))**(-order0))
+        elif type_ == 'beamsize':
+            s0_arr = (yy_mean-const0)/(np.abs((offsets-offset0-semigap))**(-order0) + np.abs((offsets-offset0+semigap))**(-order0))
         s0 = (s0_arr[0] + s0_arr[-1])/2
         p0 = [offset0, s0]
         if self.fit_order:
@@ -389,8 +392,9 @@ class StreakerCalibration:
         return fit_dict
 
     def fit(self):
-        self.fit_type('beamsize')
-        self.fit_type('centroid')
+        a = self.fit_type('beamsize')
+        b = self.fit_type('centroid')
+        return a, b
 
     def forward_propagate(self, blmeas_profile, tt_halfrange, tracker, type_='centroid', blmeas_cutoff=None, force_gap=None, force_streaker_offset=None):
         tracker.set_simulator(self.meta_data)

@@ -273,7 +273,7 @@ class LasingReconstruction:
         lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err)
         lasing_dict['Espread'] = power_Espread_err(slice_time, mean_current, on_spread_mean, off_spread_mean, self.pulse_energy, err_current, on_spread_err, off_spread_err, norm_factor=self.norm_factor)
         self.norm_factor = norm_factor = lasing_dict['Espread']['norm_factor']
-        print('norm_factor', '%.3e' % norm_factor, 'pulse energy', '%.3e uJ' % (lasing_dict['Espread']['energy']*1e6))
+        print('norm_factor', '%.3e' % norm_factor, 'pulse energy Espread', '%.3e uJ' % (lasing_dict['Espread']['energy']*1e6), 'pulse energy Eloss', '%.3e uJ' % (lasing_dict['Eloss']['energy']*1e6))
 
         n_images = len(all_slice_dict['Lasing On']['t'])
         all_loss = np.zeros([n_images, mask.sum()])
@@ -379,6 +379,7 @@ class LasingReconstructionImages:
         self.delta_gap = delta_gap
         recon_kwargs['delta_gap'] = [0, 0]
         recon_kwargs['delta_gap'][n_streaker] = delta_gap
+        print('Lasing reconstruction images: delta_gap', recon_kwargs['delta_gap'])
         self.screen_x0 = screen_x0
         self.beamline = beamline
         self.n_streaker = n_streaker

@@ -1,5 +1,5 @@
 import numpy as np
-from h5_storage import loadH5Recursive
+from h5_storage import loadH5Recursive, saveH5Recursive
 import tracking
 import config
 import streaker_calibration
@@ -37,6 +37,8 @@ files = [
         (9, '/sf/data/measurements/2021/10/03/2021_10_03-15_42_45_Calibration_SARUN18-UDCP020.h5',),
         ]
 
+
+outp_dict = {}
 
 
 for (n_optics0, optics), (n_optics1, file_) in zip(optics_list, files):
@@ -94,13 +96,21 @@ for (n_optics0, optics), (n_optics1, file_) in zip(optics_list, files):
     ms.plt.suptitle('Optics %i' % n_optics0)
 
 
-    sc.reconstruct_current(tracker, gauss_kwargs, force_gap=gap_reconstruction['gap'], force_streaker_offset=streaker_offset, use_offsets=(0,1,2,-1,-2,-3))
+    offset_list, gauss_dicts = sc.reconstruct_current(tracker, gauss_kwargs, force_gap=gap_reconstruction['gap'], force_streaker_offset=streaker_offset, use_offsets=(0,1,2,-1,-2,-3))
     sc.plot_reconstruction()
 
 
+    save_list = {offset: g for offset, g in zip(offset_list, gauss_dicts)}
+    outp_dict[n_optics0] = {
+            'streaker_center_fit': fit_dict,
+            'reconstructions': save_list,
+            }
 
     ms.saveall('./plots/068a_optics_%i' % n_optics0, empty_suptitle=False)
     ms.closeall()
+
+
+saveH5Recursive('./plots/068a_data.h5', outp_dict)
 
 ms.show()
 

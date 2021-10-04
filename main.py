@@ -39,7 +39,6 @@ import myplotstyle as ms
 # - Athos gas detector
 # - Calibration based on TDC
 # - Fix calibration - screen and streaker offset at same time
-# - fix systematic current
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -77,6 +76,8 @@ import myplotstyle as ms
 # - R12 in Athos is wrong - does not change when quad is changed
 # - Add resolution to tool
 # - Fix non converging calibration
+# - Fix erronous gap calibration
+# - Fix systematic current profile reconstruction differences
 
 # Other comments
 # - Data for paper
@@ -507,6 +508,7 @@ class StartMain(QtWidgets.QMainWindow):
 
         tracker = self.get_tracker(saved_dict['meta_data_begin'])
         gauss_kwargs = self.get_gauss_kwargs()
+        gauss_kwargs['delta_gap'] = np.array([0., 0.])
         gap_recon_dict = sc.reconstruct_gap(saved_dict, tracker, gauss_kwargs, plot_handles=self.gap_recon_plot_handles)
         n_streaker = gap_recon_dict['n_streaker']
         delta_gap = gap_recon_dict['delta_gap']

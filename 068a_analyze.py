@@ -92,18 +92,20 @@ for (n_optics0, optics), (n_optics1, file_) in zip(optics_list, files):
 
     gap_arr = np.array([10e-3-100e-6, 10e-3+50e-6])
     gap_reconstruction = sc.gap_reconstruction2(gap_arr, tracker, gauss_kwargs, streaker_offset)
+    gap = gap_reconstruction['gap']
     sc.plot_gap_reconstruction(gap_reconstruction)
     ms.plt.suptitle('Optics %i' % n_optics0)
 
 
-    offset_list, gauss_dicts = sc.reconstruct_current(tracker, gauss_kwargs, force_gap=gap_reconstruction['gap'], force_streaker_offset=streaker_offset, use_offsets=(0,1,2,-1,-2,-3))
+    offset_list, gauss_dicts = sc.reconstruct_current(tracker, gauss_kwargs, force_gap=gap, force_streaker_offset=streaker_offset, use_offsets=(0,1,2,-1,-2,-3))
     sc.plot_reconstruction()
 
 
-    save_list = {offset: g for offset, g in zip(offset_list, gauss_dicts)}
-    outp_dict[n_optics0] = {
+    save_list = {str(offset): g for offset, g in zip(offset_list, gauss_dicts)}
+    outp_dict[str(n_optics0)] = {
             'streaker_center_fit': fit_dict,
             'reconstructions': save_list,
+            'gap': gap,
             }
 
     ms.saveall('./plots/068a_optics_%i' % n_optics0, empty_suptitle=False)

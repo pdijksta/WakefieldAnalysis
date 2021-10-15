@@ -43,7 +43,8 @@
 	sigma_s = <_bunch_length_>
 	momentum_chirp = 0,
 	distribution_type[0] = gaussian, gaussian, gaussian,
-	enforce_rms_values[0] = 1, 1, 1
+	enforce_rms_values[0] = 0, 0, 0,
+	distribution_cutoff[0] = 5, 5, 5,
 &end
 
 &track

@@ -761,8 +761,6 @@ class Tracker:
         gauss_wakes = []
         sig_t_list = []
         gaps = [gaps[0]+delta_gap[0], gaps[1]+delta_gap[1]]
-        #distance = gaps[n_streaker]/2. - abs(beam_offsets[n_streaker])
-        #print('gaps, beam_offsets, distance', gaps[n_streaker], beam_offsets[n_streaker], '%i' % (distance*1e6))
 
         #meas_screen = copy.deepcopy(meas_screen)
         meas_screen.reshape(self.len_screen)
@@ -844,6 +842,10 @@ class Tracker:
         best_sig_t = sig_t_list[index_min]
         best_gauss = gauss_profiles[index_min]
         best_wake = gauss_wakes[index_min]
+
+
+        distance = gaps[n_streaker]/2. - abs(beam_offsets[n_streaker])
+        print('duration, charge, gaps, beam_offsets, distance', int(best_profile.rms()*1e15), int(charge*1e12), gaps[n_streaker], beam_offsets[n_streaker], '%i' % (distance*1e6))
 
         output = {
                'gauss_sigma': best_sig_t,

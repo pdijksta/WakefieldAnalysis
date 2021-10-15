@@ -89,47 +89,96 @@ class DataLoader(dict):
 @functools.lru_cache(5)
 def load_blmeas(file_):
     with h5py.File(file_, 'r') as f:
+        if 'Ambient data' in f:
+            return load_blmeas_new(f, file_)
+        else:
+            return load_blmeas_old(f, file_)
 
-        energy_eV = np.array(f['Input']['Energy']).squeeze()*1e6
-        output = {'energy_eV': energy_eV}
+def load_blmeas_old(f, file_):
 
-        # Not always are both zero crossings measured
-        suffixes = [('', '1')]
-        if 'Time axes 2' in f['Meta_data']:
-            suffixes.append((' 2', '2'))
+    energy_eV = np.array(f['Input']['Energy']).squeeze()*1e6
+    output = {'energy_eV': energy_eV}
 
-        for suffix, suffix_out in suffixes:
-            time_profile = np.array(f['Meta_data']['Time axes'+suffix])*1e-15
-            current = np.array(f['Meta_data']['Current profile'+suffix])
+    # Not always are both zero crossings measured
+    suffixes = [('', '1')]
+    if 'Time axes 2' in f['Meta_data']:
+        suffixes.append((' 2', '2'))
 
-            # Reorder if time array is descending
-            if time_profile[1] - time_profile[0] < 0:
-                time_profile = time_profile[::-1]
-                current = current[::-1]
+    for suffix, suffix_out in suffixes:
+        time_profile = np.array(f['Meta_data']['Time axes'+suffix])*1e-15
+        current = np.array(f['Meta_data']['Current profile'+suffix])
 
-            # Find out where is the head and the tail.
-            # In our conventios, the head is at negative time
-            centroids = np.array(f['Raw_data']['Beam centroids'+suffix])
-            phases = np.arange(0, len(centroids)) # phases always ascending, and we only care about the sign of the fit
+        # Reorder if time array is descending
+        if time_profile[1] - time_profile[0] < 0:
+            time_profile = time_profile[::-1]
+            current = current[::-1]
 
-            if len(phases) > 1:
-                dy_dphase = np.polyfit(phases, centroids.mean(axis=1), 1)[0]
+        # Find out where is the head and the tail.
+        # In our conventios, the head is at negative time
+        centroids = np.array(f['Raw_data']['Beam centroids'+suffix])
+        phases = np.arange(0, len(centroids)) # phases always ascending, and we only care about the sign of the fit
 
-                sign_dy_dt = np.sign(dy_dphase)
-            else:
-                print('Warning! Time orientation of bunch length measurement cannot be determined!')
-                print(file_)
-                sign_dy_dt = 1
+        if len(phases) > 1:
+            dy_dphase = np.polyfit(phases, centroids.mean(axis=1), 1)[0]
 
-            if sign_dy_dt == -1:
-                current = current[::-1]
+            sign_dy_dt = np.sign(dy_dphase)
+        else:
+            print('Warning! Time orientation of bunch length measurement cannot be determined!')
+            print(file_)
+            sign_dy_dt = 1
 
-            output.update({
-                'time_profile'+suffix_out: time_profile,
-                'current'+suffix_out: current,
-            })
+        if sign_dy_dt == -1:
+            current = current[::-1]
+
+        output.update({
+            'time_profile'+suffix_out: time_profile,
+            'current'+suffix_out: current,
+        })
 
     return output
+
+def load_blmeas_new(f, file_):
+    energy_eV = np.array(f['Input data']['Energy']).squeeze()*1e6
+    output = {'energy_eV': energy_eV}
+
+    # Not always are both zero crossings measured
+    suffixes = [('', '1')]
+    if 'Time axis 2' in f['Processed data']:
+        suffixes.append((' 2', '2'))
+
+    for suffix, suffix_out in suffixes:
+        time_profile = np.array(f['Processed data']['Time axis'+suffix])*1e-15
+        current = np.array(f['Processed data']['Current profile'+suffix])
+
+        ## Reorder if time array is descending
+        #if time_profile[1] - time_profile[0] < 0:
+        #    time_profile = time_profile[::-1]
+        #    current = current[::-1]
+
+        ## Find out where is the head and the tail.
+        ## In our conventios, the head is at negative time
+        #centroids = np.array(f['Raw_data']['Beam centroids'+suffix])
+        #phases = np.arange(0, len(centroids)) # phases always ascending, and we only care about the sign of the fit
+
+        #if len(phases) > 1:
+        #    dy_dphase = np.polyfit(phases, centroids.mean(axis=1), 1)[0]
+
+        #    sign_dy_dt = np.sign(dy_dphase)
+        #else:
+        #    print('Warning! Time orientation of bunch length measurement cannot be determined!')
+        #    print(file_)
+        #    sign_dy_dt = 1
+
+        #if sign_dy_dt == -1:
+        #    current = current[::-1]
+
+        output.update({
+            'time_profile'+suffix_out: time_profile,
+            'current'+suffix_out: current,
+        })
+
+    return output
+
 
 # For application
 

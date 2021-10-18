@@ -148,16 +148,16 @@ class StartMain(QtWidgets.QMainWindow):
 
         # Default strings in gui fields
         hostname = socket.gethostname()
-        if 'psi' in hostname or 'lc6a' in hostname or 'lc7a' in hostname:
-            default_dir = '/sf/data/measurements/2021/05/18/'
-            date = datetime.now()
-            save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
-        elif hostname == 'desktop':
+        if hostname == 'desktop':
             default_dir = '/storage/data_2021-05-18/'
             save_dir = '/storage/tmp_reconstruction/'
         elif hostname == 'pubuntu':
             default_dir = '/home/work/data_2021-05-18/'
             save_dir = '/home/work/tmp_reconstruction/'
+        elif 'psi' in hostname or 'lc6a' in hostname or 'lc7a' in hostname or True:
+            default_dir = '/sf/data/measurements/2021/05/18/'
+            date = datetime.now()
+            save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
 
         screen_calib_file = default_dir+'Passive_data_20201003T231958.mat'
         bunch_length_meas_file = default_dir + '119325494_bunch_length_meas.h5'

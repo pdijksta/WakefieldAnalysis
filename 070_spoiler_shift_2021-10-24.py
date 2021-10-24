@@ -1,3 +1,17 @@
+import os
+import itertools
+import lasing
+import config
+import h5_storage
+import elegant_matrix
+
+import myplotstyle as ms
+
+elegant_matrix.set_tmp_dir('~/tmp_elegant')
+
+directory = '/mnt/data/data_2021-10-24'
+
+
 
 """
 https://elog-gfa.psi.ch/SwissFEL+commissioning/21994
@@ -57,7 +71,8 @@ Dijkstal, Bettoni, Vicario, Craievich, Arrell
 
 """
 
-charge = 180e-6
+charge = 180e-12
+delta_charge = 10e-12
 beamline = 'Aramis'
 n_streaker = 1
 
@@ -78,12 +93,12 @@ case1 = {
             },
         0: {
             1: [
-                '/sf/data/measurements/2021/10/24/2021_10_24-14_18_52_Lasing_True_SARBD02-DSCR050.h5',
                 '/sf/data/measurements/2021/10/24/2021_10_24-14_19_29_Lasing_False_SARBD02-DSCR050.h5',
+                '/sf/data/measurements/2021/10/24/2021_10_24-14_18_52_Lasing_True_SARBD02-DSCR050.h5',
                 ],
             -1: [
-                '/sf/data/measurements/2021/10/24/2021_10_24-14_18_52_Lasing_True_SARBD02-DSCR050.h5',
                 '/sf/data/measurements/2021/10/24/2021_10_24-14_19_29_Lasing_False_SARBD02-DSCR050.h5',
+                '/sf/data/measurements/2021/10/24/2021_10_24-14_18_52_Lasing_True_SARBD02-DSCR050.h5',
                 ],
             },
         }
@@ -91,18 +106,18 @@ case1 = {
 case2 = {
         1: {
             1: [
-                '/sf/data/measurements/2021/10/24/2021_10_24-19_48_55_Lasing_True_SARBD02-DSCR050.h5',
                 '/sf/data/measurements/2021/10/24/2021_10_24-19_47_51_Lasing_False_SARBD02-DSCR050.h5',
+                '/sf/data/measurements/2021/10/24/2021_10_24-19_48_55_Lasing_True_SARBD02-DSCR050.h5',
                 ],
             -1: [
-                '/sf/data/measurements/2021/10/24/2021_10_24-19_41_28_Lasing_True_SARBD02-DSCR050.h5',
                 '/sf/data/measurements/2021/10/24/2021_10_24-19_40_14_Lasing_False_SARBD02-DSCR050.h5',
+                '/sf/data/measurements/2021/10/24/2021_10_24-19_41_28_Lasing_True_SARBD02-DSCR050.h5',
                 ],
             },
         0: {
             1: [
-                '/sf/data/measurements/2021/10/24/2021_10_24-19_51_42_Lasing_True_SARBD02-DSCR050.h5',
                 '/sf/data/measurements/2021/10/24/2021_10_24-19_52_31_Lasing_False_SARBD02-DSCR050.h5',
+                '/sf/data/measurements/2021/10/24/2021_10_24-19_51_42_Lasing_True_SARBD02-DSCR050.h5',
                 ],
             -1: [
                 '/sf/data/measurements/2021/10/24/2021_10_24-19_44_41_Lasing_False_SARBD02-DSCR050.h5',
@@ -115,6 +130,51 @@ ene1 = 450e-6
 ene2 = 530e-6
 
 
+ms.closeall()
+
+slice_factor = 3
+current_cutoff = 0.3e3
+
+for n_case, (calib, case, ene) in enumerate([
+        (calib1, case1, ene1),
+        (calib2, case2, ene2),
+        ]):
+    tracker_kwargs = config.get_default_tracker_settings()
+    gauss_kwargs = config.get_default_gauss_recon_settings()
+
+    for spoiler, direction in itertools.product([0, 1], [1, -1]):
+        lasing_off_file, lasing_on_file = case[spoiler][direction]
+        lasing_off_dict = h5_storage.loadH5Recursive(os.path.join(directory, os.path.basename(lasing_off_file)))
+        lasing_on_dict = h5_storage.loadH5Recursive(os.path.join(directory, os.path.basename(lasing_on_file)))
+        screen_x0, streaker_offset, delta_gap = calib
+
+        las_rec_images = {}
+        for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
+            if spoiler == 1:
+                gauss_kwargs['charge'] = charge + 10e-12
+            else:
+                gauss_kwargs['charge'] = charge
+            rec_obj = lasing.LasingReconstructionImages(screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=gauss_kwargs, charge=charge, subtract_median=True, slice_factor=slice_factor)
+
+            rec_obj.add_dict(data_dict)
+            if main_ctr == 1:
+                rec_obj.profile = las_rec_images['Lasing Off'].profile
+                rec_obj.ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
+            rec_obj.process_data()
+            las_rec_images[title] = rec_obj
+
+        las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], ene, current_cutoff=current_cutoff)
+        las_rec.plot(figsize=(14,10))
+
+        ms.saveall('./las_rec/070_%i_%i_%i' % (n_case, spoiler, direction))
+        ms.closeall()
+        save_dict = {
+                'all_slice_dict': las_rec.all_slice_dict,
+                'mean_slice_dict': las_rec.mean_slice_dict,
+                'lasing_dict': las_rec.lasing_dict,
+                }
+        h5_storage.saveH5Recursive('./las_rec/070_%i_%i_%i.h5' % (n_case, spoiler, direction), save_dict)
 
 
+ms.show()
 

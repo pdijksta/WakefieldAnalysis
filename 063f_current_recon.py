@@ -26,6 +26,8 @@ ms.closeall()
 
 config.fontsize=9
 
+charge = 180e-12
+
 title_fs = config.fontsize
 ms.set_fontsizes(title_fs)
 iap.absolute_ScreenProfile = True
@@ -55,6 +57,7 @@ if plot_gap_recon:
     recon_gap = True
 
 gauss_kwargs = config.get_default_gauss_recon_settings()
+gauss_kwargs['charge'] = charge
 tracker_kwargs = config.get_default_tracker_settings()
 
 blmeas_file = data_dir1+'119325494_bunch_length_meas.h5'
@@ -63,7 +66,7 @@ blmeas_profile.cutoff2(0.03)
 blmeas_profile.crop()
 blmeas_profile.reshape(1000)
 
-sc = streaker_calibration.StreakerCalibration('Aramis', 1, 10e-3, 200e-12)
+sc = streaker_calibration.StreakerCalibration('Aramis', 1, 10e-3, charge)
 for scf in (data_dir1+'2021_05_18-23_07_20_Calibration_SARUN18-UDCP020.h5', data_dir1+'2021_05_18-23_32_12_Calibration_SARUN18-UDCP020.h5'):
     sc.add_file(scf)
 
@@ -71,6 +74,7 @@ sc.fit_type('centroid')
 
 tracker_kwargs = config.get_default_tracker_settings()
 recon_kwargs = config.get_default_gauss_recon_settings()
+recon_kwargs['charge'] = charge
 tracker = tracking.Tracker(**tracker_kwargs)
 tracker.set_simulator(sc.meta_data)
 
@@ -102,7 +106,7 @@ if recon_gap:
 
 
 else:
-    delta_gap = -55e-6
+    delta_gap = -63e-6
 print('Delta gap %i um' % (delta_gap*1e6))
 
 
@@ -115,6 +119,7 @@ recon_kwargs['gaps'] = [10e-3, 10e-3+delta_gap]
 recon_kwargs['beam_offsets'] = [0., -(sc.offsets[index] - streaker_offset)]
 recon_kwargs['n_streaker'] = 1
 recon_kwargs['meas_screen'] = meas_screen
+recon_kwargs['charge'] = charge
 
 
 hspace, wspace = 0.40, 0.35
@@ -311,7 +316,7 @@ if recon_gap:
         plot_handles = (sp_gap, sp_dummy, sp_dummy, sp_dummy)
     else:
         plot_handles = None
-    sc.plot_gap_reconstruction(gap_recon_dict, plot_handles=plot_handles, exclude_gap_ctrs=(3,))
+    sc.plot_gap_reconstruction(gap_recon_dict, plot_handles=plot_handles, exclude_gap_ctrs=(2,))
     sc.plot_gap_reconstruction(gap_recon_dict)
     old_lim = sp_gap.get_xlim()
     sp_gap.set_xlim([old_lim[0], old_lim[1]+80])

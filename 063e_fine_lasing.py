@@ -79,9 +79,9 @@ rec_ctr = 2
 
 norm_factor = None
 for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_offset, curr_lim, main_title) in enumerate([
-        (lasing_on_fileFB, lasing_off_fileFB, 625e-6, screen_x02, streaker_offset2, 1.5e3, 'Standard mode'),
-        (lasing_on_file2, lasing_off_file2, 180e-6, screen_x02, streaker_offset2, 1.5e3, 'Double pulse'),
-        (lasing_on_fileSB, lasing_off_fileSB, 85e-6, screen_x02, streaker_offset2, 1.5e3, 'Short pulse'),
+        (lasing_on_fileFB, lasing_off_fileFB, 625e-6, screen_x02, streaker_offset2, 1.3e3, 'Standard mode'),
+        (lasing_on_file2, lasing_off_file2, 180e-6, screen_x02, streaker_offset2, 1.3e3, 'Double pulse'),
+        (lasing_on_fileSB, lasing_off_fileSB, 85e-6, screen_x02, streaker_offset2, 1.3e3, 'Short pulse'),
         ]):
 
     lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)
@@ -90,13 +90,14 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
 
     n_streaker = 1
     beamline = 'Aramis'
-    delta_gap = -50e-6
+    delta_gap = -63e-6
     tracker_kwargs = config.get_default_tracker_settings()
     recon_kwargs = config.get_default_gauss_recon_settings()
     slice_factor = 3
-    charge = 200e-12
+    charge = 180e-12
     subtract_median = False
     n_shots = 5
+    recon_kwargs['charge'] = charge
 
     streaker = config.streaker_names['Aramis'][n_streaker]
     print('Streaker offset on/off: %.3f / %.3f mm ' % (lasing_on_dict['meta_data_begin'][streaker+':CENTER'], lasing_off_dict['meta_data_begin'][streaker+':CENTER']))
@@ -139,7 +140,8 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
     sp_espread = subplot(ctr+7, xlabel='t (fs)', ylabel='P (GW)')
     sp_dummy = lasing.dummy_plot()
 
-    las_rec.plot(plot_handles=(sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_espread, sp_dummy), n_shots=n_shots)
+    plot_handles = (sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_espread, sp_dummy)
+    las_rec.plot(plot_handles=plot_handles, n_shots=n_shots)
     #sp_espread.get_legend().remove()
     if ctr == 0:
         espread_ylim = [-2, sp_espread.get_ylim()[1]]
@@ -164,9 +166,9 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
         print('Rms duration %.1f fs' % (power_profile.rms()*1e15))
         print('FWHM duration %.1f fs' % (power_profile.fwhm()*1e15))
     elif ctr == 1:
-        gf_lims = ([25e-15, 40e-15], [55e-15, 70e-15])
+        gf_lims = ([30e-15, 45e-15], [60e-15, 80e-15])
     elif ctr == 2:
-        gf_lims = ([30e-15, 50e-15],)
+        gf_lims = ([40e-15, 55e-15],)
 
     for gf_ctr, gf_lim in enumerate(gf_lims):
         if gf_ctr == 0:

@@ -94,7 +94,6 @@ get_default_gauss_recon_settings = lambda: {
         'self_consistent': True,
         'sig_t_range': np.exp(np.linspace(np.log(7), np.log(100), 15))*1e-15,
         'tt_halfrange': 200e-15,
-        'charge': 200e-12,
         'method': 'centroid',
         'delta_gap': (0., 0.)
         }

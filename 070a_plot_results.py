@@ -37,7 +37,7 @@ for n_case, label in [(0, '14:15'), (1, '19:45'),]:
         sp.legend(title='Streaking direction')
 
 
-ms.saveall('./las_rec/070a')
+ms.saveall('./las_rec/070a', empty_suptitle=False)
 
 ms.show()
 

@@ -184,8 +184,13 @@ class Profile:
         #if gauss_sigma < 5e-15:
         #    import pdb; pdb.set_trace()
 
-    def center(self):
-        self._xx = self._xx - self.gaussfit.mean
+    def center(self, type_='Gauss'):
+        if type_ == 'Gauss':
+            self._xx = self._xx - self.gaussfit.mean
+        elif type_ == 'Mean':
+            self._xx = self._xx - self.mean()
+        else:
+            raise ValueError
 
     def scale_xx(self, scale_factor, keep_range=False):
         new_xx = self._xx * scale_factor

@@ -93,8 +93,8 @@ case1 = {
             },
         0: {
             1: [
-                '/sf/data/measurements/2021/10/24/2021_10_24-14_19_29_Lasing_False_SARBD02-DSCR050.h5',
-                '/sf/data/measurements/2021/10/24/2021_10_24-14_18_52_Lasing_True_SARBD02-DSCR050.h5',
+                '/sf/data/measurements/2021/10/24/2021_10_24-14_22_25_Lasing_False_SARBD02-DSCR050.h5',
+                '/sf/data/measurements/2021/10/24/2021_10_24-14_23_09_Lasing_True_SARBD02-DSCR050.h5',
                 ],
             -1: [
                 '/sf/data/measurements/2021/10/24/2021_10_24-14_19_29_Lasing_False_SARBD02-DSCR050.h5',
@@ -126,8 +126,10 @@ case2 = {
             },
         }
 
-ene1 = 450e-6
-ene2 = 530e-6
+ene1_off = 430e-6
+ene1_on = 306e-6
+ene2_off = 520e-6
+ene2_on = 315e-6
 
 
 ms.closeall()
@@ -135,9 +137,9 @@ ms.closeall()
 slice_factor = 3
 current_cutoff = 0.3e3
 
-for n_case, (calib, case, ene) in enumerate([
-        (calib1, case1, ene1),
-        (calib2, case2, ene2),
+for n_case, (calib, case, ene_off, ene_on) in enumerate([
+        (calib1, case1, ene1_off, ene1_on),
+        (calib2, case2, ene2_off, ene2_on),
         ]):
     tracker_kwargs = config.get_default_tracker_settings()
     gauss_kwargs = config.get_default_gauss_recon_settings()
@@ -163,6 +165,10 @@ for n_case, (calib, case, ene) in enumerate([
             rec_obj.process_data()
             las_rec_images[title] = rec_obj
 
+        if spoiler == 0:
+            ene = ene_off
+        elif spoiler == 1:
+            ene = ene_on
         las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], ene, current_cutoff=current_cutoff)
         las_rec.plot(figsize=(14,10))
 

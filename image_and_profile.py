@@ -486,6 +486,9 @@ def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=Fal
         tt, cc = time_meas, current_meas
     return BeamProfile(tt, cc, energy_eV, charge)
 
+def profile_from_blmeas_new():
+    pass
+
 def dhf_profile(profile):
     dhf = doublehornfit.DoublehornFit(profile.time, profile.current)
     return BeamProfile(dhf.xx, dhf.reconstruction, profile.energy_eV, profile.charge)

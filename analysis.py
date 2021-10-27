@@ -71,7 +71,10 @@ def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profil
     for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
         if opt_ctr in skip_indices:
             continue
-        lw = None
+        if opt_ctr == gauss_dict['best_index']:
+            lw = 3.
+        else:
+            lw = None
         screen.plot_standard(sp_screen, label='%i' % round(sigma*1e15), lw=lw)
         profile.plot_standard(sp_profile, label='%i' % round(profile.rms()*1e15), center='Mean', lw=lw)
         rms_arr[opt_ctr] = screen.rms()

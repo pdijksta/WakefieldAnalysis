@@ -174,7 +174,7 @@ plot_handles = sp_screen, sp_profile, sp_opt, sp_moments
 tracker.gauss_prec=1e-15
 
 outp = analysis.current_profile_rec_gauss(tracker, recon_kwargs, do_plot=False)
-analysis.plot_rec_gauss(tracker, recon_kwargs, outp, plot_handles, [blmeas_profile], both_zero_crossings=False, skip_indices=(1,3))
+analysis.plot_rec_gauss(tracker, recon_kwargs, outp, plot_handles, [blmeas_profile], both_zero_crossings=False, skip_indices=(2,))
 tracker.gauss_prec=0.5e-15
 
 #sp_screen.get_legend().remove()

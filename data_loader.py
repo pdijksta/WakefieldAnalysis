@@ -7,10 +7,8 @@ from scipy.io import loadmat
 
 try:
     from h5_storage import loadH5Recursive
-    import image_and_profile as iap
 except ImportError:
     from .h5_storage import loadH5Recursive
-    from . import image_and_profile as iap
 
 @functools.lru_cache(5)
 def csv_to_dict(file_):
@@ -181,30 +179,6 @@ def load_blmeas_new(f, file_):
         })
 
     return output
-
-def get_average_blmeas_profile(images, x_axis, y_axis, calibration, cutoff=5e-2, size=int(1e3)):
-    time_arr = y_axis / calibration
-    current0 = images.astype(np.float64).sum(axis=-1)
-    current = current0.reshape([current0.size//current0.shape[-1], current0.shape[-1]])
-    current_profiles0 = [iap.BeamProfile(time_arr, curr, 6e9, 200e-12) for curr in current]
-    for bp in current_profiles0:
-        bp._yy -= bp._yy.min()
-        bp.reshape(size)
-        bp.center()
-        bp.cutoff2(cutoff)
-        bp.reshape(size)
-
-    squares_mat = np.zeros([len(current_profiles0)]*2, float)
-
-    for n_row in range(len(squares_mat)):
-        for n_col in range(n_row):
-            bp1 = current_profiles0[n_row]
-            bp2 = current_profiles0[n_col]
-            squares_mat[n_row,n_col] = squares_mat[n_col,n_row] = np.mean((bp1.current - bp2.current)**2)
-
-    squares = squares_mat.sum(axis=1)
-    n_best = np.argmin(squares)
-    return current[n_best]
 
 # For application
 

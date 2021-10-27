@@ -45,6 +45,7 @@ class dummy_plot:
     set_xlim = dummy
     set_yticklabels = dummy
     set_yticks = dummy
+    imshow = dummy
 
 
 def power_Eloss(slice_current, slice_Eloss_eV):

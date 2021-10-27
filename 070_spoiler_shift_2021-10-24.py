@@ -1,3 +1,4 @@
+import socket
 import os
 import itertools
 import lasing
@@ -9,8 +10,16 @@ import myplotstyle as ms
 
 elegant_matrix.set_tmp_dir('~/tmp_elegant')
 
-directory = '/mnt/data/data_2021-10-24'
+hostname = socket.gethostname()
+if hostname == 'desktop':
+    dir_ = '/storage/data_2021-10-24/'
+elif hostname == 'pc11292.psi.ch':
+    dir_ = '/sf/data/measurements/2021/10/24/'
+elif hostname == 'pubuntu':
+    dir_ = '/mnt/data/data_2021-10-24/'
 
+
+directory = dir_
 
 
 """
@@ -71,8 +80,6 @@ Dijkstal, Bettoni, Vicario, Craievich, Arrell
 
 """
 
-charge = 180e-12
-delta_charge = 10e-12
 beamline = 'Aramis'
 n_streaker = 1
 
@@ -130,6 +137,10 @@ ene1_off = 430e-6
 ene1_on = 306e-6
 ene2_off = 520e-6
 ene2_on = 315e-6
+charge1_off = 177.5e-12
+charge1_on = 185.5e-12
+charge2_off = 175.7e-12
+charge2_on = 183.7e-12
 
 
 ms.closeall()
@@ -137,9 +148,9 @@ ms.closeall()
 slice_factor = 3
 current_cutoff = 0.3e3
 
-for n_case, (calib, case, ene_off, ene_on) in enumerate([
-        (calib1, case1, ene1_off, ene1_on),
-        (calib2, case2, ene2_off, ene2_on),
+for n_case, (calib, case, ene_off, ene_on, charge_off, charge_on) in enumerate([
+        (calib1, case1, ene1_off, ene1_on, charge1_off, charge1_on),
+        (calib2, case2, ene2_off, ene2_on, charge2_off, charge2_on),
         ]):
     tracker_kwargs = config.get_default_tracker_settings()
     gauss_kwargs = config.get_default_gauss_recon_settings()
@@ -151,12 +162,9 @@ for n_case, (calib, case, ene_off, ene_on) in enumerate([
         screen_x0, streaker_offset, delta_gap = calib
 
         las_rec_images = {}
-        for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-            if spoiler == 1:
-                gauss_kwargs['charge'] = charge + 10e-12
-            else:
-                gauss_kwargs['charge'] = charge
-            rec_obj = lasing.LasingReconstructionImages(screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=gauss_kwargs, charge=charge, subtract_median=True, slice_factor=slice_factor)
+        for main_ctr, (data_dict, title, charge2) in enumerate([(lasing_off_dict, 'Lasing Off', charge_off), (lasing_on_dict, 'Lasing On', charge_on)]):
+            gauss_kwargs['charge'] = charge2
+            rec_obj = lasing.LasingReconstructionImages(screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=gauss_kwargs, charge=charge2, subtract_median=True, slice_factor=slice_factor)
 
             rec_obj.add_dict(data_dict)
             if main_ctr == 1:

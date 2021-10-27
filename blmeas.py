@@ -55,7 +55,7 @@ def get_average_blmeas_profile(images, x_axis, y_axis, calibration, cutoff=10e-2
 
     return current[n_best], current
 
-def load_avg_blmeas(file_or_dict):
+def load_avg_blmeas_new(file_or_dict):
     if type(file_or_dict) is dict:
         blmeas_dict = file_or_dict
     else:
@@ -83,4 +83,43 @@ def load_avg_blmeas(file_or_dict):
                 'all_current_reduced': all_current - all_current.min(axis=1)[:,np.newaxis]
                 }
     return outp
+
+def load_avg_blmeas_old(file_or_dict):
+    if type(file_or_dict) is dict:
+        blmeas_dict = file_or_dict
+    else:
+        blmeas_dict = h5_storage.loadH5Recursive(file_or_dict)
+    outp = {}
+    calibration = blmeas_dict['Meta_data']['Calibration factor'] * 1e-6/1e-15
+    zc_strings = ['']
+    if 'Beam images 2' in blmeas_dict['Raw_data']:
+        zc_strings.append(' 2')
+
+    for n_zero_crossing, zc_string in enumerate(zc_strings, 1):
+        images = blmeas_dict['Raw_data']['Beam images'+zc_string]
+        x_axis = blmeas_dict['Raw_data']['xAxis'+zc_string.replace(' ','')]*1e-6
+        y_axis = blmeas_dict['Raw_data']['yAxis'+zc_string.replace(' ','')]*1e-6
+        t_axis = y_axis / calibration
+
+        curr_best, all_current = get_average_blmeas_profile(images, x_axis, y_axis, calibration)
+
+        outp[n_zero_crossing] = {
+                'time': t_axis,
+                'current': curr_best,
+                'current_reduced': curr_best - curr_best.min(),
+                'all_current': all_current,
+                'all_current_reduced': all_current - all_current.min(axis=1)[:,np.newaxis]
+                }
+    return outp
+
+def load_avg_blmeas(file_or_dict):
+    if type(file_or_dict) is dict:
+        blmeas_dict = file_or_dict
+    else:
+        blmeas_dict = h5_storage.loadH5Recursive(file_or_dict)
+
+    if 'Raw_data' in blmeas_dict:
+        return load_avg_blmeas_old(blmeas_dict)
+    else:
+        return load_avg_blmeas_new(blmeas_dict)
 

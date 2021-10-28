@@ -649,10 +649,11 @@ class StreakerCalibration:
         lin_fit = []
         lin_fit_const = []
 
-        def one_gap(gap):
-            gap = np.round(gap/precision)*precision
-            if gap in gaps:
-                return
+        def one_gap(gap, force=False):
+            if not force:
+                gap = np.round(gap/precision)*precision
+                if gap in gaps:
+                    return
             offset_list, gauss_dicts = self.reconstruct_current(tracker, gauss_kwargs, plot_details=False, force_gap=gap, force_streaker_offset=streaker_offset, use_offsets=use_offsets)
             distance_arr = gap/2. - np.abs(offset_list)
 
@@ -697,6 +698,7 @@ class StreakerCalibration:
         for _ in range(3):
             gap = get_gap()
             one_gap(gap)
+        one_gap(gap, force=True)
 
         gap = get_gap()
         rms_arr = np.array(rms)
@@ -709,6 +711,7 @@ class StreakerCalibration:
         output = {
                 'gap': gap,
                 'gap0': gap0,
+                'delta_gap': gap - gap0,
                 'beamsize_rms': assumed_rms,
                 'beamsize': assumed_bunch_duration,
                 'gap_arr': np.array(gaps),

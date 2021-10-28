@@ -58,7 +58,7 @@ class Tracker:
         self.hist_bins_2d = (500, 500)
         self.split_streaker = 0
 
-        self.gauss_prec = 0.1e-15
+        self.gauss_prec = 0.05e-15
 
         if forward_method == 'matrix':
             self.forward = self.matrix_forward

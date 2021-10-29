@@ -90,7 +90,7 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
 
     n_streaker = 1
     beamline = 'Aramis'
-    delta_gap = -63e-6
+    delta_gap = -57e-6
     tracker_kwargs = config.get_default_tracker_settings()
     recon_kwargs = config.get_default_gauss_recon_settings()
     slice_factor = 3

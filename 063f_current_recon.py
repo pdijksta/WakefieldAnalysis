@@ -49,7 +49,7 @@ blmeas_file = data_dir1+'119325494_bunch_length_meas.h5'
 sc_file = data_dir1+'2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
 sc_dict = h5_storage.loadH5Recursive(sc_file)
 n_streaker = 1
-recon_gap = args.recon_gap
+#recon_gap = args.recon_gap
 
 plot_gap_recon = True
 

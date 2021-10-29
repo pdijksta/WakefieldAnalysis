@@ -7,7 +7,7 @@ except ImportError:
     from . import image_and_profile as iap
     from . import h5_storage
 
-def get_average_blmeas_profile(images, x_axis, y_axis, calibration, cutoff=10e-2, size=int(1e3)):
+def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, phases, cutoff=10e-2, size=int(1e3)):
     time_arr = y_axis / calibration
     current0 = images.astype(np.float64).sum(axis=-1)
     current = current0.reshape([current0.size//current0.shape[-1], current0.shape[-1]])
@@ -15,13 +15,31 @@ def get_average_blmeas_profile(images, x_axis, y_axis, calibration, cutoff=10e-2
     if reverse:
         time_arr = time_arr[::-1]
     current_profiles0 = []
+
+    # Find out where is the head and the tail.
+    # In our conventios, the head is at negative time
+    if len(phases) > 1:
+        dy_dphase = np.polyfit(phases, centroids, 1)[0]
+        sign_dy_dt = np.sign(dy_dphase)
+    else:
+        print('Warning! Time orientation of bunch length measurement cannot be determined!')
+        sign_dy_dt = 1
+
+    reverse_current = sign_dy_dt == -1
+
     for curr in current:
         if reverse:
             curr2 = curr[::-1]
         else:
             curr2 = curr
-        bp = iap.BeamProfile(time_arr, curr2, 1, 1)
+        if reverse_current:
+            curr3 = curr2[::-1]
+        else:
+            curr3 = curr2
+        bp = iap.BeamProfile(time_arr, curr3, 1, 1)
         current_profiles0.append(bp)
+
+
     for bp in current_profiles0:
         bp._yy -= bp._yy.min()
         bp.reshape(size)
@@ -71,9 +89,11 @@ def load_avg_blmeas_new(file_or_dict):
         images = blmeas_dict['Processed data']['Beam images'+zc_string]
         x_axis = blmeas_dict['Processed data']['x axis'+zc_string]*1e-6
         y_axis = blmeas_dict['Processed data']['y axis'+zc_string]*1e-6
+        phases = blmeas_dict['Processed data']['Phase'+zc_string]
+        centroids = blmeas_dict['Processed data']['Beam centroids'+zc_string]
         t_axis = y_axis / calibration
 
-        curr_best, all_current = get_average_blmeas_profile(images, x_axis, y_axis, calibration)
+        curr_best, all_current = get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, phases)
 
         outp[n_zero_crossing] = {
                 'time': t_axis,
@@ -99,9 +119,11 @@ def load_avg_blmeas_old(file_or_dict):
         images = blmeas_dict['Raw_data']['Beam images'+zc_string]
         x_axis = blmeas_dict['Raw_data']['xAxis'+zc_string.replace(' ','')]*1e-6
         y_axis = blmeas_dict['Raw_data']['yAxis'+zc_string.replace(' ','')]*1e-6
+        centroids = blmeas_dict['Raw_data']['Beam centroids'+zc_string].mean(axis=1)
+        phases = np.arange(len(centroids))
         t_axis = y_axis / calibration
 
-        curr_best, all_current = get_average_blmeas_profile(images, x_axis, y_axis, calibration)
+        curr_best, all_current = get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, phases)
 
         outp[n_zero_crossing] = {
                 'time': t_axis,

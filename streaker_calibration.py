@@ -667,6 +667,7 @@ class StreakerCalibration:
             rms.insert(index, rms_arr)
             lin_fit.insert(index, fit[0])
             lin_fit_const.insert(index, fit[1])
+            return offset_list, gauss_dicts
 
         def get_gap():
             lin_fit2 = np.array(lin_fit)
@@ -695,12 +696,17 @@ class StreakerCalibration:
         for gap in [gap_arr.min(), gap_arr.max()]:
             one_gap(gap)
 
-        for _ in range(3):
+        old_gap = np.inf
+        for _ in range(20):
             gap = get_gap()
+            if abs(old_gap - gap)<precision:
+                break
             one_gap(gap)
-        one_gap(gap, force=True)
+            old_gap = gap
 
         gap = get_gap()
+        offset_list, gauss_dicts = one_gap(gap, force=True)
+
         rms_arr = np.array(rms)
         rms_rms = np.std(rms_arr, axis=1)
         rms_mean = np.mean(rms_arr, axis=1)
@@ -724,6 +730,8 @@ class StreakerCalibration:
                     'streaker_offset': streaker_offset,
                     },
                 'use_offsets': use_offsets,
+                'final_gauss_dicts': gauss_dicts,
+                'final_offset_list': offset_list,
                 }
         return output
 
@@ -844,5 +852,4 @@ def clear_gap_recon(sp_rms, sp_overview, sp_std, sp_fit):
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
         sp.grid(False)
-
 

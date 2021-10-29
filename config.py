@@ -82,7 +82,7 @@ get_default_tracker_settings = lambda: {
         'screen_bins': 500,
         'screen_cutoff': 2e-2,
         'smoothen': 20e-6,
-        'profile_cutoff': 1e-2,
+        'profile_cutoff': .5e-2,
         'len_screen': 2000,
         'quad_wake': False,
         'bp_smoothen': 1e-15,

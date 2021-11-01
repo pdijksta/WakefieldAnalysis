@@ -748,7 +748,7 @@ class Tracker:
                 }
         return output
 
-    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.), prec=None):
+    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.), prec=None, plot_details=True):
 
         if prec is None:
             prec = self.gauss_prec
@@ -769,6 +769,18 @@ class Tracker:
         meas_screen.reshape(self.len_screen)
         centroid_meas = meas_screen.mean()
         rms_meas = meas_screen.rms()
+
+        if plot_details:
+            fig_number = ms.plt.gcf().number
+            ms.figure('Gauss_recon old')
+            subplot = ms.subplot_factory(2,2)
+            #sp_wake = subplot(1, title='Wake effect', xlabel='t [fs]', ylabel='$\Delta$ x [mm]')
+            sp_screen = subplot(2, title='Screen dist', xlabel='x [mm]', ylabel='Intensity (arb. units)')
+            sp_profile = subplot(3, title='Interpolated profile', xlabel='t [fs]', ylabel='Current [kA]')
+
+        n_iter = 0
+
+
 
 
         def gaussian_baf(sig_t):
@@ -798,6 +810,21 @@ class Tracker:
             opt_func_screens_no_smoothen.insert(index, baf['screen_no_smoothen'])
             gauss_profiles.insert(index, bp_gauss)
             gauss_wakes.insert(index, baf['wake_dict'])
+
+            nonlocal n_iter
+            if plot_details:
+                bp_gauss.plot_standard(sp_profile, label='Gauss %i %i' % (n_iter, sig_t*1e15), center='Mean')
+                bp_back0.plot_standard(sp_profile, label='Back0 %i' % n_iter, center='Mean')
+                bp_out.plot_standard(sp_profile, label='Back1 %i' % n_iter, center='Mean')
+                if n_iter == 0:
+                    color = meas_screen.plot_standard(sp_screen, label='Meas')[0].get_color()
+                    sp_screen.axvline(meas_screen.mean()*1e3, color=color, ls='--')
+                color = screen.plot_standard(sp_screen, label='Rec %i' % n_iter)[0].get_color()
+                sp_screen.axvline(screen.mean()*1e3, color=color, ls='--')
+
+            n_iter += 1
+
+
 
         def get_index_min(output='index'):
             sig_t_arr = np.array(sig_t_list)
@@ -845,7 +872,7 @@ class Tracker:
 
 
         distance = gaps[n_streaker]/2. - abs(beam_offsets[n_streaker])
-        print('duration, charge, gaps, beam_offsets, distance', int(best_profile.rms()*1e15), int(charge*1e12), gaps[n_streaker], beam_offsets[n_streaker], '%i' % (distance*1e6))
+        print('iterations, duration, charge, gaps, beam_offsets, distance', n_iter, int(best_profile.rms()*1e15), int(charge*1e12), gaps[n_streaker], beam_offsets[n_streaker], '%i' % (distance*1e6))
 
         output = {
                'gauss_sigma': best_sig_t,
@@ -884,6 +911,11 @@ class Tracker:
                    'opt_func_wakes': gauss_wakes,
                    })
 
+        if plot_details:
+            sp_profile.legend()
+            sp_screen.legend()
+            ms.plt.figure(fig_number)
+
         return output
 
 
@@ -903,6 +935,7 @@ class Tracker:
         meas_screen.cutoff(self.screen_cutoff)
         meas_screen.crop()
         meas_screen.reshape(self.len_screen)
+
 
         def gaussian_baf(sig_t):
             if sig_t in sig_t_list:
@@ -1002,7 +1035,6 @@ class Tracker:
                    'opt_func_sigmas': np.array(opt_func_sigmas),
                    'opt_func_wakes': gauss_wakes,
                    })
-
         return output
 
     def scale_existing_profile(self, scale_range, profile, meas_screen, gaps, beam_offsets, n_streaker):

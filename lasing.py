@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 
@@ -7,7 +8,6 @@ try:
     from . import analysis
     from . import tracking
     from . import config
-    from . import numpy as np
     from . import myplotstyle as ms
 except ImportError:
     import h5_storage
@@ -15,7 +15,6 @@ except ImportError:
     import analysis
     import tracking
     import config
-    import numpy as np
     import myplotstyle as ms
 
 class dummy_plot:

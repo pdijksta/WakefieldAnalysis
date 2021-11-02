@@ -399,6 +399,7 @@ class Tracker:
         output = {
                 'beam_at_screen': beam_at_screen,
                 'beam0_at_screen': beam0_at_screen,
+                'beam_after_s2': beam_after_s2,
                 'screen': screen,
                 'screen_no_smoothen': screen_no_smoothen,
                 'beam_profile': beamProfile,
@@ -780,9 +781,6 @@ class Tracker:
 
         n_iter = 0
 
-
-
-
         def gaussian_baf(sig_t):
             sig_t = np.round(sig_t/prec)*prec
             if sig_t in sig_t_list:
@@ -872,7 +870,7 @@ class Tracker:
 
 
         distance = gaps[n_streaker]/2. - abs(beam_offsets[n_streaker])
-        print('iterations, duration, charge, gaps, beam_offsets, distance', n_iter, int(best_profile.rms()*1e15), int(charge*1e12), gaps[n_streaker], beam_offsets[n_streaker], '%i' % (distance*1e6))
+        print('iterations %i, duration %i fs, charge %i pC, gap %.2f mm, beam_offsets %.2f mm, distance %.2f um' % (n_iter, int(best_profile.rms()*1e15), int(charge*1e12), gaps[n_streaker]*1e3, beam_offsets[n_streaker]*1e3, distance*1e6))
 
         output = {
                'gauss_sigma': best_sig_t,

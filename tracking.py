@@ -749,7 +749,7 @@ class Tracker:
                 }
         return output
 
-    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.), prec=None, plot_details=True):
+    def find_best_gauss2(self, sig_t_range, tt_halfrange, meas_screen, gaps, beam_offsets, n_streaker, charge, self_consistent=True, details=True, method='least_squares', delta_gap=(0., 0.), prec=None, plot_details=False):
 
         if prec is None:
             prec = self.gauss_prec

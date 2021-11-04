@@ -148,10 +148,12 @@ ms.closeall()
 slice_factor = 3
 current_cutoff = 0.3e3
 
-for n_case, (calib, case, ene_off, ene_on, charge_off, charge_on) in enumerate([
-        (calib1, case1, ene1_off, ene1_on, charge1_off, charge1_on),
-        (calib2, case2, ene2_off, ene2_on, charge2_off, charge2_on),
-        ]):
+for n_case, (calib, case, ene_off, ene_on, charge_off, charge_on, main_title) in enumerate(
+        [
+            (calib1, case1, ene1_off, ene1_on, charge1_off, charge1_on, '14:15'),
+            (calib2, case2, ene2_off, ene2_on, charge2_off, charge2_on, '19:45'),
+            ]
+        ):
     tracker_kwargs = config.get_default_tracker_settings()
     gauss_kwargs = config.get_default_gauss_recon_settings()
 
@@ -179,8 +181,9 @@ for n_case, (calib, case, ene_off, ene_on, charge_off, charge_on) in enumerate([
             ene = ene_on
         las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], ene, current_cutoff=current_cutoff)
         las_rec.plot(figsize=(14,10))
+        ms.plt.suptitle('%s Spoiler %s direction %s avg E pulse %i uJ' % (main_title, {0:'off', 1: 'on'}[spoiler], {1: 'positive', -1: 'negative'}[direction], round(ene*1e6)))
 
-        ms.saveall('./las_rec/070_%i_%i_%i' % (n_case, spoiler, direction))
+        ms.saveall('./las_rec/070_%i_%i_%i' % (n_case, spoiler, direction), hspace=0.35, wspace=0.35, ending='.pdf', empty_suptitle=False)
         ms.closeall()
         save_dict = {
                 'all_slice_dict': las_rec.all_slice_dict,

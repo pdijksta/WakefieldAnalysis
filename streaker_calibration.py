@@ -589,7 +589,7 @@ class StreakerCalibration:
             #gauss_dict = tracker.find_best_gauss(**gauss_kwargs)
             gauss_dict = analysis.current_profile_rec_gauss(tracker, gauss_kwargs, do_plot=False)
             if plot_details:
-                analysis.plot_rec_gauss(tracker, gauss_kwargs, gauss_dict)
+                analysis.plot_rec_gauss(gauss_dict)
             gauss_dicts.append(gauss_dict)
 
         self.gauss_dicts_gap_order[type_][self.fit_gap][self.fit_order] = gauss_dicts

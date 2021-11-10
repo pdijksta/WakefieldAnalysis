@@ -44,10 +44,10 @@ def current_profile_rec_gauss(tracker, kwargs, plot_handles=None, blmeas_file=No
                 print(e)
                 print('No zero crossing %i in %s' % (zero_crossing, blmeas_file))
 
-    plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles, blmeas_profiles, do_plot, figsize, both_zero_crossings)
+    plot_rec_gauss(gauss_dict, plot_handles, blmeas_profiles, do_plot, figsize, both_zero_crossings)
     return gauss_dict
 
-def plot_rec_gauss(tracker, kwargs, gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=True, figsize=None, both_zero_crossings=True, skip_indices=()):
+def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=True, figsize=None, both_zero_crossings=True, skip_indices=()):
 
     #best_profile = gauss_dict['reconstructed_profile']
     #best_screen = gauss_dict['reconstructed_screen']

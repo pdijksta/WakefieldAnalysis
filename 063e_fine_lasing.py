@@ -80,7 +80,7 @@ rec_ctr = 2
 norm_factor = None
 for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_offset, curr_lim, main_title) in enumerate([
         (lasing_on_fileFB, lasing_off_fileFB, 625e-6, screen_x02, streaker_offset2, 1.3e3, 'Standard mode'),
-        (lasing_on_file2, lasing_off_file2, 180e-6, screen_x02, streaker_offset2, 1.3e3, 'Double pulse'),
+        (lasing_on_file2, lasing_off_file2, 180e-6, screen_x02, streaker_offset2, 1.5e3, 'Double pulse'),
         (lasing_on_fileSB, lasing_off_fileSB, 85e-6, screen_x02, streaker_offset2, 1.3e3, 'Short pulse'),
         ]):
 

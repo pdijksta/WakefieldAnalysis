@@ -224,6 +224,8 @@ class simulator:
                 macro_dict[key] = k1
                 if print_:
                     print(key, '%.2e' % k1)
+        else:
+            raise ValueError('branch undefined:', branch)
 
 
         cmd, sim = run_sim(macro_dict, ele, lat, symlink_files=symlink_files)

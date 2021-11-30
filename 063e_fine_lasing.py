@@ -79,9 +79,9 @@ rec_ctr = 2
 
 norm_factor = None
 for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_offset, curr_lim, main_title) in enumerate([
-        (lasing_on_fileFB, lasing_off_fileFB, 625e-6, screen_x02, streaker_offset2, 1.3e3, 'Standard mode'),
-        (lasing_on_file2, lasing_off_file2, 180e-6, screen_x02, streaker_offset2, 1.5e3, 'Double pulse'),
-        (lasing_on_fileSB, lasing_off_fileSB, 85e-6, screen_x02, streaker_offset2, 1.3e3, 'Short pulse'),
+        (lasing_on_fileFB, lasing_off_fileFB, 625e-6, screen_x02, streaker_offset2, 1.3e3, '(a) Standard mode'),
+        (lasing_on_file2, lasing_off_file2, 180e-6, screen_x02, streaker_offset2, 1.5e3, '(b) Double pulse'),
+        (lasing_on_fileSB, lasing_off_fileSB, 85e-6, screen_x02, streaker_offset2, 1.3e3, '(c) Short pulse'),
         ]):
 
     lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)
@@ -134,10 +134,12 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
 
     ms.plt.figure(main_fig.number)
     title = main_title + ' ($E$=%i $\mu$J, $d$=%i $\mu$m)' % (round(las_rec.lasing_dict['Espread']['energy']*1e6), round(avg_distance*1e6))
-    sp_off = subplot(ctr+1, title=title, xlabel='t (fs)', ylabel='E (MeV)', grid=False)
-    sp_on = subplot(ctr+4, title=None, xlabel='t (fs)', ylabel='E (MeV)', grid=False)
-
+    sp_off = subplot(ctr+1, xlabel='t (fs)', ylabel='E (MeV)', grid=False)
+    sp_off.set_title(title, loc='left')
+    sp_on = subplot(ctr+4, xlabel='t (fs)', ylabel='E (MeV)', grid=False)
+    sp_on.set_title('(%s)' % 'def'[ctr], loc='left')
     sp_espread = subplot(ctr+7, xlabel='t (fs)', ylabel='P (GW)')
+    sp_espread.set_title('(%s)' % 'ghi'[ctr], loc='left')
     sp_dummy = lasing.dummy_plot()
 
     plot_handles = (sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_dummy, sp_espread, sp_dummy)

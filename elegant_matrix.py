@@ -103,9 +103,9 @@ def run_sim(macro_dict, ele, lat, copy_files=(), move_files=(), symlink_files=()
         if mute_elegant:
             run_str_mute = run_str + ' >/dev/null'
 
-        with open(os.path.join(new_dir, 'run.sh'), 'w') as f:
+        with open('run.sh', 'w') as f:
             f.write(run_str_mute+'\n')
-        with open(os.path.join(new_dir, 'run_verbose.sh'), 'w') as f:
+        with open('run_verbose.sh', 'w') as f:
             f.write(run_str+'\n')
         status = os.system(run_str_mute)
         if status != 0:

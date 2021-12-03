@@ -175,7 +175,6 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
     for gf_ctr, gf_lim in enumerate(gf_lims):
         if gf_ctr == 0:
             ms.figure('Gf %s' % main_title)
-            gf_subplot = ms.subplot_factory(2,2)
             gf_sp_ctr = 1
         sp = subplot(gf_sp_ctr, xlabel='t (fs)', ylabel='P (GW)')
         gf_sp_ctr += 1

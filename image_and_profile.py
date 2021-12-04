@@ -72,20 +72,27 @@ class Profile:
         return rms
 
     def fwhm(self):
-        abs_yy = np.abs(self._yy)
-        half = abs_yy.max()/2.
-        mask_fwhm = abs_yy > half
-        indices_fwhm = np.argwhere(mask_fwhm)
-        indices_left = indices_fwhm.min()-1, indices_fwhm.min()
-        indices_right = indices_fwhm.max(), indices_fwhm.max()+1
-        lims = []
-        for indices in indices_left, indices_right:
+        def get_lim(indices):
             xx = abs_yy[indices[0]:indices[1]+1]
             yy = self._xx[indices[0]:indices[1]+1]
             sort = np.argsort(xx)
             x = np.interp(half, xx[sort], yy[sort])
-            lims.append(x)
+            return x
 
+        abs_yy = np.abs(self._yy)
+        half = abs_yy.max()/2.
+        mask_fwhm = abs_yy > half
+        indices_fwhm = np.argwhere(mask_fwhm)
+        index_min, index_max = indices_fwhm.min(), indices_fwhm.max()
+        lims = []
+        if index_min == 0:
+            lims.append(self._xx[0])
+        else:
+            lims.append(get_lim([index_min-1, index_min]))
+        if index_max == len(self._xx)-1:
+            lims.append(self._xx[-1])
+        else:
+            lims.append(get_lim([indices_fwhm.max(), indices_fwhm.max()+1]))
         fwhm = abs(lims[0]-lims[1])
         return fwhm
 
@@ -599,12 +606,9 @@ class Image:
         #import pdb; pdb.set_trace()
         return output
 
-    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1):
+    def fit_slice(self, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.2, debug=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
-
-        pixelsize = abs(y_axis[1] - y_axis[0])
-        smoothen = smoothen/pixelsize
 
         slice_mean = []
         slice_sigma = []
@@ -615,14 +619,9 @@ class Image:
         slice_cut_mean = []
         for n_slice in range(n_slices):
             intensity = self.image[:,n_slice]
-            if smoothen_first:
-                yy_conv = gaussian_filter1d(intensity, smoothen)
-                gf0 = GaussFit(y_axis, yy_conv, fit_const=True)
-                p0 = gf0.popt
-            else:
-                p0 = None
+            intensity = intensity - intensity.min()
             try:
-                gf = GaussFit(y_axis, intensity, fit_const=True, p0=p0, raise_=True)
+                gf = GaussFit(y_axis, intensity, fit_const=False, raise_=True)
             except RuntimeError:
                 slice_mean.append(np.nan)
                 slice_sigma.append(np.nan)
@@ -633,50 +632,56 @@ class Image:
                 slice_cut_mean.append(np.nan)
             else:
                 where_max = y_axis[np.argmax(intensity)]
-                mask_rms = np.logical_and(
-                        y_axis > where_max - abs(gf.sigma)*rms_sigma,
-                        y_axis < where_max + abs(gf.sigma)*rms_sigma)
+                rms_lim1 = where_max - abs(gf.sigma)*rms_sigma
+                rms_lim2 = where_max + abs(gf.sigma)*rms_sigma
+                mask_rms = np.logical_and(y_axis > rms_lim1, y_axis < rms_lim2)
                 y_rms = y_axis[mask_rms]
                 data_rms = intensity[mask_rms]
                 if np.sum(data_rms) == 0:
                     mean_rms, rms = 0, 0
                 else:
                     mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
-                    rms = np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms)
+                    rms = np.sqrt(np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms))
 
                 slice_gf.append(gf)
                 slice_mean.append(gf.mean)
                 slice_sigma.append(gf.sigma**2)
-                slice_rms.append(rms)
+                slice_rms.append(rms**2)
                 slice_mean_rms.append(mean_rms)
 
                 intensity = intensity.copy()
-                intensity[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
-                prof_y = intensity-intensity.min()
+                min_lim, max_lim = mean_rms-2.5*rms, mean_rms+2.5*rms
+                intensity[np.logical_or(y_axis<min_lim, y_axis>max_lim)]=0
+                prof_y = intensity
                 if np.all(prof_y == 0):
                     slice_cut_rms.append(0)
                     slice_cut_mean.append(0)
                 else:
                     profile = AnyProfile(y_axis, prof_y)
-                    profile.cutoff2(noise_cut)
+                    #cutoff = min(gf.scale*noise_cut, prof_y.max()*noise_cut)
+                    #profile._yy[profile._yy < cutoff] = 0
                     profile.crop()
-
                     slice_cut_rms.append(profile.rms()**2)
                     slice_cut_mean.append(profile.mean())
 
             # Debug bad gaussfits
-            #if 101e-15 < self.x_axis[n_slice] < 104e-15:
-            #if abs(gf.sigma) < 1e5:
-            #    import matplotlib.pyplot as plt
-            #    num = plt.gcf().number
-            #    plt.figure()
-            #    plt.suptitle('Debug 38 fs')
-            #    sp = plt.subplot(1,1,1)
-            #    gf.plot_data_and_fit(sp)
-            #    sp.legend()
-            #    plt.figure(num)
-            #    plt.show()
-            #    import pdb; pdb.set_trace()
+            if debug:
+                import matplotlib.pyplot as plt
+                num = plt.gcf().number
+                plt.figure()
+                sp = plt.subplot(1,1,1)
+                gf.plot_data_and_fit(sp)
+                sp.axvline(min_lim, label='Min lim', ls='--', color='black')
+                sp.axvline(max_lim, label='Max lim', ls='--', color='black')
+                sp.axvline(rms_lim1, label='Rms lim1', ls='--', color='red')
+                sp.axvline(rms_lim2, label='Rms lim2', ls='--', color='red')
+                sp.axvline(profile._xx.min(), label='Prof min', ls='--', color='blue')
+                sp.axvline(profile._xx.max(), label='Prof max', ls='--', color='blue')
+                sp.legend()
+                plt.figure(num)
+                plt.show()
+                print('%e' % np.sqrt(slice_cut_rms[-1]), '%e' % rms, '%e' % gf.sigma)
+                import pdb; pdb.set_trace()
 
         proj = np.sum(self.image, axis=-2)
         proj = proj / np.sum(proj) * charge
@@ -707,7 +712,7 @@ class Image:
         if ref_y is None:
             ref_y = GaussFit(self.y_axis, np.sum(self.image, axis=-1)).mean
             #print('y_to_eV', ref_y*1e6, ' [um]')
-        E_axis = (self.y_axis-ref_y) * dispersion * energy_eV
+        E_axis = (self.y_axis-ref_y) / dispersion * energy_eV
         return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):

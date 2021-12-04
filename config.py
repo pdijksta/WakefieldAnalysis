@@ -104,3 +104,6 @@ fontsize = 8
 
 rho_label = r'$\rho$ (nC/m)'
 
+lasing_mean_key = 'slice_cut_mean'
+lasing_sigma_key = 'slice_cut_rms_sq'
+

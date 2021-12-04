@@ -119,7 +119,7 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
             ref_y = None
         image_tE, ref_y = image_t.y_to_eV(dispersion, energy_eV, ref_y)
         image_t_reduced = image_tE.slice_x(n_slices)
-        slice_dict = image_t_reduced.fit_slice(charge=charge, smoothen_first=True, smoothen=1e6)
+        slice_dict = image_t_reduced.fit_slice(charge=charge)
         all_slice_dict[label] = slice_dict
         all_images[label] = {
                 'image_xy': image_obj,
@@ -199,7 +199,7 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
 
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms_sq', norm_factor=None):
+    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean=config.lasing_mean_key, key_sigma=config.lasing_sigma_key, norm_factor=None):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
@@ -371,7 +371,7 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImages:
-    def __init__(self, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.1, slice_factor=1, offset_explore=30e-6, ref_slice_dict=None, ref_y=None):
+    def __init__(self, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.2, slice_factor=1, offset_explore=30e-6, ref_slice_dict=None, ref_y=None):
         self.delta_gap = delta_gap
         recon_kwargs['delta_gap'] = [0, 0]
         recon_kwargs['delta_gap'][n_streaker] = delta_gap

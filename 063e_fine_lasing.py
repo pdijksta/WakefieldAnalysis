@@ -81,7 +81,7 @@ norm_factor = None
 for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_offset, curr_lim, main_title) in enumerate([
         (lasing_on_fileFB, lasing_off_fileFB, 625e-6, screen_x02, streaker_offset2, 1.3e3, '(a) Standard mode'),
         (lasing_on_file2, lasing_off_file2, 180e-6, screen_x02, streaker_offset2, 1.5e3, '(b) Double pulse'),
-        (lasing_on_fileSB, lasing_off_fileSB, 85e-6, screen_x02, streaker_offset2, 1.3e3, '(c) Short pulse'),
+        (lasing_on_fileSB, lasing_off_fileSB, 85e-6, screen_x02, streaker_offset2, 1.8e3, '(c) Short pulse'),
         ]):
 
     lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)
@@ -157,7 +157,8 @@ for ctr, (lasing_on_file, lasing_off_file, pulse_energy, screen_x0, streaker_off
         rec_obj.slice_x()
         rec_obj.fit_slice()
         slice_dict = rec_obj.slice_dicts[0]
-        image_tE.plot_img_and_proj(sp, plot_gauss=False, ylim=[-8e6, 6e6], slice_dict=slice_dict, slice_cutoff=curr_lim)
+        #rec_obj.images_sliced[0].fit_slice(debug=True)
+        image_tE.plot_img_and_proj(sp, plot_gauss=False, ylim=[-30e6, 25e6], slice_dict=slice_dict, slice_cutoff=curr_lim)
 
 
     if ctr == 0:

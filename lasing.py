@@ -371,7 +371,7 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImages:
-    def __init__(self, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.2, slice_factor=1, offset_explore=30e-6, ref_slice_dict=None, ref_y=None):
+    def __init__(self, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, slice_factor=1, offset_explore=30e-6, ref_slice_dict=None, ref_y=None):
         self.delta_gap = delta_gap
         recon_kwargs['delta_gap'] = [0, 0]
         recon_kwargs['delta_gap'][n_streaker] = delta_gap
@@ -385,7 +385,6 @@ class LasingReconstructionImages:
         self.profile = profile
         self.recon_kwargs = recon_kwargs
         self.subtract_median = subtract_median
-        self.noise_cut = noise_cut
         self.slice_factor = slice_factor
         self.offset_explore = offset_explore
         self.ref_slice_dict = None
@@ -543,7 +542,7 @@ class LasingReconstructionImages:
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            slice_dict = image.fit_slice(charge=self.charge, noise_cut=self.noise_cut)
+            slice_dict = image.fit_slice(charge=self.charge)
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):

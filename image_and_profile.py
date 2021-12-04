@@ -606,7 +606,7 @@ class Image:
         #import pdb; pdb.set_trace()
         return output
 
-    def fit_slice(self, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.2, debug=False):
+    def fit_slice(self, intensity_cutoff=None, charge=1, rms_sigma=5, debug=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -658,8 +658,6 @@ class Image:
                     slice_cut_mean.append(0)
                 else:
                     profile = AnyProfile(y_axis, prof_y)
-                    #cutoff = min(gf.scale*noise_cut, prof_y.max()*noise_cut)
-                    #profile._yy[profile._yy < cutoff] = 0
                     profile.crop()
                     slice_cut_rms.append(profile.rms()**2)
                     slice_cut_mean.append(profile.mean())
